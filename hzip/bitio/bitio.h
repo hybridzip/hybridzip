@@ -6,8 +6,8 @@
 #include <fstream>
 #include <iostream>
 #include <stdbool.h>
-#include "../host/platform.h"
-#include "../host/constants.h"
+#include "../other/platform.h"
+#include "../other/constants.h"
 
 
 

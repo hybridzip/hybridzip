@@ -9,19 +9,23 @@ include_directories("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0/in
 
 
 add_library(libhzip STATIC
-        cuda/gpu_info.h
-		cuda/gpu_info.cu
-		host/bitio.h
-		host/bitio.cpp
-		host/ring_buffer.h
-		host/ring_buffer.cpp
-		host/platform.h
-		host/constants.h
+        hzip/cuda/gpu_info.h
+		hzip/cuda/gpu_info.cu
+		hzip/cuda/entropy-coders/cuda_fgk.h
+		hzip/cuda/entropy-coders/cuda_fgk.cu
+		hzip/bitio/bitio.h
+		hzip/bitio/bitio.cpp
+		hzip/core/entropy-coders/fgk.h
+		hzip/core/entropy-coders/fgk.cpp
+		hzip/core/ring_buffer.h
+		hzip/core/ring_buffer.cpp
+		hzip/other/platform.h
+		hzip/other/constants.h
         )
 
 target_compile_features(libhzip PUBLIC cxx_std_14)
 
-add_executable(hybridzip main.cpp)
+add_executable(hybridzip hzip/driver/main.cpp)
 
 set_property(TARGET hybridzip 
              PROPERTY CUDA_SEPARABLE_COMPILATION ON)

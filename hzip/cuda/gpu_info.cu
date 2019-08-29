@@ -4,5 +4,4 @@ void detect_gpus() {
 	int count;
 	cudaGetDeviceCount(&count);
 	printf("Detected GPU(s): %d\n", count);
-	
 }

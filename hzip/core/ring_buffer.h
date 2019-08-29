@@ -1,5 +1,5 @@
 #include <malloc.h>
-#include "platform.h"
+#include "../other/platform.h"
 
 struct ringbuffer {
 	size_t *buf, size;

@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "../../other/platform.h"
+#include "../utils/common.h"
 
 namespace FGK {
 
 	const int INVALID = -1;
+
 	typedef struct node_t {
 		bool isZero;
 		bool isRoot;
@@ -47,6 +49,7 @@ namespace FGK {
 		FGKTree(HZIP_SIZE_T n);
 		//~FGKTree();
 		void encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T* code_length);
+		bin_t encode(HZIP_SIZE_T symbol);
 	};
 
 }

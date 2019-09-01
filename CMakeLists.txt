@@ -17,6 +17,8 @@ add_library(libhzip STATIC
 		hzip/bitio/bitio.cpp
 		hzip/core/entropy-coders/fgk.h
 		hzip/core/entropy-coders/fgk.cpp
+		hzip/core/prediction/context_graph.h
+		hzip/core/prediction/context_graph.cpp
 		hzip/core/ring_buffer.h
 		hzip/core/ring_buffer.cpp
 		hzip/other/platform.h

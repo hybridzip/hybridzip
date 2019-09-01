@@ -15,7 +15,7 @@ Node* FGKTree::createTree() {
 	root->symbol = INVALID;
 	root->value = 0;
 	root->order = alphabet_size << 1;
-	
+
 	return root;
 }
 
@@ -85,7 +85,7 @@ Node* FGKTree::addSymbol(HZIP_SIZE_T symbol) {
 	symbols[symbol]->symbol = symbol;
 	symbols[symbol]->tree = rightChild;
 
-	
+
 	*zeroNode = leftChild;
 	return previousZeroNode;
 }
@@ -124,7 +124,7 @@ void FGKTree::reverseCode(bool *code, HZIP_SIZE_T codeSize) {
 
 bool* FGKTree::codeOfNode(Node *node, HZIP_SIZE_T *n) {
 	Node *current = node;
-	 /* worst case */
+	/* worst case */
 
 	int i = 0;
 	while (!current->isRoot) {
@@ -171,4 +171,27 @@ void FGKTree::encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T *code_length) 
 		Node* newNode = addSymbol(symbol);
 		updateTree(newNode);
 	}
+}
+
+bin_t FGKTree::encode(HZIP_SIZE_T symbol) {
+	bin_t bin;
+	bin.obj = 0;
+	bin.n = 0;
+
+	Node* node = getTreeFromSymbol(symbol);
+	auto *curr = node;
+	if (node) {
+		while (!curr->isRoot) {
+			bin.obj += (2 * bin.obj) + (curr->parent->right_child == curr);
+			bin.n++;
+			curr = curr->parent;
+		}
+	}
+	else {
+		bin.obj = symbol;
+		bin.n = 8;
+		Node* newNode = addSymbol(symbol);
+		updateTree(newNode);
+	}
+	return bin;
 }

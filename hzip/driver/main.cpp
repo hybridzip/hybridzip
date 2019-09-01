@@ -5,6 +5,8 @@
 #include "../cuda/entropy-coders/cuda_fgk.h"
 
 int main() {
+
+
     system("pause");
     return 0;
 }

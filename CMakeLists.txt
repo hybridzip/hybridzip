@@ -13,12 +13,12 @@ add_library(libhzip STATIC
 		hzip/cuda/gpu_info.cu
 		hzip/cuda/entropy-coders/cuda_fgk.h
 		hzip/cuda/entropy-coders/cuda_fgk.cu
+		hzip/bitio/bitio_buffer.h
+		hzip/bitio/bitio_buffer.cpp
 		hzip/bitio/bitio.h
 		hzip/bitio/bitio.cpp
 		hzip/core/entropy-coders/fgk.h
 		hzip/core/entropy-coders/fgk.cpp
-		hzip/core/prediction/context_graph.h
-		hzip/core/prediction/context_graph.cpp
 		hzip/core/ring_buffer.h
 		hzip/core/ring_buffer.cpp
 		hzip/other/platform.h

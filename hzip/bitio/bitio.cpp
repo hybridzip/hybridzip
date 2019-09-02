@@ -1,5 +1,7 @@
 #include "bitio.h"
 
+using namespace bitio;
+
 BitIO::BitIO(char* filename, size_t buffer_size) {
 	if (!(file = fopen(filename, "r"))) {
 		fprintf(stderr, "File not found");
@@ -18,6 +20,7 @@ BitIO::BitIO(char* filename, size_t buffer_size) {
 	byte_index = 0;
 	wbyte_index = 0;
 	wbit_buffer = 0;
+	wbit_count = 0;
 }
 
 void BitIO::close() {
@@ -103,11 +106,12 @@ void BitIO::skip(size_t n) {
 
 void BitIO::write(size_t obj, size_t n) {
 	size_t i = 0;
-	unsigned char mask_index = 0;
 	obj <<= 0x40 - n;
+	unsigned char mask_index = 0;
 	while (i++ < n) {
-		wbit_buffer += (obj & ui64_single_bit_masks[0x3f - mask_index++]) > 0;
-		if (mask_index == 8) {
+		wbit_buffer += (obj & ui64_single_bit_masks[0x3f - mask_index++]) != 0;
+		wbit_count++;
+		if (wbit_count == 8) {
 			wbyte_buffer[wbyte_index++] = wbit_buffer;
 			if (wbyte_index == buffer_size) {
 				wflush();
@@ -116,6 +120,7 @@ void BitIO::write(size_t obj, size_t n) {
 			mask_index = 0;
 			obj <<= 8;
 			wbit_buffer = 0;
+			wbit_count = 0;
 		}
 		wbit_buffer <<= 1;
 	}

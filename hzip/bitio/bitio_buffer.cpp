@@ -2,12 +2,12 @@
 
 using namespace bitio;
 
-void BitIOBuffer::buffer_t_alloc(struct buffer_t *buf_t, HZIP_SIZE_T buffer_length) {
+void bitio_buffer::buffer_t_alloc(struct buffer_t *buf_t, HZIP_SIZE_T buffer_length) {
 	buf_t->buffer = (unsigned char*)malloc(sizeof(unsigned char) * buffer_length);
 	buf_t->link = NULL;
 }
 
-BitIOBuffer::BitIOBuffer(size_t buffer_size) {
+bitio_buffer::bitio_buffer(size_t buffer_size) {
 	this->buffer_size = buffer_size;
 	buf_head = (buffer_t*)malloc(sizeof(buffer_t));
 	buffer_t_alloc(buf_head, buffer_size);
@@ -22,7 +22,7 @@ BitIOBuffer::BitIOBuffer(size_t buffer_size) {
 }
 
 
-void BitIOBuffer::write(size_t obj, size_t n) {
+void bitio_buffer::write(size_t obj, size_t n) {
 	int i = 0;
 	obj <<= 0x40 - n;
 	unsigned char mask_index = 0;
@@ -44,7 +44,7 @@ void BitIOBuffer::write(size_t obj, size_t n) {
 	}
 }
 
-void BitIOBuffer::buffer_flush() {
+void bitio_buffer::buffer_flush() {
 	struct buffer_t *new_buffer = (buffer_t*)malloc(sizeof(buffer_t));
 	buffer_t_alloc(new_buffer, buffer_size);
 	buf_tail->link = new_buffer;
@@ -52,7 +52,7 @@ void BitIOBuffer::buffer_flush() {
 	wbyte_buffer = new_buffer->buffer;
 }
 
-void BitIOBuffer::flush(FILE* file) {
+void bitio_buffer::flush(FILE* file) {
 	if (wbit_count != 0) {
 		wbit_buffer <<= 7 - wbit_count;
 		wbyte_buffer[wbyte_index++] = wbit_buffer;

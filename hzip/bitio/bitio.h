@@ -11,12 +11,7 @@
 
 namespace bitio {
 
-	struct BitArray {
-		bool *bitset;
-		size_t length;
-	};
-
-	class BitIO {
+	class bitio {
 	private:
 
 		FILE *file, *wfile;
@@ -36,7 +31,7 @@ namespace bitio {
 
 	public:
 
-		BitIO(char* filename, size_t read_buffer_size);
+		bitio(char* filename, size_t read_buffer_size);
 		void skip(size_t n);
 		size_t read(size_t n);
 		void write(size_t obj, size_t n);

@@ -11,8 +11,8 @@
 
 namespace bitio {
 
-	/* The BitIOBuffer is used for efficiently storing binary data
-	   in memory. To hide memory allocation latency the BitIoBuffer uses a chain
+	/* The bitio_buffer is used for efficiently storing binary data
+	   in memory. To hide memory allocation latency per byte the bitio_buffer uses a chain
 	   of buffers.
 	*/
 
@@ -23,7 +23,7 @@ namespace bitio {
 
 	
 
-	class BitIOBuffer {
+	class bitio_buffer {
 	private:
 		buffer_t *buf_head, *buf_tail;
 		size_t buffer_size, byte_index, current_buffer_length;
@@ -37,7 +37,7 @@ namespace bitio {
 
 	public:
 
-		BitIOBuffer(size_t read_buffer_size);
+		bitio_buffer(size_t read_buffer_size);
 		void write(size_t obj, size_t n);
 		void flush(FILE* file);
 	};

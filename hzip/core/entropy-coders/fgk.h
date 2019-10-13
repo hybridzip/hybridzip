@@ -5,7 +5,7 @@
 #include "../../other/platform.h"
 #include "../utils/common.h"
 
-namespace FGK {
+namespace hfc {
 
 	const int INVALID = -1;
 
@@ -28,7 +28,7 @@ namespace FGK {
 		Node* tree;
 	}Symbol;
 
-	class FGKTree {
+	class fgk_tree {
 	private:
 		HZIP_SIZE_T alphabet_size;
 		Symbol** symbols;
@@ -46,8 +46,9 @@ namespace FGK {
 		bool* codeOfNode(Node* node, HZIP_SIZE_T *n);
 		void reverseCode(bool *code, HZIP_SIZE_T codeSize);
 	public:
-		FGKTree(HZIP_SIZE_T n);
-		//~FGKTree();
+		fgk_tree(HZIP_SIZE_T n);
+		fgk_tree();
+		//~fgk_tree();
 		void encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T* code_length);
 		bin_t encode(HZIP_SIZE_T symbol);
 	};

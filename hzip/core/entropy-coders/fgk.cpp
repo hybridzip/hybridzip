@@ -1,8 +1,8 @@
 #include "fgk.h"
 
-using namespace FGK;
+using namespace hfc;
 
-Node* FGKTree::createTree() {
+Node* fgk_tree::createTree() {
 	Node* root = (Node*)malloc(sizeof(Node));
 	root->isRoot = true;
 	root->isLeaf = true;
@@ -19,7 +19,7 @@ Node* FGKTree::createTree() {
 	return root;
 }
 
-Node* FGKTree::findReplaceNode(Node* currMax, Node* root) {
+Node* fgk_tree::findReplaceNode(Node* currMax, Node* root) {
 	Node* result = currMax;
 	if (result->value > root->value && !root->isLeaf) {
 		Node* greatestLeft = findReplaceNode(result, root->left_child);
@@ -35,7 +35,7 @@ Node* FGKTree::findReplaceNode(Node* currMax, Node* root) {
 	return (result != currMax) ? result : NULL;
 }
 
-void FGKTree::swapNodes(Node* x, Node* y) {
+void fgk_tree::swapNodes(Node* x, Node* y) {
 	HZIP_SIZE_T temp_order = x->order;
 	x->order = y->order;
 	y->order = temp_order;
@@ -60,7 +60,7 @@ void FGKTree::swapNodes(Node* x, Node* y) {
 
 }
 
-Node* FGKTree::addChild(Node* parent, HZIP_SIZE_T symbol, HZIP_SIZE_T order, HZIP_SIZE_T value, bool isZero, bool isRoot) {
+Node* fgk_tree::addChild(Node* parent, HZIP_SIZE_T symbol, HZIP_SIZE_T order, HZIP_SIZE_T value, bool isZero, bool isRoot) {
 	Node* child = (Node*)malloc(sizeof(Node));
 	child->isLeaf = true;
 	child->isRoot = isRoot;
@@ -72,7 +72,7 @@ Node* FGKTree::addChild(Node* parent, HZIP_SIZE_T symbol, HZIP_SIZE_T order, HZI
 	return child;
 }
 
-Node* FGKTree::addSymbol(HZIP_SIZE_T symbol) {
+Node* fgk_tree::addSymbol(HZIP_SIZE_T symbol) {
 	Node* previousZeroNode = *zeroNode;
 	Node* rightChild = addChild(*zeroNode, symbol, previousZeroNode->order - 1, 1, false, false);
 	Node* leftChild = addChild(*zeroNode, INVALID, previousZeroNode->order - 2, 0, true, false);
@@ -90,7 +90,7 @@ Node* FGKTree::addSymbol(HZIP_SIZE_T symbol) {
 	return previousZeroNode;
 }
 
-void FGKTree::updateTree(Node *currNode) {
+void fgk_tree::updateTree(Node *currNode) {
 	while (!currNode->isRoot) {
 		Node *replaceNode = findReplaceNode(currNode, *root);
 
@@ -105,7 +105,7 @@ void FGKTree::updateTree(Node *currNode) {
 	(currNode->value)++;
 }
 
-void FGKTree::reverseCode(bool *code, HZIP_SIZE_T codeSize) {
+void fgk_tree::reverseCode(bool *code, HZIP_SIZE_T codeSize) {
 	if (code == NULL) {
 		return;
 	}
@@ -122,14 +122,13 @@ void FGKTree::reverseCode(bool *code, HZIP_SIZE_T codeSize) {
 	}
 }
 
-bool* FGKTree::codeOfNode(Node *node, HZIP_SIZE_T *n) {
+bool* fgk_tree::codeOfNode(Node *node, HZIP_SIZE_T *n) {
 	Node *current = node;
 	/* worst case */
 
 	int i = 0;
 	while (!current->isRoot) {
-		Node *parent = current->parent;
-		codebuffer[i] = (parent->left_child == current) ? 0 : 1;
+		codebuffer[i] = (current->parent->left_child == current) ? 0 : 1;
 		current = current->parent;
 		i++;
 	}
@@ -139,7 +138,7 @@ bool* FGKTree::codeOfNode(Node *node, HZIP_SIZE_T *n) {
 	return codebuffer;
 }
 
-Node* FGKTree::getTreeFromSymbol(HZIP_SIZE_T symbol) {
+Node* fgk_tree::getTreeFromSymbol(HZIP_SIZE_T symbol) {
 	Symbol *symbolPtr = symbols[symbol];
 
 	if (!symbolPtr) {
@@ -149,7 +148,7 @@ Node* FGKTree::getTreeFromSymbol(HZIP_SIZE_T symbol) {
 	return symbolPtr->tree;
 }
 
-FGKTree::FGKTree(HZIP_SIZE_T n) {
+fgk_tree::fgk_tree(HZIP_SIZE_T n) {
 	alphabet_size = n;
 	root = new Node*;
 	zeroNode = new Node*;
@@ -159,7 +158,9 @@ FGKTree::FGKTree(HZIP_SIZE_T n) {
 	codebuffer = (bool*)malloc(sizeof(bool) * 2 * n);
 }
 
-void FGKTree::encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T *code_length) {
+fgk_tree::fgk_tree() {}
+
+void fgk_tree::encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T *code_length) {
 	Node* node = getTreeFromSymbol(symbol);
 
 	if (node) {
@@ -173,19 +174,20 @@ void FGKTree::encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T *code_length) 
 	}
 }
 
-bin_t FGKTree::encode(HZIP_SIZE_T symbol) {
+bin_t fgk_tree::encode(HZIP_SIZE_T symbol) {
 	bin_t bin;
 	bin.obj = 0;
 	bin.n = 0;
 
 	Node* node = getTreeFromSymbol(symbol);
 	auto *curr = node;
+
 	if (node) {
 		while (!curr->isRoot) {
-			bin.obj += (2 * bin.obj) + (curr->parent->right_child == curr);
-			bin.n++;
+			bin.obj += (curr->parent->right_child == curr) << bin.n++;
 			curr = curr->parent;
 		}
+		updateTree(node);
 	}
 	else {
 		bin.obj = symbol;

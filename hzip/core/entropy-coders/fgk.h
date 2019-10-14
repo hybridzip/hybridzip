@@ -18,13 +18,13 @@ namespace hfc {
 		struct node_t *left_child;
 		struct node_t *right_child;
 
-		HZIP_SIZE_T symbol;
+		HZIP_UINT symbol;
 		unsigned long long int value;
-		HZIP_SIZE_T order;
+		HZIP_UINT order;
 	}Node;
 
 	typedef struct symbol_t {
-		HZIP_SIZE_T symbol;
+		HZIP_UINT symbol;
 		Node* tree;
 	}Symbol;
 
@@ -40,9 +40,9 @@ namespace hfc {
 		void updateTree(Node* currNode);
 		Node* findReplaceNode(Node* currMax, Node* root);
 		void swapNodes(Node* x, Node* y);
-		Node* addChild(Node* parent, HZIP_SIZE_T symbol, HZIP_SIZE_T order, HZIP_SIZE_T value, bool isZero, bool isRoot);
+		Node* addChild(Node* parent, HZIP_UINT symbol, HZIP_SIZE_T order, HZIP_SIZE_T value, bool isZero, bool isRoot);
 		Node* addSymbol(HZIP_SIZE_T symbol);
-		Node* getTreeFromSymbol(HZIP_SIZE_T symbol);
+		Node* getTreeFromSymbol(HZIP_UINT symbol);
 		bool* codeOfNode(Node* node, HZIP_SIZE_T *n);
 		void reverseCode(bool *code, HZIP_SIZE_T codeSize);
 	public:
@@ -50,7 +50,8 @@ namespace hfc {
 		fgk_tree();
 		//~fgk_tree();
 		void encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T* code_length);
-		bin_t encode(HZIP_SIZE_T symbol);
+		void update(HZIP_UINT symbol);
+		bin_t encode(HZIP_UINT symbol);
 	};
 
 }

@@ -60,7 +60,7 @@ void fgk_tree::swapNodes(Node* x, Node* y) {
 
 }
 
-Node* fgk_tree::addChild(Node* parent, HZIP_SIZE_T symbol, HZIP_SIZE_T order, HZIP_SIZE_T value, bool isZero, bool isRoot) {
+Node* fgk_tree::addChild(Node* parent, HZIP_UINT symbol, HZIP_SIZE_T order, HZIP_SIZE_T value, bool isZero, bool isRoot) {
 	Node* child = (Node*)malloc(sizeof(Node));
 	child->isLeaf = true;
 	child->isRoot = isRoot;
@@ -138,7 +138,7 @@ bool* fgk_tree::codeOfNode(Node *node, HZIP_SIZE_T *n) {
 	return codebuffer;
 }
 
-Node* fgk_tree::getTreeFromSymbol(HZIP_SIZE_T symbol) {
+Node* fgk_tree::getTreeFromSymbol(HZIP_UINT symbol) {
 	Symbol *symbolPtr = symbols[symbol];
 
 	if (!symbolPtr) {
@@ -174,7 +174,19 @@ void fgk_tree::encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T *code_length)
 	}
 }
 
-bin_t fgk_tree::encode(HZIP_SIZE_T symbol) {
+void fgk_tree::update(HZIP_UINT symbol) {
+    Node* node = getTreeFromSymbol(symbol);
+    auto *curr = node;
+    if (node) {
+        updateTree(node);
+    }
+    else {
+        Node* newNode = addSymbol(symbol);
+        updateTree(newNode);
+    }
+}
+
+bin_t fgk_tree::encode(HZIP_UINT symbol) {
 	bin_t bin;
 	bin.obj = 0;
 	bin.n = 0;
@@ -187,13 +199,13 @@ bin_t fgk_tree::encode(HZIP_SIZE_T symbol) {
 			bin.obj += (curr->parent->right_child == curr) << bin.n++;
 			curr = curr->parent;
 		}
-		updateTree(node);
+		//updateTree(node);
 	}
 	else {
 		bin.obj = symbol;
 		bin.n = 8;
-		Node* newNode = addSymbol(symbol);
-		updateTree(newNode);
+		//Node* newNode = addSymbol(symbol);
+		//updateTree(newNode);
 	}
 	return bin;
 }

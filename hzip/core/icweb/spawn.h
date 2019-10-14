@@ -18,7 +18,7 @@ namespace icweb {
     public:
         HZIP_UINT lru_index;
 
-        spawn(HZIP_UINT, float*);
+        spawn(HZIP_UINT size, float* noise_buf);
         ~spawn();
         void update(HZIP_UINT symbol);
         bin_t encode(HZIP_UINT symbol);

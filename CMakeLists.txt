@@ -27,7 +27,7 @@ add_library(libhzip STATIC
 
 target_compile_features(libhzip PUBLIC cxx_std_14)
 
-add_executable(hybridzip hzip/driver/main.cpp hzip/core/icweb/core.h hzip/core/icweb/spawn.h hzip/core/icweb/tracker.h)
+add_executable(hybridzip hzip/driver/main.cpp hzip/core/icweb/instance.h hzip/core/icweb/spawn.h hzip/core/icweb/tracker.h hzip/core/icweb/spawn.cpp)
 
 set_property(TARGET hybridzip
         PROPERTY CUDA_SEPARABLE_COMPILATION ON)

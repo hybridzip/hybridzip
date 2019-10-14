@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_INSANE_CONTEXT_WEB_CORE_H
-#define HYBRIDZIP_INSANE_CONTEXT_WEB_CORE_H
+#ifndef HYBRIDZIP_INSANE_CONTEXT_WEB_INSTANCE_H
+#define HYBRIDZIP_INSANE_CONTEXT_WEB_INSTANCE_H
 
 #include <vector>
 #include "spawn.h"
@@ -21,8 +21,6 @@ namespace icweb {
         instance();
         void set_nbsize(HZIP_UINT size);
         void set_ctx_threshold(float threshold);
-
-
     };
 }
 

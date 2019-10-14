@@ -3,8 +3,8 @@
 
 #include <vector>
 #include "spawn.h"
-#include "../entropy-coders/fgk.h"
 #include "tracker.h"
+#include "../entropy-coders/fgk.h"
 
 
 namespace icweb {
@@ -12,7 +12,6 @@ namespace icweb {
     private:
         hfc::fgk_tree z0;
         std::vector<icweb::spawn> spawns;
-        std::vector<icweb::tracker> trackers;
 
         float* noise_buffer;
         HZIP_UINT nbsize;

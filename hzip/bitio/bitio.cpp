@@ -2,7 +2,7 @@
 
 using namespace bitio;
 
-bitio::bitio(char* filename, size_t buffer_size) {
+bitio_stream::bitio_stream(char* filename, size_t buffer_size) {
 	if (!(file = fopen(filename, "r"))) {
 		fprintf(stderr, "File not found");
 		return;
@@ -23,17 +23,17 @@ bitio::bitio(char* filename, size_t buffer_size) {
 	wbit_count = 0;
 }
 
-void bitio::close() {
+void bitio_stream::close() {
 	fclose(file);
 }
 
-HZIP_FORCED_INLINE void bitio::load_buffer() {
+HZIP_FORCED_INLINE void bitio_stream::load_buffer() {
 	current_buffer_length = fread(byte_buffer, 1, buffer_size, file);
 	eof = current_buffer_length == 0;
 	byte_index = 0;
 }
 
-HZIP_FORCED_INLINE void bitio::load_byte() {
+HZIP_FORCED_INLINE void bitio_stream::load_byte() {
 	if (eof)
 		bit_buffer = 0;
 	if (byte_index == current_buffer_length)
@@ -41,11 +41,11 @@ HZIP_FORCED_INLINE void bitio::load_byte() {
 	bit_buffer = byte_buffer[byte_index++];
 }
 
-HZIP_FORCED_INLINE void bitio::wflush() {
+HZIP_FORCED_INLINE void bitio_stream::wflush() {
 	fwrite(wbyte_buffer, 1, buffer_size, wfile);
 }
 
-size_t bitio::read(size_t n) {
+size_t bitio_stream::read(size_t n) {
 	size_t value = 0;
 	if (bit_count == 0) {
 		load_byte();
@@ -82,7 +82,7 @@ size_t bitio::read(size_t n) {
 	return value & ui64_masks[n];
 }
 
-void bitio::skip(size_t n) {
+void bitio_stream::skip(size_t n) {
 	if (bit_count == 0) {
 		load_byte();
 		bit_count = 8;
@@ -104,7 +104,7 @@ void bitio::skip(size_t n) {
 	}
 }
 
-void bitio::write(size_t obj, size_t n) {
+void bitio_stream::write(size_t obj, size_t n) {
 	size_t i = 0;
 	obj <<= 0x40 - n;
 	unsigned char mask_index = 0;
@@ -127,7 +127,7 @@ void bitio::write(size_t obj, size_t n) {
 	wbit_count = mask_index;
 }
 
-void bitio::flush() {
+void bitio_stream::flush() {
 	if (wbit_count == 0) return;
 	wbit_buffer <<= 7 - wbit_count;
 	wbyte_buffer[wbyte_index++] = wbit_buffer;

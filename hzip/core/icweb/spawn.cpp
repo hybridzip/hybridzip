@@ -1,4 +1,4 @@
-#include "spawn.h"
+#include "icweb.h"
 
 using namespace icweb;
 
@@ -9,7 +9,6 @@ spawn::spawn(HZIP_UINT size, float* noise_buf) {
     freq = new HZIP_SIZE_T[size];
     total_freq = 0;
     ref_freq = 0;
-    spawnsptr = nullptr;
     tree = hfc::fgk_tree(size);
 }
 
@@ -36,6 +35,7 @@ void spawn::merge(spawn* dual) {
     for(HZIP_UINT i = 0; i < alphabet_size; i++) {
         freq[i] += dual->freq[i];
     }
+    tree.bulk_override(freq);
 }
 
 

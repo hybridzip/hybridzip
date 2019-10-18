@@ -209,3 +209,36 @@ bin_t fgk_tree::encode(HZIP_UINT symbol) {
 	}
 	return bin;
 }
+
+
+void fgk_tree::bulk_override(HZIP_SIZE_T *table) {
+    for(int i = 0; i <= 0xff; i++) {
+        int diff = 0;
+        Node* node = getTreeFromSymbol(i);
+        if(node) {
+            diff = table[i] - node->value;
+        } else {
+            node = addSymbol(i);
+            node->value = 0;
+            diff = table[i];
+        }
+        update_s(node, diff);
+    }
+
+}
+
+
+void fgk_tree::update_s(Node* currNode, long int diff) {
+    while (!currNode->isRoot) {
+        Node *replaceNode = findReplaceNode(currNode, *root);
+
+        if (replaceNode && currNode->parent != replaceNode) {
+            swapNodes(currNode, replaceNode);
+        }
+
+        currNode->value += diff;
+        currNode = currNode->parent;
+    }
+
+    currNode->value += diff;
+}

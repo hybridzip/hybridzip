@@ -1,4 +1,4 @@
-#include "bitio_buffer.h"
+#include "bitio.h"
 
 using namespace bitio;
 

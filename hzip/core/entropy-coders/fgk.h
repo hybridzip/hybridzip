@@ -45,13 +45,16 @@ namespace hfc {
 		Node* getTreeFromSymbol(HZIP_UINT symbol);
 		bool* codeOfNode(Node* node, HZIP_SIZE_T *n);
 		void reverseCode(bool *code, HZIP_SIZE_T codeSize);
+        void update_s(Node* currNode, long int diff);
 	public:
 		fgk_tree(HZIP_SIZE_T n);
 		fgk_tree();
 		//~fgk_tree();
 		void encode(HZIP_SIZE_T symbol, bool** code, HZIP_SIZE_T* code_length);
 		void update(HZIP_UINT symbol);
+
 		bin_t encode(HZIP_UINT symbol);
+		void bulk_override(HZIP_SIZE_T* table);
 	};
 
 }

@@ -22,13 +22,13 @@ add_library(libhzip STATIC
 		hzip/other/platform.h
         hzip/other/constants.h
 		hzip/core/entropy-coders/hzrans64.h
-		hzip/core/entropy-coders/hzrans64.cpp)
+		)
 
 target_compile_features(libhzip PUBLIC cxx_std_14)
 
 add_executable(hybridzip hzip/driver/main.cpp)
 
-#set_property(TARGET hybridzip PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+set_property(TARGET hybridzip PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 target_link_libraries(hybridzip PRIVATE libhzip)
 

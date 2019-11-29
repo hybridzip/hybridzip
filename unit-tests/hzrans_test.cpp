@@ -6,7 +6,6 @@
 #include "../core/entropy-coders/hzrans64.h"
 
 #define SIZE 1024
-#define BUFFER_SIZE 2ull << 20ull
 
 int main() {
     std::cout << "hzrans64-unit-test" << std::endl;
@@ -29,8 +28,8 @@ int main() {
 
     //now we run the rans encoder with a dynamic probability distribution
     uint64_t sum = 0x100;
-    uint32_t *data = new uint32_t[BUFFER_SIZE];
-    data += BUFFER_SIZE;
+    uint32_t *data = new uint32_t[1ull << 20ull]; //32mb
+    data += 1ull << 20ull;
 
     hzrans64_alloc_frame(&state, SIZE);
 
@@ -51,23 +50,11 @@ int main() {
         hzrans64_encode_s(&state, i, &data);
     }
     hzrans64_enc_flush(&state, &data);
-    std::cout << "\n\nTime taken (encoder): " << (clock.now() - start).count() << " ns" << std::endl;
+    //std::cout << "\n\nTime taken (encoder): " << (clock.now() - start).count() << " ns" << std::endl;
 
-
-    //now we write data to file.
-    FILE *out_fp = fopen("E:/dickens.hzf", "wb");
-    fwrite(data, sizeof(uint32_t), state.count, out_fp);
-    fclose(out_fp);
-    //now we read the file.
-    //reset data.
-    data = new uint32_t[BUFFER_SIZE];
-    FILE *in_fp = fopen("E:/dickens.hzf", "rb");
-    fread(data, sizeof(uint32_t), state.count, in_fp); //state.count is constant for stride-based encoder..
-
-    start = clock.now();
     //decoder ...
-    hzrans64_codec_init(&state, 0x100, 12);
-    hzrans64_dec_load_state(&state, &data);
+    hzrans64_dec_init(&state, 0x100, 12);
+    hzrans64_dec_load_final(&state, &data);
     uint8_t sym;
 
     for (int i = 0; i < 0x100; i++) {
@@ -76,11 +63,10 @@ int main() {
     sum = 0x100;
     for (int i = 0; i < SIZE; i++) {
         hzrans64_decode_s(&state, dist, i, &data, &sym);
-        //std::cout << sym;
         dist[sym]++;
         sum++;
     }
 
-    std::cout << "Time taken (decoder): " << (clock.now() - start).count() << " ns" << std::endl;
+    //start = clock.now();
     return 0;
 }

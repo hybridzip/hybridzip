@@ -17,6 +17,7 @@ struct hzrans64_t {
     uint64_t mask;
     uint64_t *ls;
     uint64_t *bs;
+    uint64_t count;
 };
 
 HZIP_FORCED_INLINE void hzrans64_alloc_frame(hzrans64_t *state, uint64_t block_size) {
@@ -50,19 +51,7 @@ HZIP_FORCED_INLINE void hzrans64_codec_init(hzrans64_t *state, uint16_t size, ui
     state->scale = scale;
     state->up_prefix = (state->lower_bound >> scale) << 32;
     state->mask = (1ull << scale) - 1;
-}
-
-HZIP_FORCED_INLINE void hzrans64_encode(hzrans64_t *state, uint16_t symbol, uint32_t **data) {
-    uint64_t x = state->x;
-    uint64_t freq = state->ftable[symbol];
-    uint64_t upper_bound = state->up_prefix * freq;
-
-    if (x >= upper_bound) {
-        *data -= 1;
-        **data = (uint32_t) x;
-        x >>= 32;
-    }
-    state->x = (x << state->scale) / freq + hzrans64_bs(state, symbol) + (x % freq);
+    state->count = 0;
 }
 
 HZIP_FORCED_INLINE void hzrans64_encode_s(hzrans64_t *state, uint64_t index, uint32_t **data) {
@@ -75,6 +64,7 @@ HZIP_FORCED_INLINE void hzrans64_encode_s(hzrans64_t *state, uint64_t index, uin
         *data -= 1;
         **data = (uint32_t) x;
         x >>= 32;
+        state->count++;
     }
 
     x = ((x / ls) << state->scale) + bs + (x % ls);
@@ -96,9 +86,29 @@ HZIP_FORCED_INLINE void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *f
         state->ftable[i] = value;
     }
 
+    //calculate residue.
     ssum = (1ull << state->scale) - ssum;
-    for (int i = 0; ssum > 0; i++, ssum--) {
-        state->ftable[i] += 1;
+
+
+
+    //now make sure ls != 0.
+    int ipt = 0;
+    for (int i = 0; i < 0x100; i++) {
+        if (state->ftable[i] == 0) {
+            //use residues for frequency-stealing.
+            if (ssum > 0) {
+                state->ftable[i]++;
+                ssum--;
+                continue;
+            }
+            //make sure we don't steal frequencies from the same symbol.
+            //use do - while loop.
+            do {
+                ipt = (ipt + 1) % 0x100;
+            } while (state->ftable[ipt] < 2);
+            state->ftable[i]++;
+            state->ftable[ipt]--;
+        }
     }
 
 }
@@ -123,35 +133,12 @@ HZIP_FORCED_INLINE void hzrans64_enc_flush(hzrans64_t *state, uint32_t **data) {
     (*data)[1] = (uint32_t) (state->x >> 32);
 }
 
-//todo: encoder-decoder-compat with model.
-HZIP_FORCED_INLINE void hzrans64_dec_init(hzrans64_t *state, uint16_t size, uint8_t scale) {
-    state->x = 1;
-    state->size = size;
-    state->ftable = (uint64_t *) malloc(sizeof(uint64_t) * size);
-    state->scale = scale;
-    state->up_prefix = (state->lower_bound >> scale) << 32;
-}
 
-
-HZIP_FORCED_INLINE void hzrans64_dec_load_final(hzrans64_t *state, uint32_t **data) {
+HZIP_FORCED_INLINE void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
     uint64_t x;
     x = (uint64_t) ((*data)[0]) << 0;
     x |= (uint64_t) ((*data)[1]) << 32;
     *data += 2;
-    state->x = x;
-}
-
-HZIP_FORCED_INLINE void hzrans64_decode(hzrans64_t *state, uint16_t symbol, uint8_t **data) {
-    uint64_t x = state->x;
-    uint64_t freq = state->ftable[symbol];
-    uint64_t bs = hzrans64_bs(state, symbol);
-    x = freq * (x >> state->scale) + (x & state->mask) - bs;
-
-    if (x < state->lower_bound) {
-        x = (x << 32) | **data;
-        *data += 1;
-    }
-
     state->x = x;
 }
 

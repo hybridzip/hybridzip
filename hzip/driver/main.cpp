@@ -5,7 +5,7 @@
 #include <cassert>
 #include "../core/entropy-coders/hzrans64.h"
 
-#define SIZE 1048576
+#define SIZE 1024
 
 int main() {
     std::cout << "hzrans64-unit-test" << std::endl;
@@ -39,17 +39,34 @@ int main() {
     //generate ftable, normalize and pass to rans encoder.
 
     for (int i = 0; i < SIZE; i++) {
-        hzrans64_normalize(&state, array[i], i, dist, 0x100);
+        //std::cout << (int)array[i] << " ";
+        hzrans64_create_ftable_nf(&state, dist);
+        hzrans64_add_to_seq(&state, array[i], i);
         dist[array[i]]++;
         sum++;
     }
-
     //reverse-encode using ftable.
-    for(int i = SIZE - 1; i >= 0; i--) {
+    for (int i = SIZE - 1; i >= 0; i--) {
         hzrans64_encode_s(&state, i, &data);
     }
+    hzrans64_enc_flush(&state, &data);
+    //std::cout << "\n\nTime taken (encoder): " << (clock.now() - start).count() << " ns" << std::endl;
 
-    std::cout << "Time taken: " << (clock.now() - start).count() << std::endl;
+    //decoder ...
+    hzrans64_dec_init(&state, 0x100, 12);
+    hzrans64_dec_load_final(&state, &data);
+    uint8_t sym;
 
+    for (int i = 0; i < 0x100; i++) {
+        dist[i] = 1;
+    }
+    sum = 0x100;
+    for (int i = 0; i < SIZE; i++) {
+        hzrans64_decode_s(&state, dist, i, &data, &sym);
+        dist[sym]++;
+        sum++;
+    }
+
+    //start = clock.now();
     return 0;
 }

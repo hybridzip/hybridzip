@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(hybridzip LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 
 #include_directories("/usr/local/cuda-10.1/include")
 
@@ -21,8 +21,8 @@ add_library(libhzip STATIC
         hzip/core/entropy-coders/fgk.cpp
 		hzip/other/platform.h
         hzip/other/constants.h
-		hzip/core/entropy-coders/hzrans64.h
-		)
+		hzip/core/entropy-coders/hzrans/hzrans64.h
+		hzip/core/entropy-coders/hzrans/hzrbyte.h hzip/core/utils/avx2utils.h hzip/core/entropy-coders/hzrans/hzrans64avx.h hzip/core/entropy-coders/hzrans/hzrans.h)
 
 target_compile_features(libhzip PUBLIC cxx_std_14)
 

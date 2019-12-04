@@ -1,11 +1,17 @@
-#ifndef HYBRIDZIP_HZRANS64_H
-#define HYBRIDZIP_HZRANS64_H
+#ifndef HYBRIDZIP_HZRANS64AVX_H
+#define HYBRIDZIP_HZRANS64AVX_H
 
 #include <vector>
+#include <chrono>
 #include <cstdint>
 #include <cassert>
+#include <emmintrin.h>
 #include <malloc.h>
-#include "../../other/platform.h"
+
+#include "../../utils/avx2utils.h"
+
+#include "../../../other/platform.h"
+
 
 struct hzrans64_t {
     uint64_t x;
@@ -73,44 +79,34 @@ HZIP_FORCED_INLINE void hzrans64_encode_s(hzrans64_t *state, uint64_t index, uin
 }
 
 
-HZIP_FORCED_INLINE void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
+HZIP_FORCED_INLINE void hzrans64_create_ftable_nf(hzrans64_t *state, int32_t *freq) {
     uint64_t sum = 0x100;
     for (int i = 0; i < 0x100; i++) {
         sum += freq[i];
     }
-
-    uint64_t ssum = 0;
-    for (int i = 0; i < 0x100; i++) {
-        uint64_t value = ((freq[i] + 1) << state->scale) / sum;
-        ssum += value;
-        state->ftable[i] = value;
-    }
-
-    //calculate residue.
-    ssum = (1ull << state->scale) - ssum;
-
-
-
-    //now make sure ls != 0.
-    int ipt = 0;
-    for (int i = 0; i < 0x100; i++) {
-        if (state->ftable[i] == 0) {
-            //use residues for frequency-stealing.
-            if (ssum > 0) {
-                state->ftable[i]++;
-                ssum--;
-                continue;
-            }
-            //make sure we don't steal frequencies from the same symbol.
-            //use do - while loop.
-            do {
-                ipt = (ipt + 1) % 0x100;
-            } while (state->ftable[ipt] < 2);
-            state->ftable[i]++;
-            state->ftable[ipt]--;
+    // use three-layered normalization.
+    int32_t ssum = 0;
+    int32_t mul_factor = (1ull << state->scale) - 0x100;
+    //SIMD optimization.
+    __m256i m_div = _mm256_set1_epi32(sum);
+    __m256i m256_val1 = _mm256_set1_epi32(1);
+    for (int i = 0; i < 0x20; i++) {
+        uint8_t m = i << 3;
+        auto mres = avx_mul1plus_256i32(freq + m, mul_factor);
+        __m256i divres = _mm256_div_epi32(mres, m_div);
+        divres = _mm256_add_epi32(divres, m256_val1);
+        for (int j = 0; j < 8; j++) {
+            int32_t value = ((int32_t *) &divres)[j];
+            state->ftable[m + j] = value;
+            ssum += value - 1;
         }
     }
 
+
+    //disperse residues.
+    ssum = mul_factor - ssum;
+    for (int i = 0; ssum > 0; i++, ssum--)
+        state->ftable[i]++;
 }
 
 
@@ -131,8 +127,8 @@ HZIP_FORCED_INLINE void hzrans64_enc_flush(hzrans64_t *state, uint32_t **data) {
     *data -= 2;
     (*data)[0] = (uint32_t) (state->x >> 0);
     (*data)[1] = (uint32_t) (state->x >> 32);
+    state->count += 2;
 }
-
 
 HZIP_FORCED_INLINE void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
     uint64_t x;
@@ -143,11 +139,10 @@ HZIP_FORCED_INLINE void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **da
 }
 
 HZIP_FORCED_INLINE void
-hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint64_t index, uint32_t **data, uint8_t *sym) {
+hzrans64_decode_s(hzrans64_t *state, int32_t *_ls, uint64_t index, uint32_t **data, uint8_t *sym) {
     uint64_t x = state->x;
     hzrans64_create_ftable_nf(state, _ls);
     uint8_t symbol = hzrans64_inv_bs(state, x & state->mask);
-    auto y = x & state->mask;
     *sym = symbol;
 
     hzrans64_add_to_seq(state, symbol, index);

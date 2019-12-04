@@ -74,7 +74,6 @@ HZIP_FORCED_INLINE void hzrans64_encode_s(hzrans64_t *state, uint64_t index, uin
     }
 
     x = ((x / ls) << state->scale) + bs + (x % ls);
-    auto cv = x & state->mask;
     state->x = x;
 }
 

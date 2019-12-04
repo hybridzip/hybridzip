@@ -8,6 +8,10 @@
 #define HZRANS_USE_AVX 0
 #endif
 
+#ifndef HZRANS_SCALE
+#define HZRANS_SCALE 12
+#endif
+
 #if HZRANS_USE_AVX
 #include "hzrans64avx.h"
 #define HYBRIDZIP_HZRANS64_H

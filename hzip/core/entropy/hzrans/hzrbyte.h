@@ -9,6 +9,8 @@
 #include "hzrans64.h"
 #include <functional>
 
+typedef std::function<void(uint8_t, int32_t*)> enc_callback;
+
 struct u32ptr {
     uint32_t *data;
     uint64_t n;
@@ -22,13 +24,11 @@ struct u8ptr {
 class hzrByteEncoder {
 private:
     uint32_t *data;
-    uint64_t buffer_size;
     int32_t *distptr;
     int64_t index;
     hzrans64_t *state;
 public:
     hzrByteEncoder(uint64_t bufsize, uint16_t scale) {
-        buffer_size = bufsize;
         data = new uint32_t[bufsize];
         data += bufsize;
         index = 0;
@@ -44,9 +44,10 @@ public:
         distptr = dist;
     }
 
-    void normalize(uint8_t byte) {
+    void normalize(uint8_t byte, enc_callback callback) {
         hzrans64_create_ftable_nf(state, distptr);
         hzrans64_add_to_seq(state, byte, index++);
+        callback((uint8_t)byte, (int32_t*)distptr);
     }
 
     u32ptr encodeBytes() {

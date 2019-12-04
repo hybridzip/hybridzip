@@ -2,8 +2,8 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include "../../other/platform.h"
-#include "../utils/common.h"
+#include "../../../other/platform.h"
+#include "../../utils/common.h"
 
 namespace hfc {
 

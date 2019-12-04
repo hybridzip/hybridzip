@@ -3,7 +3,7 @@
 #define HYBRIDZIP_ICWEB_H
 
 #include <vector>
-#include "../entropy-coders/fgk.h"
+#include "../entropy/fgk/fgk.h"
 
 namespace icweb {
 

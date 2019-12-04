@@ -9,20 +9,20 @@ set(CMAKE_CXX_STANDARD 20)
 add_library(libhzip STATIC
         #hzip/cuda/gpu_info.h
         #hzip/cuda/gpu_info.cu
-        #hzip/cuda/entropy-coders/cuda_fgk.h
-        #hzip/cuda/entropy-coders/cuda_fgk.cu
+        #hzip/cuda/entropy/cuda_fgk.h
+        #hzip/cuda/entropy/cuda_fgk.cu
 		hzip/bitio/bitio_buffer.cpp
         hzip/bitio/bitio.h
         hzip/bitio/bitio.cpp
 		hzip/core/icweb/spawn.cpp
 		hzip/core/icweb/icweb.h
 		hzip/core/icweb/ctx_tracker.cpp
-        hzip/core/entropy-coders/fgk.h
-        hzip/core/entropy-coders/fgk.cpp
+		hzip/core/entropy/fgk/fgk.h
+		hzip/core/entropy/fgk/fgk.cpp
 		hzip/other/platform.h
         hzip/other/constants.h
-		hzip/core/entropy-coders/hzrans/hzrans64.h
-		hzip/core/entropy-coders/hzrans/hzrbyte.h hzip/core/utils/avx2utils.h hzip/core/entropy-coders/hzrans/hzrans64avx.h hzip/core/entropy-coders/hzrans/hzrans.h)
+		hzip/core/entropy/hzrans/hzrans64.h
+		hzip/core/entropy/hzrans/hzrbyte.h hzip/core/utils/avx2utils.h hzip/core/entropy/hzrans/hzrans64avx.h hzip/core/entropy/hzrans/hzrans.h hzip/core/blob/hzblob.h hzip/core/blob/hzmthread.h)
 
 target_compile_features(libhzip PUBLIC cxx_std_14)
 

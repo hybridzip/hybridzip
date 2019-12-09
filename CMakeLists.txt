@@ -22,7 +22,7 @@ add_library(libhzip STATIC
 		hzip/other/platform.h
         hzip/other/constants.h
 		hzip/core/entropy/hzrans/hzrans64.h
-		hzip/core/entropy/hzrans/hzrbyte.h hzip/core/utils/avx2utils.h hzip/core/entropy/hzrans/hzrans64avx.h hzip/core/entropy/hzrans/hzrans.h hzip/core/blob/hzblob.h hzip/core/blob/hzmthread.h)
+		hzip/core/entropy/hzrans/hzrbyte.h hzip/core/utils/avx2utils.h hzip/core/entropy/hzrans/hzrans64avx.h hzip/core/entropy/hzrans/hzrans.h hzip/core/blob/hzblob.h hzip/core/blob/hzmthread.h hzip/core/utils/unary.h hzip/core/blob/hzblobpack.h)
 
 target_compile_features(libhzip PUBLIC cxx_std_14)
 

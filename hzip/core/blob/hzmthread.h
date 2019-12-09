@@ -48,15 +48,21 @@ public:
 
         for (int i = 0; i < thread_count; i++) {
             dist_col[i] = new int32_t[0x100];
-            std::thread thread(hzGenBlob, raw + i * block_size, block_size, dist_col[i], callback, blobs + i);
+            uint64_t residual = 0;
+            if (i == thread_count - 1)
+                residual = block_residual;
+            std::thread thread(hzGenBlob, raw + i * block_size, block_size + residual, dist_col[i], callback,
+                               blobs + i);
             thread_vector.push_back(std::move(thread));
         }
-        for(auto & iter : thread_vector) {
+
+
+        for (auto &iter : thread_vector) {
             //wait for all threads to complete encoding the blobs.
             iter.join();
         }
 
-        return hzrblob_set {.blobs = blobs, .count = thread_count};
+        return hzrblob_set{.blobs = blobs, .count = thread_count};
     }
 };
 

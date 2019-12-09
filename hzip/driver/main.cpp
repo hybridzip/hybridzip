@@ -7,6 +7,9 @@
 #define HZRANS_USE_AVX 1
 
 #include "../core/blob/hzmthread.h"
+#include "../core/blob/hzblobpack.h"
+#include "../core/utils/unary.h"
+#include "../bitio/bitio.h"
 
 
 #define SIZE 1048576
@@ -31,11 +34,22 @@ int main() {
 
 
     auto clock = std::chrono::high_resolution_clock();
+    bitio::bitio_stream bstream(_strdup("E:/dickens.hzbs"), bitio::WRITE, 1024);
 
     auto start = clock.now();
-    hzmbb.run();
+    auto set = hzmbb.run();
+
+    // pack blobs and commit
+    hzBlobPacker packer(set);
+    packer.pack();
+    packer.commit(bstream);
+
 
     std::cout << "\n\nTime taken (encoder): " << (clock.now() - start).count() << " ns" << std::endl;
+
+    bitio::bitio_stream rstream(_strdup("E:/dickens.hzbs"), bitio::READ, 1024);
+    hzBlobUnpacker unpacker;
+    unpacker.unpack(rstream);
 
     return 0;
 }

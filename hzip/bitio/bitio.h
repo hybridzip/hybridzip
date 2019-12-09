@@ -11,6 +11,11 @@
 
 namespace bitio {
 
+    enum access_enum {
+        WRITE = 0,
+        READ = 1
+    };
+
 	class bitio_stream {
 	private:
 
@@ -18,11 +23,11 @@ namespace bitio {
 		unsigned char bit_buffer, *byte_buffer;
 		unsigned char bit_count;
 
-		size_t buffer_size, byte_index, current_buffer_length;
+		uint64_t buffer_size, byte_index, current_buffer_length;
 		bool eof, read_mode;
 
 		unsigned char wbit_buffer, *wbyte_buffer, wbit_count;
-		size_t wbyte_index;
+		uint64_t wbyte_index;
 
 		HZIP_FORCED_INLINE void load_buffer();
 		HZIP_FORCED_INLINE void load_byte();
@@ -31,10 +36,10 @@ namespace bitio {
 
 	public:
 
-		bitio_stream(char* filename, size_t read_buffer_size);
-		void skip(size_t n);
-		size_t read(size_t n);
-		void write(size_t obj, size_t n);
+		bitio_stream(char* filename, access_enum op, uint64_t buffer_size);
+		void skip(uint64_t n);
+		uint64_t read(uint64_t n);
+		void write(uint64_t obj, uint64_t n);
 		void flush();
 		void close();
 
@@ -53,19 +58,19 @@ namespace bitio {
     class bitio_buffer {
     private:
         buffer_t *buf_head, *buf_tail;
-        size_t buffer_size, byte_index, current_buffer_length;
+        uint64_t buffer_size, byte_index, current_buffer_length;
         bool eof, read_mode;
 
         unsigned char wbit_buffer, *wbyte_buffer, wbit_count;
-        size_t wbyte_index;
+        uint64_t wbyte_index;
 
         HZIP_FORCED_INLINE void buffer_flush();
-        void buffer_t_alloc(struct buffer_t *buf_t, HZIP_SIZE_T buffer_length);
+        void buffer_t_alloc(struct buffer_t *buf_t, uint64_t buffer_length);
 
     public:
 
-        bitio_buffer(size_t read_buffer_size);
-        void write(size_t obj, size_t n);
+        bitio_buffer(uint64_t read_buffer_size);
+        void write(uint64_t obj, uint64_t n);
         void flush(FILE* file);
     };
 }

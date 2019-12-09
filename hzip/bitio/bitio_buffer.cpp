@@ -2,12 +2,12 @@
 
 using namespace bitio;
 
-void bitio_buffer::buffer_t_alloc(struct buffer_t *buf_t, HZIP_SIZE_T buffer_length) {
+void bitio_buffer::buffer_t_alloc(struct buffer_t *buf_t, uint64_t buffer_length) {
 	buf_t->buffer = (unsigned char*)malloc(sizeof(unsigned char) * buffer_length);
 	buf_t->link = NULL;
 }
 
-bitio_buffer::bitio_buffer(size_t buffer_size) {
+bitio_buffer::bitio_buffer(uint64_t buffer_size) {
 	this->buffer_size = buffer_size;
 	buf_head = (buffer_t*)malloc(sizeof(buffer_t));
 	buffer_t_alloc(buf_head, buffer_size);
@@ -22,7 +22,7 @@ bitio_buffer::bitio_buffer(size_t buffer_size) {
 }
 
 
-void bitio_buffer::write(size_t obj, size_t n) {
+void bitio_buffer::write(uint64_t obj, uint64_t n) {
 	int i = 0;
 	obj <<= 0x40 - n;
 	unsigned char mask_index = 0;

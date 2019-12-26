@@ -10,14 +10,14 @@
 
 #include "../core/blob/hzmthread.h"
 #include "../core/blob/hzblobpack.h"
-#include "../core/utils/unary.h"
-#include "../bitio/bitio.h"
+#include "../core/blob/hzbatchprocessor.h"
 
 
-#define SIZE 1048576
+#define SIZE 1048576 * 9
 #define FILENAME "/run/media/supercmmetry/dickens/dickens"
 #define OFILENAME "/run/media/supercmmetry/dickens/dickens.hz"
 #define BUFFER_SIZE 1ull << 20ull
+
 
 int main() {
     std::cout << "hzrans64-unit-test" << std::endl;
@@ -31,29 +31,24 @@ int main() {
     int32_t dist[0x100];
     for (int i = 0; i < 0x100; i++) dist[i] = 1;
 
-    hzMthByteBlob hzmbb(12, array, SIZE);
-    hzmbb.setCallback([](uint8_t byte, int32_t *ptr) {
-       ptr[byte]++;
-    });
+    auto callback = [](uint8_t byte, int32_t *ptr) {
+        ptr[byte]++;
+    };
 
+    hzBatchProcessor batchProc(0x400, 12, strdup(FILENAME),
+            strdup(OFILENAME));
 
     auto clock = std::chrono::high_resolution_clock();
     bitio::bitio_stream bstream(strdup(OFILENAME), bitio::WRITE, 1024);
 
     auto start = clock.now();
-    auto set = hzmbb.run();
-
-    // pack blobs and commit
-    hzBlobPacker packer(set);
-    packer.pack();
-    packer.commit(bstream);
-
-
+    batchProc.compress_batch(callback);
     std::cout << "\n\nTime taken (encoder): " << (clock.now() - start).count() << " ns" << std::endl;
 
-    bitio::bitio_stream rstream(strdup("E:/dickens.hzbs"), bitio::READ, 1024);
+    bitio::bitio_stream rstream(strdup(OFILENAME), bitio::READ, 1024);
     hzBlobUnpacker unpacker;
-    unpacker.unpack(rstream);
+    auto set = unpacker.unpack(rstream);
+
 
     return 0;
 }

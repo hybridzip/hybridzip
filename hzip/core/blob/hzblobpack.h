@@ -47,15 +47,11 @@ class hzBlobUnpacker {
 private:
 
 public:
-    void unpack(bitio::bitio_stream stream) {
-//        for(int i = 0; i < 40; i++) {
-//            std::cout << stream.read(1);
-//        }
-
+    hzrblob_set unpack(bitio::bitio_stream stream) {
         // first retrieve set count.
 
-        auto lambda = [&stream](uint64_t n) { return stream.read(n); };
-        auto set_count = unaryinv_bin(lambda).obj;
+        auto lb_stream = [&stream](uint64_t n) { return stream.read(n); };
+        auto set_count = unaryinv_bin(lb_stream).obj;
         std::cout << "Blob count : " << set_count << std::endl;
 
         hzrblob_set set;
@@ -63,11 +59,17 @@ public:
         set.blobs = new hzrblob_t[set_count];
 
         for(int i = 0; i < set_count; i++) {
-            set.blobs[i].size = unaryinv_bin(lambda).obj;
+            set.blobs[i].size = unaryinv_bin(lb_stream).obj;
             std::cout << "blob-" << i << "-size: " << set.blobs[i].size << std::endl;
         }
 
-
+        for(int i = 0; i < set_count; i++) {
+            set.blobs[i].data = new uint32_t[set.blobs[i].size];
+            for(int j = 0; j < set.blobs[i].size; j++) {
+                set.blobs[i].data[j] = lb_stream(0x20);
+            }
+        }
+        return set;
     }
 };
 

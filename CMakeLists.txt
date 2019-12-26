@@ -4,6 +4,9 @@ project(hybridzip LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
 add_library(libhzip STATIC
         #hzip/cuda/gpu_info.h
         #hzip/cuda/gpu_info.cu
@@ -36,5 +39,5 @@ add_executable(hybridzip hzip/driver/main.cpp)
 
 set_property(TARGET hybridzip PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
-target_link_libraries(hybridzip PRIVATE libhzip)
+target_link_libraries(hybridzip PRIVATE libhzip pthread ${Boost_FILESYSTEM_LIBRARY})
 

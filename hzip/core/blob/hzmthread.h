@@ -46,6 +46,10 @@ public:
         this->callback = _callback;
     }
 
+    void setSize(uint64_t size) {
+        this->size = size;
+    }
+
     hzrblob_set run_encoder(uint8_t *raw) {
         uint64_t block_size = size / thread_count;
         uint64_t block_residual = size % thread_count;

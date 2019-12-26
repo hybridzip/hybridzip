@@ -39,7 +39,7 @@ public:
             stream.write(bin.obj, bin.n);
         }
         stream.flush();
-        stream.close();
+        //stream.close();
     }
 };
 

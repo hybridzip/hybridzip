@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <functional>
+#include <boost/filesystem.hpp>
 #include "hzmthread.h"
 #include "hzblobpack.h"
 #include "../../bitio/bitio.h"
@@ -47,6 +48,7 @@ public:
                 auto buf = new char[rem];
                 fread(buf, 1, rem,fp);
                 buffer = buf;
+                hzmbb.setSize(rem);
             }
             auto set = hzmbb.run_encoder((uint8_t*)buffer);
             hzBlobPacker packer(set);
@@ -54,6 +56,7 @@ public:
             packer.commit(bstream);
             rem -= size;
         }
+        bstream.close();
     }
 };
 

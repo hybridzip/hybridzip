@@ -6,8 +6,9 @@
 #ifndef HYBRIDZIP_HZRBYTE_H
 #define HYBRIDZIP_HZRBYTE_H
 
-#include "hzrans64.h"
 #include <functional>
+#include "hzrans64.h"
+
 
 typedef std::function<void(uint8_t, int32_t*)> enc_callback;
 

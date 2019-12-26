@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdbool.h>
+#include <vector>
 #include "../other/platform.h"
 #include "../other/constants.h"
 
@@ -72,5 +73,19 @@ namespace bitio {
         bitio_buffer(uint64_t read_buffer_size);
         void write(uint64_t obj, uint64_t n);
         void flush(FILE* file);
+    };
+
+    // dedicated byte-dumper.
+
+    class bitio_byte_dumper {
+    private:
+        std::vector<uint8_t> data;
+        char* filename;
+        FILE* out;
+    public:
+        bitio_byte_dumper(char* filename);
+        void write_byte(uint8_t byte);
+        uint8_t *get_bytes();
+        void dump();
     };
 }

@@ -4,7 +4,7 @@ project(hybridzip LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-#include_directories("/usr/local/cuda-10.1/include")
+include_directories("D:/Downloads/boost_1_72_0/boost_1_72_0")
 
 add_library(libhzip STATIC
         #hzip/cuda/gpu_info.h
@@ -22,7 +22,15 @@ add_library(libhzip STATIC
 		hzip/other/platform.h
         hzip/other/constants.h
 		hzip/core/entropy/hzrans/hzrans64.h
-		hzip/core/entropy/hzrans/hzrbyte.h hzip/core/utils/avx2utils.h hzip/core/entropy/hzrans/hzrans64avx.h hzip/core/entropy/hzrans/hzrans.h hzip/core/blob/hzblob.h hzip/core/blob/hzmthread.h hzip/core/utils/unary.h hzip/core/blob/hzblobpack.h)
+		hzip/core/entropy/hzrans/hzrbyte.h
+		hzip/core/utils/avx2utils.h
+		hzip/core/entropy/hzrans/hzrans64avx.h
+		hzip/core/entropy/hzrans/hzrans.h
+		hzip/core/blob/hzblob.h
+		hzip/core/blob/hzmthread.h
+		hzip/core/utils/unary.h
+		hzip/core/blob/hzblobpack.h
+		hzip/bitio/bitio_byte_dumper.cpp hzip/core/utils/distribution.h hzip/core/blob/hzbatchprocessor.h)
 
 target_compile_features(libhzip PUBLIC cxx_std_14)
 

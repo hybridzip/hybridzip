@@ -10,41 +10,53 @@
 #include "../other/platform.h"
 #include "../other/constants.h"
 
+#ifndef HZ_BITIO_BUFFER_SIZE
+#define HZ_BITIO_BUFFER_SIZE 0x400
+#endif
+
 namespace bitio {
 
     enum access_enum {
         WRITE = 0,
-        READ = 1
+        READ = 1,
+        APPEND = 2
     };
 
-	class bitio_stream {
-	private:
+    class bitio_stream {
+    private:
 
-		FILE *file, *wfile;
-		unsigned char bit_buffer, *byte_buffer;
-		unsigned char bit_count;
+        FILE *file;
+        unsigned char bit_buffer, *byte_buffer;
+        unsigned char bit_count;
 
-		uint64_t buffer_size, byte_index, current_buffer_length;
-		bool eof, read_mode;
+        uint64_t buffer_size, byte_index, current_buffer_length;
+        bool read_mode, eof;
 
-		unsigned char wbit_buffer, *wbyte_buffer, wbit_count;
-		uint64_t wbyte_index;
+        HZIP_FORCED_INLINE void load_buffer();
 
-		HZIP_FORCED_INLINE void load_buffer();
-		HZIP_FORCED_INLINE void load_byte();
-		HZIP_FORCED_INLINE void wflush();
+        HZIP_FORCED_INLINE void load_byte();
+
+        HZIP_FORCED_INLINE void wflush();
 
 
-	public:
+    public:
 
-		bitio_stream(char* filename, access_enum op, uint64_t buffer_size);
-		void skip(uint64_t n);
-		uint64_t read(uint64_t n);
-		void write(uint64_t obj, uint64_t n);
-		void flush();
-		void close();
+        bitio_stream(char *filename, access_enum op, uint64_t buffer_size);
 
-	};
+        void skip(uint64_t n);
+
+        uint64_t read(uint64_t n);
+
+        void write(uint64_t obj, uint64_t n);
+
+        void flush();
+
+        void align();
+
+        void close();
+
+        bool isEOF();
+    };
 
     /* The bitio_buffer is used for efficiently storing binary data
        in memory. To hide memory allocation latency per byte the bitio_buffer uses a chain
@@ -66,26 +78,35 @@ namespace bitio {
         uint64_t wbyte_index;
 
         HZIP_FORCED_INLINE void buffer_flush();
+
         void buffer_t_alloc(struct buffer_t *buf_t, uint64_t buffer_length);
 
     public:
 
         bitio_buffer(uint64_t read_buffer_size);
+
         void write(uint64_t obj, uint64_t n);
-        void flush(FILE* file);
+
+        void flush(FILE *file);
     };
 
     // dedicated byte-dumper.
 
     class bitio_byte_dumper {
     private:
-        std::vector<uint8_t> data;
-        char* filename;
-        FILE* out;
+        uint8_t *data;
+        uint64_t size;
+        int multiplier;
+        char *filename;
+        FILE *out;
+        char *mode;
     public:
-        bitio_byte_dumper(char* filename);
+        bitio_byte_dumper(char *filename, bool append = false);
+
         void write_byte(uint8_t byte);
+
         uint8_t *get_bytes();
+
         void dump();
     };
 }

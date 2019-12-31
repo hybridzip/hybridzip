@@ -11,7 +11,7 @@
 #include "../../other/constants.h"
 #include "../utils/distribution.h"
 
-void hzGenBlob(uint8_t *raw, uint64_t size, int32_t *dist, enc_callback callback, hzrblob_t *targ_blob) {
+void hzGenBlob(uint8_t *raw, uint64_t size, int32_t *dist, hz_codec_callback callback, hzrblob_t *targ_blob) {
     hzrByteEncoder hbenc(size, HZRANS_SCALE);
     for (int i = 0; i < 0x100; i++) dist[i] = 1;
     hbenc.setDistribution(dist);
@@ -24,7 +24,7 @@ void hzGenBlob(uint8_t *raw, uint64_t size, int32_t *dist, enc_callback callback
     targ_blob->o_size = size;
 }
 
-void hzDeGenBlob(hzrblob_t blob, int32_t *dist, enc_callback _callback) {
+void hzDeGenBlob(hzrblob_t blob, int32_t *dist, hz_codec_callback _callback) {
     auto hbdec = hzrByteDecoder(blob.o_size, HZRANS_SCALE);
     hbdec.setDistribution(dist);
     hbdec.decodeBytes(blob.data, _callback);
@@ -34,14 +34,14 @@ class hzMultiByteBlobProcessor {
 private:
     uint32_t thread_count;
     uint64_t size;
-    enc_callback callback;
+    hz_codec_callback callback;
 public:
     hzMultiByteBlobProcessor(uint32_t nthreads, uint64_t size) {
         thread_count = nthreads;
         this->size = size;
     }
 
-    void setCallback(enc_callback _callback) {
+    void setCallback(hz_codec_callback _callback) {
         this->callback = _callback;
     }
 

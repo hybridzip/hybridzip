@@ -10,7 +10,7 @@
 #include "hzrans64.h"
 
 
-typedef std::function<void(uint8_t, int32_t*)> enc_callback;
+typedef std::function<void(uint8_t, int32_t*)> hz_codec_callback;
 
 struct u32ptr {
     uint32_t *data;
@@ -45,7 +45,7 @@ public:
         distptr = dist;
     }
 
-    void normalize(uint8_t byte, enc_callback callback) {
+    void normalize(uint8_t byte, hz_codec_callback callback) {
         hzrans64_create_ftable_nf(state, distptr);
         hzrans64_add_to_seq(state, byte, index++);
         callback((uint8_t)byte, (int32_t*)distptr);
@@ -82,17 +82,17 @@ public:
         distptr = dist;
     }
 
-    u8ptr decodeBytes(uint32_t *bytes, void (*callback)(uint8_t symbol)) {
+    u8ptr decodeBytes(uint32_t *bytes, void (*callback)(uint8_t symbol, int32_t *ptr)) {
         hzrans64_dec_load_state(state, &bytes);
         uint8_t *sym = new uint8_t[buffer_size];
         for (int i = 0; i < buffer_size; i++) {
             hzrans64_decode_s(state, distptr, i, &bytes, sym + i);
-            callback(sym[i]);
+            callback(sym[i], distptr);
         }
         return u8ptr {.data = sym, .n = buffer_size};
     }
 
-    u8ptr decodeBytes(uint32_t *bytes, enc_callback callback) {
+    u8ptr decodeBytes(uint32_t *bytes, hz_codec_callback callback) {
         hzrans64_dec_load_state(state, &bytes);
         uint8_t *sym = new uint8_t[buffer_size];
         for (int i = 0; i < buffer_size; i++) {

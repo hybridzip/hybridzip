@@ -4,16 +4,14 @@
 #include <cstdio>
 #include <cstdint>
 #include <functional>
-#include <boost/filesystem.hpp>
+#include <cassert>
 #include "hzmthread.h"
 #include "hzblobpack.h"
 #include "../../bitio/bitio.h"
+#include "../utils/boost_utils.h"
 
-#ifndef HZ_BITIO_BUFFER_SIZE
-#define HZ_BITIO_BUFFER_SIZE 0x400
-#endif
 
-namespace fs = boost::filesystem;
+
 
 class hzBatchProcessor {
 private:
@@ -28,13 +26,20 @@ public:
         this->threads_per_batch = threads_per_batch;
     };
 
+    void set_src_dest(char *in,char *out) {
+        this->in = in;
+        this->out = out;
+    }
+
     void compress_batch(std::function<void(uint8_t, int32_t *)> callback) {
         hzMultiByteBlobProcessor hzmbb(threads_per_batch, size);
         hzmbb.setCallback(std::move(callback));
-        auto bstream = bitio::bitio_stream(out, bitio::WRITE, HZ_BITIO_BUFFER_SIZE);
+
+        deleteFileIfExists(out);
+        auto bstream = bitio::bitio_stream(out, bitio::APPEND, HZ_BITIO_BUFFER_SIZE);
 
 
-        int64_t file_size = fs::file_size(fs::path{in});
+        int64_t file_size = getFileSize(in);
         int64_t rem = file_size;
         FILE *fp = fopen(in, "rb");
 
@@ -42,21 +47,35 @@ public:
             char *buffer;
             if (rem > size) {
                 auto buf = new char[size];
-                fread(buf, 1, size,fp);
+                fread(buf, 1, size, fp);
                 buffer = buf;
             } else {
                 auto buf = new char[rem];
-                fread(buf, 1, rem,fp);
+                fread(buf, 1, rem, fp);
                 buffer = buf;
                 hzmbb.setSize(rem);
             }
-            auto set = hzmbb.run_encoder((uint8_t*)buffer);
+            auto set = hzmbb.run_encoder((uint8_t *) buffer);
             hzBlobPacker packer(set);
             packer.pack();
             packer.commit(bstream);
             rem -= size;
         }
         bstream.close();
+    }
+
+    void decompress_batch(std::function<void(uint8_t, int32_t *)> callback) {
+        auto hzmbb = hzMultiByteBlobProcessor(threads_per_batch, size);
+        hzmbb.setCallback(callback);
+
+        auto rstream = bitio::bitio_stream(in, bitio::READ, HZ_BITIO_BUFFER_SIZE);
+
+        auto unpacker = hzBlobUnpacker();
+
+        while(!rstream.isEOF()) {
+            auto blobset = unpacker.unpack(&rstream);
+            hzmbb.run_decoder(blobset, out);
+        }
     }
 };
 

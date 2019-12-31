@@ -92,12 +92,12 @@ public:
         return u8ptr {.data = sym, .n = buffer_size};
     }
 
-    u8ptr decodeBytes(uint32_t *bytes, std::function <void(uint8_t)> callback) {
+    u8ptr decodeBytes(uint32_t *bytes, enc_callback callback) {
         hzrans64_dec_load_state(state, &bytes);
         uint8_t *sym = new uint8_t[buffer_size];
         for (int i = 0; i < buffer_size; i++) {
             hzrans64_decode_s(state, distptr, i, &bytes, sym + i);
-            callback(sym[i]);
+            callback(sym[i], distptr);
         }
         return u8ptr {.data = sym, .n = buffer_size};
     }

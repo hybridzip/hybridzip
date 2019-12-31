@@ -21,10 +21,11 @@ void hzGenBlob(uint8_t *raw, uint64_t size, int32_t *dist, enc_callback callback
     auto dptr = hbenc.encodeBytes();
     targ_blob->data = dptr.data;
     targ_blob->size = dptr.n;
+    targ_blob->o_size = size;
 }
 
-void hzDeGenBlob(hzrblob_t blob, int32_t *dist, std::function<void(uint8_t)> _callback) {
-    auto hbdec = hzrByteDecoder(blob.size, HZRANS_SCALE);
+void hzDeGenBlob(hzrblob_t blob, int32_t *dist, enc_callback _callback) {
+    auto hbdec = hzrByteDecoder(blob.o_size, HZRANS_SCALE);
     hbdec.setDistribution(dist);
     hbdec.decodeBytes(blob.data, _callback);
 }
@@ -33,13 +34,11 @@ class hzMultiByteBlobProcessor {
 private:
     uint32_t thread_count;
     uint64_t size;
-    int32_t **dist_col;
     enc_callback callback;
 public:
     hzMultiByteBlobProcessor(uint32_t nthreads, uint64_t size) {
         thread_count = nthreads;
         this->size = size;
-        dist_col = new int32_t *[nthreads];
     }
 
     void setCallback(enc_callback _callback) {
@@ -57,11 +56,10 @@ public:
         auto *blobs = new hzrblob_t[thread_count];
 
         for (int i = 0; i < thread_count; i++) {
-            dist_col[i] = new int32_t[0x100];
             uint64_t residual = 0;
             if (i == thread_count - 1)
                 residual = block_residual;
-            std::thread thread(hzGenBlob, raw + i * block_size, block_size + residual, dist_col[i], callback,
+            std::thread thread(hzGenBlob, raw + i * block_size, block_size + residual, hzip_get_init_dist(), callback,
                                blobs + i);
             thread_vector.push_back(std::move(thread));
         }
@@ -78,10 +76,15 @@ public:
     void run_decoder(hzrblob_set set, char* filename) {
         std::vector<bitio::bitio_byte_dumper*> dumpers;
         std::vector<std::thread> thread_vector;
+
         for(int i = 0; i < set.count; i++) {
-            bitio::bitio_byte_dumper dumper(filename);
-            dumpers.push_back(&dumper);
-            std::thread decoder_thread(hzDeGenBlob, set.blobs[i], hzip_get_init_dist(), [&dumper](uint8_t byte) {dumper.write_byte(byte);});
+            auto dumper = new bitio::bitio_byte_dumper(filename, true);
+            dumpers.push_back(dumper);
+            auto _callback = this->callback;
+            std::thread decoder_thread(hzDeGenBlob, set.blobs[i], hzip_get_init_dist(), [dumper, _callback](uint8_t byte, int32_t *ptr) {
+                dumper->write_byte(byte);
+                _callback(byte, ptr);
+            });
             thread_vector.push_back(std::move(decoder_thread));
         }
 
@@ -90,15 +93,20 @@ public:
             thread_vector[i].join();
             dumpers[i]->dump();
         }
+
     }
 
     std::vector<uint8_t*> run_decoder(hzrblob_set set) {
         std::vector<bitio::bitio_byte_dumper*> dumpers;
         std::vector<std::thread> thread_vector;
         for(int i = 0; i < set.count; i++) {
-            bitio::bitio_byte_dumper dumper(nullptr);
-            dumpers.push_back(&dumper);
-            std::thread decoder_thread(hzDeGenBlob, set.blobs[i], hzip_get_init_dist(), [&dumper](uint8_t byte) {dumper.write_byte(byte);});
+            auto dumper = new bitio::bitio_byte_dumper(nullptr);
+            dumpers.push_back(dumper);
+            auto _callback = this->callback;
+            std::thread decoder_thread(hzDeGenBlob, set.blobs[i], hzip_get_init_dist(), [dumper, _callback](uint8_t byte, int32_t *ptr) {
+                dumper->write_byte(byte);
+                _callback(byte, ptr);
+            });
             thread_vector.push_back(std::move(decoder_thread));
         }
 

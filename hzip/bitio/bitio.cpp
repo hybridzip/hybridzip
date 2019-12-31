@@ -5,29 +5,28 @@ using namespace bitio;
 
 bitio_stream::bitio_stream(char *filename, access_enum op, uint64_t buffer_size) {
     file = nullptr;
-    wfile = nullptr;
+
     if ((op == READ) && !(file = fopen(filename, "rb"))) {
         fprintf(stderr, "File not found");
         return;
     } else if (op == WRITE) {
-        wfile = fopen(filename, "wb");
+        file = fopen(filename, "wb");
+    } else if (op == APPEND) {
+        file = fopen(filename, "a");
     }
+
     this->buffer_size = buffer_size;
     byte_buffer = (unsigned char *) malloc(sizeof(unsigned char) * buffer_size);
-    wbyte_buffer = (unsigned char *) malloc(sizeof(unsigned char) * buffer_size);
     bit_count = 0;
-
+    eof = 0;
     bit_buffer = 0;
     current_buffer_length = 0;
     byte_index = 0;
-    wbyte_index = 0;
-    wbit_buffer = 0;
-    wbit_count = 0;
+
 }
 
 void bitio_stream::close() {
-    if(file != nullptr) fclose(file);
-    if(wfile != nullptr) fclose(wfile);
+    if (file != nullptr) fclose(file);
 }
 
 HZIP_FORCED_INLINE void bitio_stream::load_buffer() {
@@ -45,7 +44,7 @@ HZIP_FORCED_INLINE void bitio_stream::load_byte() {
 }
 
 HZIP_FORCED_INLINE void bitio_stream::wflush() {
-    fwrite(wbyte_buffer, 1, buffer_size, wfile);
+    fwrite(byte_buffer, 1, buffer_size, file);
 }
 
 uint64_t bitio_stream::read(uint64_t n) {
@@ -89,17 +88,23 @@ void bitio_stream::skip(uint64_t n) {
         load_byte();
         bit_count = 8;
     }
+
     if (bit_count >= n) {
         bit_buffer <<= n;
         bit_count -= n;
     } else {
-        uint64_t nbytes = (n - bit_count) >> 3;
+        char target_bits = n - bit_count;
+        char nbytes = target_bits >> 3;
         bit_buffer = 0;
         bit_count = 0;
-        fseek(file, nbytes, SEEK_CUR);
+
+        while (nbytes--) {
+            load_byte();
+        }
         load_byte();
         bit_count = 8;
-        char rembits = n & bit_masks[3];
+
+        char rembits = target_bits & bit_masks[3];
         bit_buffer <<= rembits;
         bit_count -= rembits;
     }
@@ -111,28 +116,42 @@ void bitio_stream::write(uint64_t obj, uint64_t n) {
 
     unsigned char mask_index = 0;
     while (i++ < n) {
-        auto debug_z = (obj & ui64_single_bit_masks[0x3f - mask_index++]);
-
-        wbit_buffer +=  debug_z != 0;
-        wbit_count++;
-        if (wbit_count == 8) {
-            wbyte_buffer[wbyte_index++] = wbit_buffer;
-            if (wbyte_index == buffer_size) {
+        bit_buffer += (obj & ui64_single_bit_masks[0x3f - mask_index++]) != 0;
+        bit_count++;
+        if (bit_count == 8) {
+            byte_buffer[byte_index++] = bit_buffer;
+            if (byte_index == buffer_size) {
                 wflush();
-                wbyte_index = 0;
+                byte_index = 0;
             }
-            wbit_buffer = 0;
-            wbit_count = 0;
+            bit_buffer = 0;
+            bit_count = 0;
         }
-        wbit_buffer <<= 1;
+        bit_buffer <<= 1;
     }
 }
 
-void bitio_stream::flush() {
-    if (wbit_count == 0) return;
-    wbit_buffer <<= 7 - wbit_count;
-    wbyte_buffer[wbyte_index++] = wbit_buffer;
-    fwrite(wbyte_buffer, 1, wbyte_index, wfile);
+// aligns to next-byte, meaningful only for read operations.
+void bitio_stream::align() {
+    read(bit_count);
+    //load_byte();
 }
+
+// write residues and align to next-byte.
+void bitio_stream::flush() {
+    if (bit_count == 0) return;
+    bit_buffer <<= 8 - bit_count;
+    byte_buffer[byte_index++] = bit_buffer;
+    fwrite(byte_buffer, 1, byte_index, file);
+}
+
+bool bitio_stream::isEOF() {
+    if (eof) return true;
+    eof = fread(new char[1], 1, 1, file) == 0;
+    if (!eof) fseek(file, -1, SEEK_CUR);
+    return eof;
+}
+
+
 
 

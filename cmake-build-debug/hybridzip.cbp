@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="hybridzip"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\..\;CMake Files\..\..\..\..\usr\;CMake Files\..\..\..\..\usr\share\;CMake Files\..\..\..\..\usr\share\cmake\;CMake Files\..\..\..\..\usr\share\cmake\pybind11\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/supercmmetry/Projects/hybridzip/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/supercmmetry/Projects/hybridzip/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/supercmmetry/Projects/hybridzip/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="hzip">
+				<Option output="/home/supercmmetry/Projects/hybridzip/cmake-build-debug/libhzip.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/supercmmetry/Projects/hybridzip/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/supercmmetry/Projects/hybridzip/src"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++/x86_64-redhat-linux"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++/backward"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include"/>
+					<Add directory="/usr/local/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 hzip"/>
+					<CompileFile command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="hzip/fast">
+				<Option output="/home/supercmmetry/Projects/hybridzip/cmake-build-debug/libhzip.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/supercmmetry/Projects/hybridzip/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/supercmmetry/Projects/hybridzip/src"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++/x86_64-redhat-linux"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++/backward"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include"/>
+					<Add directory="/usr/local/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 hzip/fast"/>
+					<CompileFile command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="hybridzip">
+				<Option output="/home/supercmmetry/Projects/hybridzip/cmake-build-debug/hybridzip" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/supercmmetry/Projects/hybridzip/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/supercmmetry/Projects/hybridzip/src"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/include/python3.7m"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++/x86_64-redhat-linux"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++/backward"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include"/>
+					<Add directory="/usr/local/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 hybridzip"/>
+					<CompileFile command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="hybridzip/fast">
+				<Option output="/home/supercmmetry/Projects/hybridzip/cmake-build-debug/hybridzip" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/supercmmetry/Projects/hybridzip/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/supercmmetry/Projects/hybridzip/src"/>
+					<Add directory="/usr/include"/>
+					<Add directory="/usr/include/python3.7m"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++/x86_64-redhat-linux"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include/c++/backward"/>
+					<Add directory="/usr/lib64/gcc/x86_64-redhat-linux/8.3.0/include"/>
+					<Add directory="/usr/local/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 hybridzip/fast"/>
+					<CompileFile command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j12 -f &quot;/home/supercmmetry/Projects/hybridzip/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/bitio/bitio.cpp">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/bitio/bitio.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/bitio/bitio_buffer.cpp">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/bitio/bitio_byte_dumper.cpp">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/blob/hzbatchprocessor.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/blob/hzblob.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/blob/hzblobpack.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/blob/hzmthread.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/entropy/hzrans/hzrans.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/entropy/hzrans/hzrans64.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/entropy/hzrans/hzrans64avx.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/entropy/hzrans/hzrbin.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/entropy/hzrans/hzrbyte.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/utils/avx2utils.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/utils/boost_utils.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/utils/distribution.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/core/utils/unary.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/driver/main.cpp">
+			<Option target="hybridzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/other/constants.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/src/hzip/other/platform.h">
+			<Option target="hzip"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/../../../../usr/share/cmake/pybind11/FindPythonLibsNew.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\share\cmake\pybind11\"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/../../../../usr/share/cmake/pybind11/pybind11Config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\share\cmake\pybind11\"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/../../../../usr/share/cmake/pybind11/pybind11ConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\share\cmake\pybind11\"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/../../../../usr/share/cmake/pybind11/pybind11Targets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\share\cmake\pybind11\"/>
+		</Unit>
+		<Unit filename="/home/supercmmetry/Projects/hybridzip/../../../../usr/share/cmake/pybind11/pybind11Tools.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\..\usr\share\cmake\pybind11\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

@@ -1,0 +1,4 @@
+/home/supercmmetry/Projects/hybridzip/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/supercmmetry/Projects/hybridzip/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/supercmmetry/Projects/hybridzip/cmake-build-debug/CMakeFiles/hzip.dir
+/home/supercmmetry/Projects/hybridzip/cmake-build-debug/CMakeFiles/hybridzip.dir

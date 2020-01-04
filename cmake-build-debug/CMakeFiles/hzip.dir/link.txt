@@ -1,2 +1,0 @@
-/bin/ar qc libhzip.a  CMakeFiles/hzip.dir/src/hzip/bitio/bitio_buffer.cpp.o CMakeFiles/hzip.dir/src/hzip/bitio/bitio.cpp.o CMakeFiles/hzip.dir/src/hzip/bitio/bitio_byte_dumper.cpp.o
-/bin/ranlib libhzip.a

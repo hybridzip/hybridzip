@@ -1,4 +1,0 @@
-/home/supercmmetry/.install/clion-2019.3.2/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/bin/cuda-gcc -DCMAKE_CXX_COMPILER=/bin/cuda-g++ -G "CodeBlocks - Unix Makefiles" /home/supercmmetry/Projects/hybridzip
--- Configuring done
--- Generating done
--- Build files have been written to: /home/supercmmetry/Projects/hybridzip/cmake-build-debug

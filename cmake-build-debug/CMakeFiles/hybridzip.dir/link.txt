@@ -1,1 +1,0 @@
-/bin/cuda-g++  -g   CMakeFiles/hybridzip.dir/src/hzip/driver/main.cpp.o  -o hybridzip libhzip.a -lpthread /usr/lib64/libboost_filesystem.so /usr/lib64/libpython3.7m.so 

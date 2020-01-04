@@ -53,7 +53,8 @@ public:
     hzrblob_set unpack(bitio::bitio_stream *stream) {
         // first retrieve set count.
         auto lb_stream = [stream](uint64_t n) {
-            return stream->read(n);
+            uint64_t x =  stream->read(n);
+            return x;
         };
 
         auto set_count = unaryinv_bin(lb_stream).obj;
@@ -68,7 +69,7 @@ public:
         }
 
         for (int i = 0; i < set_count; i++) {
-            set.blobs[i].data = new uint32_t[set.blobs[i].size];
+            set.blobs[i].data = new uint64_t[set.blobs[i].size];
             for (int j = 0; j < set.blobs[i].size; j++) {
                 set.blobs[i].data[j] = lb_stream(0x20);
             }

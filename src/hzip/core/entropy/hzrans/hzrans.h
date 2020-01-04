@@ -18,6 +18,13 @@
 #include "hzrans64.h"
 #endif
 
-#include "hzrbyte.h"
+#include <functional>
+
+struct u64ptr {
+    uint64_t *data;
+    uint64_t n;
+};
+
+typedef std::function<void(uint64_t, uint64_t*)> hz_codec_callback;
 
 #endif //HYBRIDZIP_HZRANS_H

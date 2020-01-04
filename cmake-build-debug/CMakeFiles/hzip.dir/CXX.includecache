@@ -6,11 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/supercmmetry/Projects/hybridzip/hzip/bitio/bitio.cpp
+/home/supercmmetry/Projects/hybridzip/src/hzip/bitio/bitio.cpp
 bitio.h
-/home/supercmmetry/Projects/hybridzip/hzip/bitio/bitio.h
+/home/supercmmetry/Projects/hybridzip/src/hzip/bitio/bitio.h
 
-/home/supercmmetry/Projects/hybridzip/hzip/bitio/bitio.h
+/home/supercmmetry/Projects/hybridzip/src/hzip/bitio/bitio.h
 stdio.h
 -
 stdlib.h
@@ -26,21 +26,11 @@ stdbool.h
 vector
 -
 ../other/platform.h
-/home/supercmmetry/Projects/hybridzip/hzip/other/platform.h
+/home/supercmmetry/Projects/hybridzip/src/hzip/other/platform.h
 ../other/constants.h
-/home/supercmmetry/Projects/hybridzip/hzip/other/constants.h
+/home/supercmmetry/Projects/hybridzip/src/hzip/other/constants.h
 
-/home/supercmmetry/Projects/hybridzip/hzip/bitio/bitio_buffer.cpp
-bitio.h
-/home/supercmmetry/Projects/hybridzip/hzip/bitio/bitio.h
+/home/supercmmetry/Projects/hybridzip/src/hzip/other/constants.h
 
-/home/supercmmetry/Projects/hybridzip/hzip/bitio/bitio_byte_dumper.cpp
-bitio.h
-/home/supercmmetry/Projects/hybridzip/hzip/bitio/bitio.h
-cstring
--
-
-/home/supercmmetry/Projects/hybridzip/hzip/other/constants.h
-
-/home/supercmmetry/Projects/hybridzip/hzip/other/platform.h
+/home/supercmmetry/Projects/hybridzip/src/hzip/other/platform.h
 

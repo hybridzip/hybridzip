@@ -2,7 +2,6 @@
 
 using namespace bitio;
 
-
 bitio_stream::bitio_stream(char *filename, access_enum op, uint64_t buffer_size) {
     file = nullptr;
 
@@ -116,7 +115,9 @@ void bitio_stream::write(uint64_t obj, uint64_t n) {
 
     unsigned char mask_index = 0;
     while (i++ < n) {
-        bit_buffer += (obj & ui64_single_bit_masks[0x3f - mask_index++]) != 0;
+        auto z = (obj & ui64_single_bit_masks[0x3f - mask_index++]) != 0;
+        bit_buffer <<= 1;
+        bit_buffer += z;
         bit_count++;
         if (bit_count == 8) {
             byte_buffer[byte_index++] = bit_buffer;
@@ -127,7 +128,7 @@ void bitio_stream::write(uint64_t obj, uint64_t n) {
             bit_buffer = 0;
             bit_count = 0;
         }
-        bit_buffer <<= 1;
+
     }
 }
 

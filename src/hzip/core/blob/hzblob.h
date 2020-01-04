@@ -5,14 +5,14 @@
 #include <hzip/other/platform.h>
 
 struct hzrblob_t {
-    uint32_t *data;
+    uint64_t *data;
     uint64_t size;
     uint64_t o_size;
 };
 
 struct hzrblob_set{
     hzrblob_t *blobs;
-    uint32_t count;
+    uint64_t count;
 };
 
 

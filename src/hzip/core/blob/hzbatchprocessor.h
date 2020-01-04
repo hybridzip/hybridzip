@@ -32,7 +32,7 @@ public:
         this->out = out;
     }
 
-    void compress_batch(std::function<void(uint8_t, int32_t *)> callback) {
+    void compress_batch(std::function<void(uint8_t, uint64_t *)> callback) {
         hzMultiByteBlobProcessor hzmbb(threads_per_batch, size);
         hzmbb.setCallback(std::move(callback));
 
@@ -65,11 +65,13 @@ public:
         bstream.close();
     }
 
-    void decompress_batch(std::function<void(uint8_t, int32_t *)> callback) {
+    void decompress_batch(std::function<void(uint8_t, uint64_t *)> callback) {
         auto hzmbb = hzMultiByteBlobProcessor(threads_per_batch, size);
         hzmbb.setCallback(callback);
+        deleteFileIfExists(out);
 
         auto rstream = bitio::bitio_stream(in, bitio::READ, HZ_BITIO_BUFFER_SIZE);
+
 
         auto unpacker = hzBlobUnpacker();
 

@@ -3,7 +3,10 @@
 #include <cstring>
 
 #define HZRANS_USE_AVX 0
-#include <hzip/core/blob/hzbatchprocessor.h>
+
+#include <hzip/bitio/bitio.h>
+#include <hzip/core/blob/hzmthread.h>
+#include <hzip/core/utils/boost_utils.h>
 
 #define FILENAME "/run/media/supercmmetry/SYMPIENT/sample.txt"
 #define OFILENAME "/run/media/supercmmetry/SYMPIENT/sample.txt.hz"
@@ -19,25 +22,32 @@ int main() {
         ptr[byte]++;
     };
 
+    auto rstream = bitio::bitio_stream(FILENAME, bitio::READ, 1024);
 
-    auto clock = std::chrono::high_resolution_clock();
-    auto filesize = getFileSize(strdup(FILENAME));
+    auto n = 4;
+    auto proc = HZUProcessor(n);
+    proc.setCallback(callback);
+    proc.setBufferSize(8);
 
-    hzBatchProcessor batchProc(0x800000, 12, strdup(FILENAME),
-            strdup(OFILENAME));
+    auto extractors = new std::function<uint64_t(void)>[n];
 
-    auto start = clock.now();
+    for (int i = 0; i < n; i++) {
+        auto temp_stream = new bitio::bitio_stream(FILENAME, bitio::READ, 1024);
+        temp_stream->skip(16 * i);
+        extractors[i] = [temp_stream]() {
+            return temp_stream->read(0x8);
+        };
+    }
 
-    batchProc.compress_batch(callback);
-
-    std::cout << "Compression rate: " << double(filesize * 1000000000 / 1024) / (clock.now() - start).count() << " KBps" << std::endl;
+    proc.setExtractors(extractors);
 
 
-    batchProc.set_src_dest(strdup(OFILENAME), strdup(O2FILENAME));
-
-    start = clock.now();
-    batchProc.decompress_batch(callback);
-    std::cout << "Decompression rate: " << double(filesize * 1000000000 / 1024) / (clock.now() - start).count() << " KBps" << std::endl;
+    hzrblob_set set = proc.encode();
+    auto vec = proc.decode(set);
+    for (int i = 0; i < vec.size(); i++) {
+        std::cout << (char) vec[i];
+    }
+    std::cout << std::endl;
 
     return 0;
 }

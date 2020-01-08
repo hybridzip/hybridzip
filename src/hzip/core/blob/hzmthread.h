@@ -170,7 +170,7 @@ private:
     uint64_t size;
     uint16_t scale;
     hz_codec_callback callback;
-    std::function<uint64_t(void)> extract;
+    std::function<uint64_t(void)> *extractors;
 
 public:
     HZUProcessor(uint n_threads) {
@@ -191,8 +191,8 @@ public:
         callback = _callback;
     }
 
-    void setExtractionFunc(std::function<uint64_t(void)> _extract) {
-        extract = _extract;
+    void setExtractors(std::function<uint64_t(void)> *_extractors) {
+        extractors = _extractors;
     }
 
     hzrblob_set encode() {
@@ -205,8 +205,10 @@ public:
             uint64_t residual = 0;
             if (i == nthreads - 1)
                 residual = block_residual;
+
+
             std::thread thread(hzuGenBlob, alphabet_size, scale, block_size + residual,
-                               hzip_get_init_dist(alphabet_size), callback, extract, blobs + i);
+                               hzip_get_init_dist(alphabet_size), callback, extractors[i], blobs + i);
             thread_vector.push_back(std::move(thread));
         }
 

@@ -83,29 +83,8 @@ uint64_t bitio_stream::read(uint64_t n) {
 }
 
 void bitio_stream::skip(uint64_t n) {
-    if (bit_count == 0) {
-        load_byte();
-        bit_count = 8;
-    }
-
-    if (bit_count >= n) {
-        bit_buffer <<= n;
-        bit_count -= n;
-    } else {
-        char target_bits = n - bit_count;
-        char nbytes = target_bits >> 3;
-        bit_buffer = 0;
-        bit_count = 0;
-
-        while (nbytes--) {
-            load_byte();
-        }
-        load_byte();
-        bit_count = 8;
-
-        char rembits = target_bits & bit_masks[3];
-        bit_buffer <<= rembits;
-        bit_count -= rembits;
+    for(int i = 0; i < n; i++) {
+        read(1);
     }
 }
 

@@ -3,7 +3,7 @@
 
 #include <functional>
 #include <cstdint>
-#include <hzip/core/utils/common.h>
+#include "common.h"
 
 uint64_t u64log2(uint64_t n) {
     if (n == 0) return 0;

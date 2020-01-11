@@ -9,9 +9,9 @@
 #include <malloc.h>
 #include <iostream>
 
-#include "../../utils/avx2utils.h"
+#include <hzip/utils/avx2utils.h>
 
-#include "../../../other/platform.h"
+#include <hzip/other/platform.h>
 
 
 struct hzrans64_t {

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <functional>
-#include <hzip/core/utils/unary.h>
+#include <hzip/utils/unary.h>
 #include <hzip/bitio/bitio.h>
 #include "hzblob.h"
 

@@ -8,7 +8,7 @@
 #include <hzip/core/entropy/hzrans/hzrans.h>
 #include <hzip/bitio/bitio.h>
 #include <hzip/other/constants.h>
-#include <hzip/core/utils/distribution.h>
+#include <hzip/utils/distribution.h>
 #include "hzblob.h"
 #include <hzip/core/entropy/hzrans/hzrbyte.h>
 #include <hzip/core/entropy/hzrans/hzrbin.h>

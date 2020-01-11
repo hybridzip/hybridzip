@@ -6,23 +6,27 @@
 
 #include <hzip/bitio/bitio.h>
 #include <hzip/core/blob/hzmthread.h>
-#include <hzip/core/utils/boost_utils.h>
+#include <hzip/utils/boost_utils.h>
+#include <hzip/log/global_logger.h>
 
-#define FILENAME "/run/media/supercmmetry/SYMPIENT/sample.txt"
-#define OFILENAME "/run/media/supercmmetry/SYMPIENT/sample.txt.hz"
-#define O2FILENAME "/run/media/supercmmetry/SYMPIENT/sample.txt.orig"
+#define FILENAME "/run/media/supercmmetry/SYMPIENT/dickens/dickens"
+#define OFILENAME "/run/media/supercmmetry/SYMPIENT/dickens/dickens.hz"
+#define O2FILENAME "/run/media/supercmmetry/SYMPIENT/dickens/dickens.orig.txt"
 
 
 int main() {
-    std::cout << "hzrans64-unit-test" << std::endl;
-    deleteFileIfExists(OFILENAME);
-    deleteFileIfExists(O2FILENAME);
+    hzlogger = Logger(nullptr, false);
+    hzlogger.log(hzlog::INFO, "hzip-unit-test started");
+
+
+    hzboost::deleteFileIfExists(OFILENAME);
+    hzboost::deleteFileIfExists(O2FILENAME);
 
     auto callback = [](uint64_t byte, uint64_t *ptr) {
         ptr[byte]++;
     };
 
-    auto rstream = bitio::bitio_stream(FILENAME, bitio::READ, 1024);
+
 
     auto n = 4;
     auto proc = HZUProcessor(n);
@@ -44,10 +48,6 @@ int main() {
 
     hzrblob_set set = proc.encode();
     auto vec = proc.decode(set);
-    for (int i = 0; i < vec.size(); i++) {
-        std::cout << (char) vec[i];
-    }
-    std::cout << std::endl;
 
     return 0;
 }

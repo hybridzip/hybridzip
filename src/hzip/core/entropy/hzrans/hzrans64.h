@@ -7,10 +7,7 @@
 #include <cassert>
 #include <emmintrin.h>
 #include <malloc.h>
-
-#include "../../utils/avx2utils.h"
-
-#include "../../../other/platform.h"
+#include <hzip/other/platform.h>
 
 
 struct hzrans64_t {

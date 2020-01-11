@@ -6,7 +6,7 @@
 #include <functional>
 #include <cassert>
 #include <hzip/bitio/bitio.h>
-#include <hzip/core/utils/boost_utils.h>
+#include <hzip/utils/boost_utils.h>
 #include "hzmthread.h"
 #include "hzblobpack.h"
 
@@ -36,11 +36,11 @@ public:
         hzMultiByteBlobProcessor hzmbb(threads_per_batch, size);
         hzmbb.setCallback(std::move(callback));
 
-        deleteFileIfExists(out);
+        hzboost::deleteFileIfExists(out);
         auto bstream = bitio::bitio_stream(out, bitio::APPEND, HZ_BITIO_BUFFER_SIZE);
 
 
-        int64_t file_size = getFileSize(in);
+        int64_t file_size = hzboost::getFileSize(in);
         int64_t rem = file_size;
         FILE *fp = fopen(in, "rb");
 
@@ -68,7 +68,7 @@ public:
     void decompress_batch(std::function<void(uint8_t, uint64_t *)> callback) {
         auto hzmbb = hzMultiByteBlobProcessor(threads_per_batch, size);
         hzmbb.setCallback(callback);
-        deleteFileIfExists(out);
+        hzboost::deleteFileIfExists(out);
 
         auto rstream = bitio::bitio_stream(in, bitio::READ, HZ_BITIO_BUFFER_SIZE);
 

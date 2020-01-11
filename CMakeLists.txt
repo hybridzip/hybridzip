@@ -22,22 +22,26 @@ add_library(hzip STATIC
 		src/hzip/other/constants.h
 		src/hzip/core/entropy/hzrans/hzrans64.h
 		src/hzip/core/entropy/hzrans/hzrbyte.h
-		src/hzip/core/utils/avx2utils.h
+		src/hzip/utils/avx2utils.h
 		src/hzip/core/entropy/hzrans/hzrans64avx.h
 		src/hzip/core/entropy/hzrans/hzrans.h
 		src/hzip/core/blob/hzblob.h
 		src/hzip/core/blob/hzmthread.h
-		src/hzip/core/utils/unary.h
+		src/hzip/utils/unary.h
 		src/hzip/core/blob/hzblobpack.h
 		src/hzip/bitio/bitio_byte_dumper.cpp
-		src/hzip/core/utils/distribution.h
+		src/hzip/utils/distribution.h
 		src/hzip/core/blob/hzbatchprocessor.h
-		src/hzip/core/utils/boost_utils.h
-		src/hzip/core/entropy/hzrans/hzrbin.h)
+		src/hzip/utils/boost_utils.h
+		src/hzip/core/entropy/hzrans/hzrbin.h
+		src/hzip/archiver/hzarchiver.h
+		src/hzip/archiver/hzdirtree.h
+		src/hzip/log/logger.h
+		src/hzip/log/global_logger.h)
 
 target_compile_features(hzip PUBLIC cxx_std_14)
 
-add_executable(hybridzip src/hzip/driver/main.cpp)
+add_executable(hybridzip src/hzip/driver/main.cpp )
 
 set_property(TARGET hybridzip PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 

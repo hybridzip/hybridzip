@@ -15,7 +15,7 @@
 
 
 int main() {
-    hzlogger = Logger(nullptr, false);
+    hzlogger = Logger(strdup("./log.txt"), false);
     hzlogger.log(hzlog::INFO, "hzip-unit-test started");
 
 

@@ -6,7 +6,7 @@
 #include <string>
 #include <memory.h>
 #include <boost/algorithm/string.hpp>
-#include <hzip/log/global_logger.h>
+#include <hzip/log/logger.h>
 
 struct HZDirTreeNode {
     std::string name;
@@ -53,8 +53,8 @@ public:
         for(auto &elem : result) {
             auto nextDir = wkdir->childMap[elem];
             if (nextDir == nullptr) {
-                hzlogger.log(hzlog::WARNING, "Invalid Path.");
-                hzlogger.setErrStatus(1);
+                HZLogger::log(LOGTYPE::WARNING, "Invalid Path.");
+                HZLogger::setErrStatus(HZERR::HZIP_PATH_ERROR);
                 return;
             }
         }

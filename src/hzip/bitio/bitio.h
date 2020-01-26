@@ -1,12 +1,9 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <fstream>
 #include <iostream>
-#include <stdbool.h>
 #include <vector>
+#include <hzip/log/logger.h>
 #include "../other/platform.h"
 #include "../other/constants.h"
 
@@ -30,7 +27,7 @@ namespace bitio {
         unsigned char bit_count;
 
         uint64_t buffer_size, byte_index, current_buffer_length;
-        bool read_mode, eof;
+        bool eof;
 
         HZIP_FORCED_INLINE void load_buffer();
 
@@ -41,7 +38,7 @@ namespace bitio {
 
     public:
 
-        bitio_stream(char *filename, access_enum op, uint64_t buffer_size);
+        bitio_stream(std::string filename, access_enum op, uint64_t buffer_size);
 
         void skip(uint64_t n);
 

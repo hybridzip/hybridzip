@@ -2,16 +2,17 @@
 
 using namespace bitio;
 
-bitio_stream::bitio_stream(char *filename, access_enum op, uint64_t buffer_size) {
+bitio_stream::bitio_stream(std::string filename, access_enum op, uint64_t buffer_size) {
     file = nullptr;
 
-    if ((op == READ) && !(file = fopen(filename, "rb"))) {
-        fprintf(stderr, "File not found");
+    if ((op == READ) && !(file = fopen(filename.c_str(), "rb"))) {
+        HZLogger::log(LOGTYPE::CRITICAL, "bitio: File not found.");
+        HZLogger::setErrStatus(HZERR::BITIO_FILE_NOT_FOUND);
         return;
     } else if (op == WRITE) {
-        file = fopen(filename, "wb");
+        file = fopen(filename.c_str(), "wb");
     } else if (op == APPEND) {
-        file = fopen(filename, "a");
+        file = fopen(filename.c_str(), "a");
     }
 
     this->buffer_size = buffer_size;
@@ -94,9 +95,8 @@ void bitio_stream::write(uint64_t obj, uint64_t n) {
 
     unsigned char mask_index = 0;
     while (i++ < n) {
-        auto z = (obj & ui64_single_bit_masks[0x3f - mask_index++]) != 0;
         bit_buffer <<= 1;
-        bit_buffer += z;
+        bit_buffer += (obj & ui64_single_bit_masks[0x3f - mask_index++]) != 0;;
         bit_count++;
         if (bit_count == 8) {
             byte_buffer[byte_index++] = bit_buffer;
@@ -119,9 +119,10 @@ void bitio_stream::align() {
 
 // write residues and align to next-byte.
 void bitio_stream::flush() {
-    if (bit_count == 0) return;
-    bit_buffer <<= 8 - bit_count;
-    byte_buffer[byte_index++] = bit_buffer;
+    if (bit_count != 0) {
+        bit_buffer <<= 8 - bit_count;
+        byte_buffer[byte_index++] = bit_buffer;
+    }
     fwrite(byte_buffer, 1, byte_index, file);
 }
 

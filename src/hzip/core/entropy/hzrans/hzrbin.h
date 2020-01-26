@@ -47,6 +47,7 @@ public:
 
     u64ptr encode() {
         auto data = new uint64_t[size];
+        data += size;
         while (index--)
             hzrans64_encode_s(state, index, &data);
         hzrans64_enc_flush(state, &data);

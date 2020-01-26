@@ -35,7 +35,7 @@ void hzuGenBlob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
                 hz_codec_callback callback, std::function<uint64_t(void)> extract, hzrblob_t *targ_blob) {
 
     auto encoder = HZRUEncoder(alpha, scale, size);
-    encoder.setExtractionFunc(extract);
+    encoder.setExtractionFunc(std::move(extract));
     encoder.setDistribution(dist);
     encoder.setCallback(callback);
     for (uint64_t i = 0; i < size; i++) {

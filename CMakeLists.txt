@@ -37,7 +37,8 @@ add_library(hzip STATIC
 		src/hzip/archiver/hzarchiver.h
 		src/hzip/archiver/hzdirtree.h
 		src/hzip/log/logger.h
-		src/hzip/log/global_logger.h)
+		src/hzip/utils/errors.h
+		src/hzip/log/logger.cpp src/hzip/core/models/vtrie.h)
 
 target_compile_features(hzip PUBLIC cxx_std_14)
 

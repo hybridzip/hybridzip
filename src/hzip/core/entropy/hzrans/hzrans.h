@@ -15,7 +15,9 @@
 #if HZRANS_USE_AVX
 #include "hzrans64avx.h"
 #else
+
 #include "hzrans64.h"
+
 #endif
 
 #include <functional>
@@ -25,6 +27,12 @@ struct u64ptr {
     uint64_t n;
 };
 
-typedef std::function<void(uint64_t, uint64_t*)> hz_codec_callback;
+struct u32ptr {
+    uint32_t *data;
+    uint64_t n;
+};
+
+typedef std::function<void(uint64_t, uint64_t *)> hz_codec_callback;
+typedef std::function<void(hzrans64_t *, std::stack<uint32_t> *data)> hz_cross_encoder;
 
 #endif //HYBRIDZIP_HZRANS_H

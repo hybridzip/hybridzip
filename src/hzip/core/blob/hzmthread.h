@@ -10,34 +10,19 @@
 #include <hzip/other/constants.h>
 #include <hzip/utils/distribution.h>
 #include "hzblob.h"
-#include <hzip/core/entropy/hzrans/hzrbyte.h>
 #include <hzip/core/entropy/hzrans/hzrbin.h>
 
-void hzGenBlob(uint8_t *raw, uint64_t size, uint64_t *dist, hz_codec_callback callback, hzrblob_t *targ_blob) {
-    hzrByteEncoder hbenc(size, HZRANS_SCALE);
-    hbenc.setDistribution(dist);
-    for (auto i = 0; i < size; i++) {
-        hbenc.normalize(raw[i], callback);
-    }
-    auto dptr = hbenc.encodeBytes();
-    targ_blob->data = dptr.data;
-    targ_blob->size = dptr.n;
-    targ_blob->o_size = size;
-}
-
-void hzDeGenBlob(hzrblob_t blob, uint64_t *dist, hz_codec_callback _callback) {
-    auto hbdec = hzrByteDecoder(blob.o_size, HZRANS_SCALE);
-    hbdec.setDistribution(dist);
-    hbdec.decodeBytes(blob.data, _callback);
-}
 
 void hzuGenBlob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
-                hz_codec_callback callback, std::function<uint64_t(void)> extract, hzrblob_t *targ_blob) {
+                hz_codec_callback callback, std::function<uint64_t(void)> extract, hzrblob_t *targ_blob,
+                hz_cross_encoder cross_encoder = nullptr) {
 
     auto encoder = HZRUEncoder(alpha, scale, size);
     encoder.setExtractionFunc(std::move(extract));
     encoder.setDistribution(dist);
     encoder.setCallback(callback);
+    encoder.setCrossEncoder(cross_encoder);
+
     for (uint64_t i = 0; i < size; i++) {
         encoder.normalize();
     }
@@ -55,114 +40,6 @@ void hzuDeGenBlob(hzrblob_t blob, uint64_t alpha, uint16_t scale, uint64_t *dist
     decoder.decode(blob.data);
 }
 
-class hzMultiByteBlobProcessor {
-private:
-    uint64_t thread_count;
-    uint64_t size;
-    hz_codec_callback callback;
-public:
-    hzMultiByteBlobProcessor(uint64_t nthreads, uint64_t size) {
-        thread_count = nthreads;
-        this->size = size;
-    }
-
-    hzMultiByteBlobProcessor() {
-        thread_count = 0;
-        this->size = 0;
-    }
-
-    void setCallback(hz_codec_callback _callback) {
-        this->callback = _callback;
-    }
-
-    void setSize(uint64_t size) {
-        this->size = size;
-    }
-
-    hzrblob_set run_encoder(uint8_t *raw) {
-        uint64_t block_size = size / thread_count;
-
-        if (block_size == 0) {
-            thread_count = 1;
-            block_size = size;
-        }
-
-        uint64_t block_residual = size % thread_count;
-        std::vector<std::thread> thread_vector;
-        auto *blobs = new hzrblob_t[thread_count];
-
-        for (int i = 0; i < thread_count; i++) {
-            uint64_t residual = 0;
-            if (i == thread_count - 1)
-                residual = block_residual;
-
-            auto _callback = this->callback;
-
-            std::thread thread(hzGenBlob, raw + i * block_size, block_size + residual, hzip_get_init_dist(0x100),
-                               _callback,
-                               blobs + i);
-            thread_vector.push_back(std::move(thread));
-        }
-
-
-        for (auto &iter : thread_vector) {
-            //wait for all threads to complete encoding the blobs.
-            iter.join();
-        }
-
-        return hzrblob_set{.blobs = blobs, .count = thread_count};
-    }
-
-    void run_decoder(hzrblob_set set, char *filename) {
-        std::vector<bitio::bitio_byte_dumper *> dumpers;
-        std::vector<std::thread> thread_vector;
-
-        for (int i = 0; i < set.count; i++) {
-            auto dumper = new bitio::bitio_byte_dumper(filename, true);
-            dumpers.push_back(dumper);
-            auto _callback = this->callback;
-            std::thread decoder_thread(hzDeGenBlob, set.blobs[i], hzip_get_init_dist(0x100),
-                                       [dumper, _callback](uint64_t obj, uint64_t *ptr) {
-                                           dumper->write_byte(obj);
-                                           _callback(obj, ptr);
-                                       });
-            thread_vector.push_back(std::move(decoder_thread));
-        }
-
-        for (int i = 0; i < thread_vector.size(); i++) {
-            // wait for thread-i and then dump bytes to file.
-            thread_vector[i].join();
-            dumpers[i]->dump();
-        }
-
-    }
-
-    std::vector<uint8_t *> run_decoder(hzrblob_set set) {
-        std::vector<bitio::bitio_byte_dumper *> dumpers;
-        std::vector<std::thread> thread_vector;
-        for (int i = 0; i < set.count; i++) {
-            auto dumper = new bitio::bitio_byte_dumper(nullptr);
-            dumpers.push_back(dumper);
-            auto _callback = this->callback;
-            std::thread decoder_thread(hzDeGenBlob, set.blobs[i], hzip_get_init_dist(0x100),
-                                       [dumper, _callback](uint64_t obj, uint64_t *ptr) {
-                                           dumper->write_byte(obj);
-                                           _callback(obj, ptr);
-                                       });
-            thread_vector.push_back(std::move(decoder_thread));
-        }
-
-        std::vector<uint8_t *> byte_set;
-        for (int i = 0; i < thread_vector.size(); i++) {
-            // wait for thread-i and then push to byte-set.
-            thread_vector[i].join();
-            byte_set.push_back(dumpers[i]->get_bytes());
-        }
-
-        return byte_set;
-    }
-};
-
 class HZUProcessor {
 private:
     uint nthreads;
@@ -171,6 +48,7 @@ private:
     uint16_t scale;
     hz_codec_callback callback;
     std::function<uint64_t(void)> *extractors;
+    hz_cross_encoder *cross_encoders;
 
 public:
     HZUProcessor(uint n_threads) {
@@ -195,6 +73,17 @@ public:
         extractors = _extractors;
     }
 
+    void setCrossEncoders(hz_cross_encoder *_cross_encoders) {
+        cross_encoders = _cross_encoders;
+    }
+
+    void useOnlyBaseEncoder() {
+        cross_encoders = new hz_cross_encoder[nthreads];
+        for (int i = 0; i < nthreads; i++) {
+            cross_encoders[i] = nullptr;
+        }
+    }
+
     hzrblob_set encode() {
         uint64_t block_size = size / nthreads;
         uint64_t block_residual = size % nthreads;
@@ -208,7 +97,9 @@ public:
 
 
             std::thread thread(hzuGenBlob, alphabet_size, scale, block_size + residual,
-                               hzip_get_init_dist(alphabet_size), callback, extractors[i], blobs + i);
+                               hzip_get_init_dist(alphabet_size), callback, extractors[i], blobs + i,
+                               cross_encoders[i]);
+
             thread_vector.push_back(std::move(thread));
         }
 

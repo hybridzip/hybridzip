@@ -53,6 +53,7 @@ namespace bitio {
         void close();
 
         bool isEOF();
+
     };
 
     /* The bitio_buffer is used for efficiently storing binary data

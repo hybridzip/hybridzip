@@ -25,7 +25,9 @@ bitio_stream::bitio_stream(std::string filename, access_enum op, uint64_t buffer
 
 }
 
+
 void bitio_stream::close() {
+    free(byte_buffer);
     if (file != nullptr) fclose(file);
 }
 
@@ -84,7 +86,7 @@ uint64_t bitio_stream::read(uint64_t n) {
 }
 
 void bitio_stream::skip(uint64_t n) {
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         read(1);
     }
 }

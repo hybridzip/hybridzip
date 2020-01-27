@@ -21,8 +21,7 @@ add_library(hzip STATIC
 		src/hzip/other/platform.h
 		src/hzip/other/constants.h
 		src/hzip/core/entropy/hzrans/hzrans64.h
-		src/hzip/core/entropy/hzrans/hzrbyte.h
-		src/hzip/utils/avx2utils.h
+        src/hzip/utils/avx2utils.h
 		src/hzip/core/entropy/hzrans/hzrans64avx.h
 		src/hzip/core/entropy/hzrans/hzrans.h
 		src/hzip/core/blob/hzblob.h
@@ -46,5 +45,5 @@ add_executable(hybridzip src/hzip/driver/main.cpp )
 
 set_property(TARGET hybridzip PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
-target_link_libraries(hybridzip PRIVATE hzip pthread pybind11::embed ${Boost_FILESYSTEM_LIBRARY})
+target_link_libraries(hybridzip PRIVATE hzip pthread pybind11::embed ${Boost_FILESYSTEM_LIBRARY} profiler)
 

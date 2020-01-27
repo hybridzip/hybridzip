@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cassert>
+#include <stack>
 #include <emmintrin.h>
 #include <malloc.h>
 #include <hzip/other/platform.h>
@@ -21,6 +22,12 @@ struct hzrans64_t {
     uint64_t *ls;
     uint64_t *bs;
     uint64_t count;
+
+    ~hzrans64_t() {
+        free(ftable);
+        free(ls);
+        free(bs);
+    }
 };
 
 HZIP_FORCED_INLINE void hzrans64_alloc_frame(hzrans64_t *state, uint64_t block_size) {
@@ -61,15 +68,15 @@ HZIP_FORCED_INLINE void hzrans64_codec_init(hzrans64_t *state, uint64_t size, ui
     state->count = 0;
 }
 
-HZIP_FORCED_INLINE void hzrans64_encode_s(hzrans64_t *state, uint64_t index, uint64_t **data) {
+HZIP_FORCED_INLINE void hzrans64_encode_s(hzrans64_t *state, uint64_t index, std::stack<uint32_t> *data) {
+
     uint64_t x = state->x;
     uint64_t ls = state->ls[index];
     uint64_t bs = state->bs[index];
     uint64_t upper_bound = ls * state->up_prefix;
 
     if (x >= upper_bound) {
-        *data -= 1;
-        **data = (uint32_t) x;
+        data->push(x);
         x >>= 32;
         state->count++;
     }
@@ -107,20 +114,19 @@ HZIP_FORCED_INLINE void
 hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol, uint64_t index) {
     state->bs[index] = 0;
     state->ls[index] = state->ftable[symbol];
-    
+
     for (int i = 0; i < symbol; i++) {
         state->bs[index] += state->ftable[i];
     }
 }
 
-HZIP_FORCED_INLINE void hzrans64_enc_flush(hzrans64_t *state, uint64_t **data) {
-    *data -= 2;
-    (*data)[0] = (uint64_t) (state->x >> 0);
-    (*data)[1] = (uint64_t) (state->x >> 32);
+HZIP_FORCED_INLINE void hzrans64_enc_flush(hzrans64_t *state, std::stack<uint32_t> *data) {
+    data->push(state->x >> 32);
+    data->push(state->x >> 0);
     state->count += 2;
 }
 
-HZIP_FORCED_INLINE void hzrans64_dec_load_state(hzrans64_t *state, uint64_t **data) {
+HZIP_FORCED_INLINE void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
     uint64_t x;
     x = (uint64_t) ((*data)[0]) << 0;
     x |= (uint64_t) ((*data)[1]) << 32;
@@ -129,7 +135,7 @@ HZIP_FORCED_INLINE void hzrans64_dec_load_state(hzrans64_t *state, uint64_t **da
 }
 
 HZIP_FORCED_INLINE void
-hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint64_t index, uint64_t **data, uint64_t *sym) {
+hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint64_t index, uint32_t **data, uint64_t *sym) {
     uint64_t x = state->x;
     hzrans64_create_ftable_nf(state, _ls);
     uint64_t symbol = hzrans64_inv_bs(state, x & state->mask);

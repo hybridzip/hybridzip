@@ -8,6 +8,7 @@
 class HZRUEncoder {
 private:
     std::function<uint64_t(void)> extract;
+    hz_cross_encoder cross_encoder;
     hz_codec_callback callback;
     uint64_t *distptr;
     uint64_t size;
@@ -38,6 +39,10 @@ public:
         callback = _callback;
     }
 
+    void setCrossEncoder(hz_cross_encoder __cross_encoder) {
+        cross_encoder = std::move(__cross_encoder);
+    }
+
     void normalize() {
         uint64_t symbol = extract();
         hzrans64_create_ftable_nf(state, distptr);
@@ -45,16 +50,31 @@ public:
         callback(symbol, distptr);
     }
 
-    u64ptr encode() {
-        auto data = new uint64_t[size];
-        data += size;
-        while (index--)
-            hzrans64_encode_s(state, index, &data);
-        hzrans64_enc_flush(state, &data);
+    u32ptr encode() {
+        auto data = new std::stack<uint32_t>();
+
+        while (index--) {
+            cross_encoder(state, data);
+            hzrans64_encode_s(state, index, data);
+        }
+
+        hzrans64_enc_flush(state, data);
 
         index = 0; // reset index
 
-        return u64ptr{.data = data, .n = state->count};
+        auto __data = new uint32_t[data->size()];
+
+        for (int i = 0; !data->empty(); i++) {
+            __data[i] = data->top();
+            data->pop();
+        }
+
+        return u32ptr{.data = __data, .n = state->count};
+    }
+
+    ~HZRUEncoder() {
+        delete state;
+        free(distptr);
     }
 
 };
@@ -85,14 +105,19 @@ public:
         callback = _callback;
     }
 
-    u64ptr decode(uint64_t *raw) {
+    u64ptr decode(uint32_t *raw) {
         hzrans64_dec_load_state(state, &raw);
         auto *sym = new uint64_t[size];
         for (int i = 0; i < size; i++) {
             hzrans64_decode_s(state, distptr, i, &raw, sym + i);
             callback(sym[i], distptr);
         }
-        return u64ptr {.data = sym, .n = size};
+        return u64ptr{.data = sym, .n = size};
+    }
+
+    ~HZRUDecoder() {
+        delete state;
+        free(distptr);
     }
 
 };

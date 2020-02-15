@@ -8,8 +8,6 @@ include_directories("src")
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-find_package(pybind11 REQUIRED)
-
 add_library(hzip STATIC
         #hzip/cuda/gpu_info.h
         #hzip/cuda/gpu_info.cu
@@ -39,11 +37,9 @@ add_library(hzip STATIC
 		src/hzip/utils/errors.h
 		src/hzip/log/logger.cpp src/hzip/core/models/vtrie.h)
 
-target_compile_features(hzip PUBLIC cxx_std_14)
+target_compile_features(hzip PUBLIC cxx_std_20)
 
-add_executable(hybridzip src/hzip/driver/main.cpp )
+add_executable(hybridzip src/main.cpp)
 
-set_property(TARGET hybridzip PROPERTY CUDA_SEPARABLE_COMPILATION ON)
-
-target_link_libraries(hybridzip PRIVATE hzip pthread pybind11::embed ${Boost_FILESYSTEM_LIBRARY} profiler)
+target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} profiler)
 

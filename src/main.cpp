@@ -7,7 +7,6 @@
 #include <hzip/bitio/bitio.h>
 #include <hzip/core/blob/hzmthread.h>
 #include <hzip/utils/boost_utils.h>
-#include <hzip/log/logger.h>
 #include <hzip/core/blob/hzblobpack.h>
 #include <hzip/core/models/vtrie.h>
 
@@ -17,15 +16,6 @@
 
 
 int main() {
-    // initialize logger.
-    HZLogger::setFileStream(strdup("./log.txt"));
-    HZLogger::logThreadId(true);
-    HZLogger::logTime(true);
-    HZLogger::logDebug(true);
-    HZLogger::start();
-
-    HZLogger::setErrStatus(HZERR::NO_ERROR);
-    HZLogger::log(LOGTYPE::INFO, "hzip-unit-test #1 VTrieModel -- started");
 
     hzboost::deleteFileIfExists(OFILENAME);
     hzboost::deleteFileIfExists(O2FILENAME);
@@ -61,9 +51,7 @@ int main() {
     auto extractors = new std::function<uint64_t(void)>;
 
     auto temp_stream = new bitio::bitio_stream(FILENAME, bitio::READ, 1024);
-    if (HZLogger::getErrStatus() == HZERR::BITIO_FILE_NOT_FOUND) {
-        return 0;
-    }
+
 
     *extractors = [temp_stream]() {
         return temp_stream->read(0x8);
@@ -100,8 +88,5 @@ int main() {
     }
     o2stream.flush();
     o2stream.close();
-
-    HZLogger::log(LOGTYPE::INFO, "hzip-unit-test #1 VTrieModel -- completed");
-    HZLogger::stop();
     return 0;
 }

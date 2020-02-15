@@ -3,7 +3,6 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <hzip/log/logger.h>
 #include "../other/platform.h"
 #include "../other/constants.h"
 

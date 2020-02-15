@@ -6,9 +6,6 @@ bitio_stream::bitio_stream(std::string filename, access_enum op, uint64_t buffer
     file = nullptr;
 
     if ((op == READ) && !(file = fopen(filename.c_str(), "rb"))) {
-        HZLogger::log(LOGTYPE::CRITICAL, "bitio: File not found.");
-        HZLogger::setErrStatus(HZERR::BITIO_FILE_NOT_FOUND);
-        return;
     } else if (op == WRITE) {
         file = fopen(filename.c_str(), "wb");
     } else if (op == APPEND) {

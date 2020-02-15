@@ -28,14 +28,12 @@ add_library(hzip STATIC
 		src/hzip/core/blob/hzblobpack.h
 		src/hzip/bitio/bitio_byte_dumper.cpp
 		src/hzip/utils/distribution.h
-		src/hzip/core/blob/hzbatchprocessor.h
 		src/hzip/utils/boost_utils.h
 		src/hzip/core/entropy/hzrans/hzrbin.h
 		src/hzip/archiver/hzarchiver.h
 		src/hzip/archiver/hzdirtree.h
-		src/hzip/log/logger.h
 		src/hzip/utils/errors.h
-		src/hzip/log/logger.cpp src/hzip/core/models/vtrie.h)
+		src/hzip/core/models/vtrie.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 

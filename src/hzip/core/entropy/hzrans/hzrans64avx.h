@@ -92,29 +92,6 @@ HZIP_FORCED_INLINE void hzrans64_create_ftable_nf(hzrans64_t *state, int32_t *fr
     // todo : Implement residual AVX optimizations.
     std::cerr << "ftable residues not handled.";
     return;
-    // use three-layered normalization.
-    int32_t ssum = 0;
-    int32_t mul_factor = (1ull << state->scale) - state->size;
-    //SIMD optimization.
-    __m256i m_div = _mm256_set1_epi32(sum);
-    __m256i m256_val1 = _mm256_set1_epi32(1);
-    for (int i = 0; i < 0x20; i++) {
-        uint8_t m = i << 3;
-        auto mres = avx_mul1plus_256i32(freq + m, mul_factor);
-        __m256i divres = _mm256_div_epi32(mres, m_div);
-        divres = _mm256_add_epi32(divres, m256_val1);
-        for (int j = 0; j < 8; j++) {
-            int32_t value = ((int32_t *) &divres)[j];
-            state->ftable[m + j] = value;
-            ssum += value - 1;
-        }
-    }
-
-
-    //disperse residues.
-    ssum = mul_factor - ssum;
-    for (int i = 0; ssum > 0; i++, ssum--)
-        state->ftable[i]++;
 }
 
 

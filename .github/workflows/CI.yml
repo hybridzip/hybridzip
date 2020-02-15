@@ -1,0 +1,22 @@
+name: Push To Package Registry
+on: [push]
+jobs:
+  publish_docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout-repo
+        uses: actions/checkout@v1
+
+      - name: Setup Docker
+        uses: docker-practice/actions-setup-docker@0.0.1
+
+      - name: Publish to Docker Registry
+        env:
+          DOCKER_USERNAME = ${{ github.actor }}
+          DOCKER_PASSWORD = ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+
+        run: |
+          docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+          docker image build -t supercmmetry/hybridzip/hybridzip:latest -f ./ops/images/cpp.Dockerfile .
+          docker push supercmmetry/hybridzip/hybridzip:latest
+

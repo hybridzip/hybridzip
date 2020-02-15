@@ -37,7 +37,7 @@ add_library(hzip STATIC
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 
-add_executable(hybridzip src/main.cpp)
+add_executable(src/main.cpp)
 
 target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY})
 

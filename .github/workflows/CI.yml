@@ -12,8 +12,8 @@ jobs:
 
       - name: Publish to Docker Registry
         env:
-          DOCKER_USERNAME = ${{ github.actor }}
-          DOCKER_PASSWORD = ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+          DOCKER_USERNAME: ${{ github.actor }}
+          DOCKER_PASSWORD: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
 
         run: |
           docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"

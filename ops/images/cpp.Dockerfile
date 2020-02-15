@@ -9,7 +9,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN cmake . && make
+RUN cmake -DDISABLE_PROFILER=ON . && make
 
 # Runner
 FROM alpine:latest

@@ -13,31 +13,38 @@ add_library(hzip STATIC
         #hzip/cuda/gpu_info.cu
         #hzip/cuda/entropy/cuda_fgk.h
         #hzip/cuda/entropy/cuda_fgk.cu
-		src/hzip/bitio/bitio_buffer.cpp
-		src/hzip/bitio/bitio.h
-		src/hzip/bitio/bitio.cpp
-		src/hzip/other/platform.h
-		src/hzip/other/constants.h
-		src/hzip/core/entropy/hzrans/hzrans64.h
+        src/hzip/bitio/bitio_buffer.cpp
+        src/hzip/bitio/bitio.h
+        src/hzip/bitio/bitio.cpp
+        src/hzip/other/platform.h
+        src/hzip/other/constants.h
+        src/hzip/core/entropy/hzrans/hzrans64.h
         src/hzip/utils/avx2utils.h
-		src/hzip/core/entropy/hzrans/hzrans64avx.h
-		src/hzip/core/entropy/hzrans/hzrans.h
-		src/hzip/core/blob/hzblob.h
-		src/hzip/core/blob/hzmthread.h
-		src/hzip/utils/unary.h
-		src/hzip/core/blob/hzblobpack.h
-		src/hzip/bitio/bitio_byte_dumper.cpp
-		src/hzip/utils/distribution.h
-		src/hzip/utils/boost_utils.h
-		src/hzip/core/entropy/hzrans/hzrbin.h
-		src/hzip/archiver/hzarchiver.h
-		src/hzip/archiver/hzdirtree.h
-		src/hzip/utils/errors.h
-		src/hzip/core/models/vtrie.h)
+        src/hzip/core/entropy/hzrans/hzrans64avx.h
+        src/hzip/core/entropy/hzrans/hzrans.h
+        src/hzip/core/blob/hzblob.h
+        src/hzip/core/blob/hzmthread.h
+        src/hzip/utils/unary.h
+        src/hzip/core/blob/hzblobpack.h
+        src/hzip/bitio/bitio_byte_dumper.cpp
+        src/hzip/utils/distribution.h
+        src/hzip/utils/boost_utils.h
+        src/hzip/core/entropy/hzrans/hzrbin.h
+        src/hzip/archiver/hzarchiver.h
+        src/hzip/archiver/hzdirtree.h
+        src/hzip/utils/errors.h
+        src/hzip/core/models/vtrie.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 
 add_executable(hybridzip src/main.cpp)
 
-target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} profiler)
+target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY})
+
+if (${DISABLE_PROFILER})
+    # Do nothing
+else ()
+    message("Linking to profiler ...")
+    target_link_libraries(hybridzip PRIVATE profiler)
+endif ()
 

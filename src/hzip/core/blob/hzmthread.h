@@ -1,6 +1,7 @@
 #ifndef HYBRIDZIP_HZMTHREAD_H
 #define HYBRIDZIP_HZMTHREAD_H
 
+#include <sys/types.h>
 #include <cstdint>
 #include <thread>
 #include <utility>

@@ -6,6 +6,7 @@ bitio_stream::bitio_stream(std::string filename, access_enum op, uint64_t buffer
     file = nullptr;
 
     if ((op == READ) && !(file = fopen(filename.c_str(), "rb"))) {
+        return;
     } else if (op == WRITE) {
         file = fopen(filename.c_str(), "wb");
     } else if (op == APPEND) {

@@ -1,5 +1,11 @@
 name: Push To Package Registry
-on: [push]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 jobs:
   publish_docker:
     runs-on: ubuntu-latest

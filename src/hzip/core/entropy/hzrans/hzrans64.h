@@ -6,9 +6,9 @@
 #include <cstdint>
 #include <cassert>
 #include <stack>
-#include <emmintrin.h>
 #include <malloc.h>
 #include <hzip/other/platform.h>
+#include <hzip/utils/light_stack.h>
 
 
 struct hzrans64_t {
@@ -68,7 +68,7 @@ HZIP_FORCED_INLINE void hzrans64_codec_init(hzrans64_t *state, uint64_t size, ui
     state->count = 0;
 }
 
-HZIP_FORCED_INLINE void hzrans64_encode_s(hzrans64_t *state, uint64_t index, std::stack<uint32_t> *data) {
+HZIP_FORCED_INLINE void hzrans64_encode_s(hzrans64_t *state, uint64_t index, light_stack<uint32_t> *data) {
 
     uint64_t x = state->x;
     uint64_t ls = state->ls[index];
@@ -120,7 +120,7 @@ hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol, uint64_t index) {
     }
 }
 
-HZIP_FORCED_INLINE void hzrans64_enc_flush(hzrans64_t *state, std::stack<uint32_t> *data) {
+HZIP_FORCED_INLINE void hzrans64_enc_flush(hzrans64_t *state, light_stack<uint32_t> *data) {
     data->push(state->x >> 32);
     data->push(state->x >> 0);
     state->count += 2;

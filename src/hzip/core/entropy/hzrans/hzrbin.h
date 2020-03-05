@@ -51,7 +51,7 @@ public:
     }
 
     u32ptr encode() {
-        auto data = new std::stack<uint32_t>();
+        auto data = new light_stack<uint32_t>();
 
         while (index--) {
             cross_encoder(state, data);

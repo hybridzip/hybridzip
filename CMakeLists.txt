@@ -33,7 +33,7 @@ add_library(hzip STATIC
         src/hzip/archiver/hzarchiver.h
         src/hzip/archiver/hzdirtree.h
         src/hzip/utils/errors.h
-        src/hzip/core/models/vtrie.h)
+        src/hzip/core/models/vtrie.h src/hzip/utils/light_stack.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 

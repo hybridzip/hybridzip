@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(hybridzip LANGUAGES CXX CUDA)
+project(hybridzip LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 

@@ -21,8 +21,8 @@ void hzuGenBlob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
     auto encoder = HZRUEncoder(alpha, scale, size);
     encoder.setExtractionFunc(std::move(extract));
     encoder.setDistribution(dist);
-    encoder.setCallback(callback);
-    encoder.setCrossEncoder(cross_encoder);
+    encoder.setCallback(std::move(callback));
+    encoder.setCrossEncoder(std::move(cross_encoder));
 
     for (uint64_t i = 0; i < size; i++) {
         encoder.normalize();

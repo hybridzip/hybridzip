@@ -128,7 +128,9 @@ void bitio_stream::flush() {
 
 bool bitio_stream::isEOF() {
     if (eof) return true;
-    eof = fread(new char[1], 1, 1, file) == 0;
+    auto *tmp_ptr = new char[1];
+    eof = fread(tmp_ptr, 1, 1, file) == 0;
+    free(tmp_ptr);
     if (!eof) fseek(file, -1, SEEK_CUR);
     return eof;
 }

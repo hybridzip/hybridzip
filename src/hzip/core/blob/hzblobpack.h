@@ -14,6 +14,10 @@ private:
     std::vector<bin_t> bin_vec;
 
 public:
+    void pack_header(bin_t bin) {
+        bin_vec.push_back(bin);
+    }
+
     void pack(hzrblob_set set) {
         auto bin = unarypx_bin(set.count);
         bin_vec.push_back(bin);
@@ -44,12 +48,21 @@ public:
 
 class hzBlobUnpacker {
 private:
-
+    bitio::bitio_stream *stream;
 public:
-    hzrblob_set unpack(bitio::bitio_stream *stream) {
+    hzBlobUnpacker(bitio::bitio_stream *stream) {
+        this->stream = stream;
+    }
+
+    HZIP_SIZE_T unpack_header(HZIP_UINT n) {
+        return stream->read(n);
+    }
+
+    hzrblob_set unpack() {
         // first retrieve set count.
-        auto lb_stream = [stream](uint64_t n) {
-            uint64_t x = stream->read(n);
+        auto tmp_stream = this->stream;
+        auto lb_stream = [tmp_stream](uint64_t n) {
+            uint64_t x = tmp_stream->read(n);
             return x;
         };
 

@@ -36,7 +36,7 @@ public:
     }
 
     void setCallback(hz_codec_callback _callback) {
-        callback = _callback;
+        callback = std::move(_callback);
     }
 
     void setCrossEncoder(hz_cross_encoder __cross_encoder) {

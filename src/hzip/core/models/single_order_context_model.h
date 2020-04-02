@@ -26,9 +26,9 @@ public:
         return context_map[symbol];
     }
 
-    void update(uint64_t symbol) {
+    void update(uint64_t symbol, uint64_t delta=1) {
         if (has_started) {
-            context_map[prev_symbol][symbol]++;
+            context_map[prev_symbol][symbol] += delta;
         }
         prev_symbol = symbol;
         has_started = true;

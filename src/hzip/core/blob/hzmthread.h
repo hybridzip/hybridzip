@@ -54,31 +54,31 @@ private:
 public:
     HZUProcessor(uint n_threads) {
         nthreads = n_threads;
-        setHeader();
+        set_header();
     }
 
-    void setHeader(uint64_t alphabet_size = 0x100, uint16_t scale = HZRANS_SCALE) {
+    void set_header(uint64_t alphabet_size = 0x100, uint16_t scale = HZRANS_SCALE) {
         this->alphabet_size = alphabet_size;
         this->scale = scale;
     }
 
-    void setBufferSize(uint64_t buffer_size) {
+    void set_buffer_size(uint64_t buffer_size) {
         size = buffer_size;
     }
 
-    void setCallback(hz_codec_callback _callback) {
+    void set_callback(hz_codec_callback _callback) {
         callback = _callback;
     }
 
-    void setExtractors(std::function<uint64_t(void)> *_extractors) {
+    void set_extractors(std::function<uint64_t(void)> *_extractors) {
         extractors = _extractors;
     }
 
-    void setCrossEncoders(hz_cross_encoder *_cross_encoders) {
+    void set_cross_encoders(hz_cross_encoder *_cross_encoders) {
         cross_encoders = _cross_encoders;
     }
 
-    void useOnlyBaseEncoder() {
+    void use_only_base_encoder() {
         cross_encoders = new hz_cross_encoder[nthreads];
         for (int i = 0; i < nthreads; i++) {
             cross_encoders[i] = nullptr;

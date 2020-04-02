@@ -39,14 +39,16 @@ public:
         callback = std::move(_callback);
     }
 
-    void setCrossEncoder(hz_cross_encoder __cross_encoder) {
-        cross_encoder = std::move(__cross_encoder);
+    void setCrossEncoder(hz_cross_encoder _cross_encoder) {
+        cross_encoder = std::move(_cross_encoder);
     }
 
     void normalize() {
         uint64_t symbol = extract();
         hzrans64_create_ftable_nf(state, distptr);
         hzrans64_add_to_seq(state, symbol, index++);
+        // DEBUG START
+
         callback(symbol, distptr);
     }
 
@@ -54,7 +56,9 @@ public:
         auto data = new light_stack<uint32_t>();
 
         while (index--) {
-            cross_encoder(state, data);
+            if (cross_encoder != nullptr) {
+                cross_encoder(state, data);
+            }
             hzrans64_encode_s(state, index, data);
         }
 

@@ -22,6 +22,7 @@ namespace bitio {
     private:
 
         FILE *file;
+        std::string filename;
         unsigned char bit_buffer, *byte_buffer;
         unsigned char bit_count;
 
@@ -45,14 +46,24 @@ namespace bitio {
 
         void write(uint64_t obj, uint64_t n);
 
+        template <typename T>
+        void force_write(T *data, uint64_t length) {
+            auto byte_data = new uint8_t[length];
+            for(uint64_t i = 0; i < length; i++) {
+                byte_data[i] = (uint8_t) data[i];
+            }
+            fwrite(byte_data, 1, length, file);
+        }
+
         void flush();
 
         void align();
 
         void close();
 
-        bool isEOF();
+        bool is_eof();
 
+        uint64_t get_file_size();
     };
 
     /* The bitio_buffer is used for efficiently storing binary data

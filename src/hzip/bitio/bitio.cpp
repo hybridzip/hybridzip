@@ -1,9 +1,11 @@
 #include "bitio.h"
+#include <hzip/utils/boost_utils.h>
 
 using namespace bitio;
 
 bitio_stream::bitio_stream(std::string filename, access_enum op, uint64_t buffer_size) {
     file = nullptr;
+    this->filename = filename;
 
     if ((op == READ) && !(file = fopen(filename.c_str(), "rb"))) {
         return;
@@ -16,7 +18,7 @@ bitio_stream::bitio_stream(std::string filename, access_enum op, uint64_t buffer
     this->buffer_size = buffer_size;
     byte_buffer = (unsigned char *) malloc(sizeof(unsigned char) * buffer_size);
     bit_count = 0;
-    eof = 0;
+    eof = false;
     bit_buffer = 0;
     current_buffer_length = 0;
     byte_index = 0;
@@ -126,13 +128,20 @@ void bitio_stream::flush() {
     fwrite(byte_buffer, 1, byte_index, file);
 }
 
-bool bitio_stream::isEOF() {
+bool bitio_stream::is_eof() {
     if (eof) return true;
-    auto *tmp_ptr = new char[1];
-    eof = fread(tmp_ptr, 1, 1, file) == 0;
-    free(tmp_ptr);
-    if (!eof) fseek(file, -1, SEEK_CUR);
+    if (byte_index == current_buffer_length) {
+        auto *tmp_ptr = new char[1];
+        eof = fread(tmp_ptr, 1, 1, file) == 0;
+        free(tmp_ptr);
+
+        if (!eof) fseek(file, -1, SEEK_CUR);
+    }
     return eof;
+}
+
+uint64_t bitio_stream::get_file_size() {
+    return hzboost::get_file_size(filename);
 }
 
 

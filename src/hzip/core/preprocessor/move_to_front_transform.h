@@ -14,13 +14,14 @@ public:
     MoveToFrontTransformer(int *data, int alphabet_size, uint64_t length) {
         this->data = data;
         this->length = length;
-        for (int i = 0; i < alphabet_size; i++) {
-            lru_cache.push_back(i);
-        }
         this->alphabet_size = alphabet_size;
     }
 
     void transform() {
+        lru_cache.clear();
+        for (int i = 0; i < alphabet_size; i++) {
+            lru_cache.push_back(i);
+        }
         for (uint64_t i = 0; i < length; i++) {
             uint64_t symbol = data[i];
             for (int j = 0; j < alphabet_size; j++) {
@@ -35,7 +36,16 @@ public:
     }
 
     void invert() {
-
+        lru_cache.clear();
+        for (int i = 0; i < alphabet_size; i++) {
+            lru_cache.push_back(i);
+        }
+        for (uint64_t i = 0; i < length; i++) {
+            auto chri = data[i];
+            data[i] = lru_cache[chri];
+            lru_cache.erase(lru_cache.begin() + chri);
+            lru_cache.insert(lru_cache.begin(), data[i]);
+        }
     }
 };
 

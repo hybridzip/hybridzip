@@ -36,7 +36,10 @@ add_library(hzip STATIC
         src/hzip/utils/errors.h
         src/hzip/utils/light_stack.h
         src/hzip/utils/fast_math.h
-        src/hzip/core/preprocessor/burrows_wheeler_transform.h src/hzip/core/models/single_order_context_model.h src/hzip/core/preprocessor/move_to_front_transform.h)
+        src/hzip/core/preprocessor/burrows_wheeler_transform.h
+        src/hzip/core/models/single_order_context_model.h
+        src/hzip/core/preprocessor/move_to_front_transform.h
+        src/hzip/core/compressors/dark_ninja_compressor.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 

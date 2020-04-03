@@ -13,11 +13,16 @@
 class DarkNinjaCompressor {
 private:
     bitio::bitio_stream *stream;
+    const uint8_t min_repetitions = 3;
 public:
     DarkNinjaCompressor(std::string filename) {
         // use a 1MB buffer.
         stream = new bitio::bitio_stream(filename, bitio::READ, 1048576);
     }
+
+    DarkNinjaCompressor() {
+        // empty-constructor
+    };
 
     void set_file(std::string filename) {
         // use a 1MB buffer.
@@ -51,11 +56,12 @@ public:
         while (!stream->is_eof()) {
             data[j++] = stream->read(0x8);
         }
+        auto length = j;
 
-        auto bwt = BurrowsWheelerTransformer(data, j, 0x100);
+        auto bwt = BurrowsWheelerTransformer(data, length, 0x100);
         auto bwt_index = bwt.transform();
 
-        auto mtf = MoveToFrontTransformer(data, 0x100, j);
+        auto mtf = MoveToFrontTransformer(data, 0x100, length);
         mtf.transform();
 
         auto *extractors = new std::function<uint64_t(void)>;

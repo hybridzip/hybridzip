@@ -39,13 +39,13 @@ add_library(hzip STATIC
         src/hzip/core/preprocessor/burrows_wheeler_transform.h
         src/hzip/core/models/single_order_context_model.h
         src/hzip/core/preprocessor/move_to_front_transform.h
-        src/hzip/core/compressors/dark_ninja_compressor.h)
+        src/hzip/core/compressors/dark_ninja_compressor.h src/hzip/core/preprocessor/png_codec.h src/hzip/core/models/pivoted_gaussian_model.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 
 add_executable(hybridzip src/main.cpp)
 
-target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY})
+target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png)
 
 if (${DISABLE_PROFILER})
     # Do nothing

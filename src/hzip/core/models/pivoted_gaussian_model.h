@@ -1,0 +1,7 @@
+#include <cstdint>
+
+#ifndef HYBRIDZIP_PIVOTED_GAUSSIAN_MODEL_H
+#define HYBRIDZIP_PIVOTED_GAUSSIAN_MODEL_H
+
+
+#endif

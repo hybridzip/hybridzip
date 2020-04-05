@@ -2,6 +2,8 @@
 #ifndef HYBRIDZIP_BURROWS_WHEELER_TRANSFORM_H
 #define HYBRIDZIP_BURROWS_WHEELER_TRANSFORM_H
 
+#include <vector>
+
 class BurrowsWheelerTransformer {
 
 private:

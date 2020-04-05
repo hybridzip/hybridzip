@@ -15,7 +15,7 @@ public:
         for (int i = 0; i < alphabet_size; i++) {
             context_map[i] = new uint64_t[alphabet_size];
             for (int j = 0; j < alphabet_size; j++) {
-                context_map[i][j] = 0;
+                context_map[i][j] = 1;
             }
         }
         prev_symbol = 0;

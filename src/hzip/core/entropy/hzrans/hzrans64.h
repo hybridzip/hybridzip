@@ -135,13 +135,20 @@ HZIP_FORCED_INLINE void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **da
 }
 
 HZIP_FORCED_INLINE void
-hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint64_t index, uint32_t **data, uint64_t *sym) {
+hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint64_t index, uint32_t **data, uint64_t *sym,
+                  bool bypass_normalization = false, std::function<uint64_t()> symbol_callback = nullptr) {
     uint64_t x = state->x;
-    hzrans64_create_ftable_nf(state, _ls);
-    uint64_t symbol = hzrans64_inv_bs(state, x & state->mask);
-    *sym = symbol;
 
-    hzrans64_add_to_seq(state, symbol, index);
+    if (!bypass_normalization) {
+        hzrans64_create_ftable_nf(state, _ls);
+        uint64_t symbol = hzrans64_inv_bs(state, x & state->mask);
+        *sym = symbol;
+        hzrans64_add_to_seq(state, symbol, index);
+    }
+    if (symbol_callback != nullptr) {
+        *sym = symbol_callback();
+    }
+
     uint64_t ls = state->ls[index];
     uint64_t bs = state->bs[index];
 

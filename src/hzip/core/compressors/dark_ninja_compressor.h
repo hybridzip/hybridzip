@@ -13,7 +13,6 @@
 class DarkNinjaCompressor {
 private:
     bitio::bitio_stream *stream;
-    const uint8_t min_repetitions = 3;
 public:
     DarkNinjaCompressor(std::string filename) {
         // use a 1MB buffer.
@@ -30,8 +29,6 @@ public:
     }
 
     void compress(std::string out_file_name) {
-        std::cout << "Started Dark-Ninja compression ..." << std::endl;
-        std::cout << "filesize : " << stream->get_file_size() << " bytes" << std::endl;
         hzboost::delete_file_if_exists(out_file_name);
         auto socm = SingleOrderContextModel(0x100);
         auto callback = [&socm](uint64_t byte, uint64_t *ptr) {
@@ -39,11 +36,9 @@ public:
             for (int i = 0; i < 0x100; i++) {
                 ptr[i] = preds[i];
             }
-            socm.update(byte, 32);
+            socm.update(byte, 48);
         };
 
-        auto clock = std::chrono::high_resolution_clock();
-        auto start = clock.now();
 
         auto proc = HZUProcessor(1);
         proc.set_header(0x100, 24);
@@ -74,8 +69,6 @@ public:
 
         hzrblob_set set = proc.encode();
 
-        std::cout << "Time taken for encoding: " << (float) (clock.now() - start).count() / 1000000000.0f << std::endl;
-
         auto ostream = bitio::bitio_stream(out_file_name, bitio::WRITE, 1048576);
 
         hzBlobPacker packer;
@@ -89,8 +82,6 @@ public:
     }
 
     void decompress(std::string out_file_name) {
-        std::cout << "Started Dark-Ninja decompression ..." << std::endl;
-        std::cout << "filesize : " << stream->get_file_size() << " bytes" << std::endl;
         hzboost::delete_file_if_exists(out_file_name);
         auto socm = SingleOrderContextModel(0x100);
 
@@ -99,7 +90,7 @@ public:
             for (int i = 0; i < 0x100; i++) {
                 ptr[i] = preds[i];
             }
-            socm.update(byte, 32);
+            socm.update(byte, 48);
         };
 
         auto clock = std::chrono::high_resolution_clock();
@@ -137,8 +128,6 @@ public:
 
         auto ostream = new bitio::bitio_stream(out_file_name, bitio::WRITE, 1048576);
         ostream->force_write<int>(data, length);
-
-        std::cout << "Time taken for decoding: " << (float) (clock.now() - start).count() / 1000000000.0f << std::endl;
     }
 };
 

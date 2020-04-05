@@ -13,19 +13,19 @@
 #include "hzblob.h"
 #include <hzip/core/entropy/hzrans/hzrbin.h>
 
-
 void hzuGenBlob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
                 hz_codec_callback callback, std::function<uint64_t(void)> extract, hzrblob_t *targ_blob,
-                hz_cross_encoder cross_encoder = nullptr) {
+                hz_cross_encoder cross_encoder = nullptr, bool bypass_normalization = false) {
 
     auto encoder = HZRUEncoder(alpha, scale, size);
-    encoder.setExtractionFunc(std::move(extract));
-    encoder.setDistribution(dist);
-    encoder.setCallback(std::move(callback));
-    encoder.setCrossEncoder(std::move(cross_encoder));
+    encoder.set_extractor(std::move(extract));
+    encoder.set_distribution(dist);
+    encoder.set_callback(std::move(callback));
+    encoder.set_cross_encoder(std::move(cross_encoder));
+
 
     for (uint64_t i = 0; i < size; i++) {
-        encoder.normalize();
+        encoder.normalize(bypass_normalization);
     }
 
     auto dptr = encoder.encode();
@@ -34,11 +34,15 @@ void hzuGenBlob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
     targ_blob->o_size = size;
 }
 
-void hzuDeGenBlob(hzrblob_t blob, uint64_t alpha, uint16_t scale, uint64_t *dist, hz_codec_callback _callback) {
+void hzuDeGenBlob(hzrblob_t blob, uint64_t alpha, uint16_t scale, uint64_t *dist, hz_codec_callback _callback,
+                  hz_cross_encoder cross_encoder,
+                  bool bypass_normalization = false, std::function<uint64_t()> symbol_callback=nullptr) {
     auto decoder = HZRUDecoder(alpha, scale, blob.o_size);
-    decoder.setDistribution(dist);
-    decoder.setCallback(_callback);
-    decoder.decode(blob.data);
+    decoder.set_distribution(dist);
+    decoder.set_callback(std::move(_callback));
+    decoder.set_cross_encoder(std::move(cross_encoder));
+    decoder.set_symbol_callback(std::move(symbol_callback));
+    decoder.decode(blob.data, bypass_normalization);
 }
 
 class HZUProcessor {
@@ -50,10 +54,11 @@ private:
     hz_codec_callback callback;
     std::function<uint64_t(void)> *extractors;
     hz_cross_encoder *cross_encoders;
-
+    bool _bypass_normalization;
 public:
     HZUProcessor(uint n_threads) {
         nthreads = n_threads;
+        callback = nullptr;
         set_header();
     }
 
@@ -85,6 +90,10 @@ public:
         }
     }
 
+    void bypass_normalization() {
+        _bypass_normalization = true;
+    }
+
     hzrblob_set encode() {
         uint64_t block_size = size / nthreads;
         uint64_t block_residual = size % nthreads;
@@ -99,7 +108,7 @@ public:
 
             std::thread thread(hzuGenBlob, alphabet_size, scale, block_size + residual,
                                hzip_get_init_dist(alphabet_size), callback, extractors[i], blobs + i,
-                               cross_encoders[i]);
+                               cross_encoders[i], _bypass_normalization);
 
             thread_vector.push_back(std::move(thread));
         }
@@ -113,7 +122,7 @@ public:
         return hzrblob_set{.blobs = blobs, .count = nthreads};
     }
 
-    std::vector<uint64_t> decode(hzrblob_set set) {
+    std::vector<uint64_t> decode(hzrblob_set set, std::function<uint64_t()> symbol_callback=nullptr) {
         std::vector<uint64_t> union_vec;
         std::vector<std::vector<uint64_t> *> data_vectors;
         std::vector<std::thread> thread_vector;
@@ -124,8 +133,10 @@ public:
             std::thread decoder_thread(hzuDeGenBlob, set.blobs[i], alphabet_size, scale, hzip_get_init_dist(0x100),
                                        [data_vector, _callback](uint64_t obj, uint64_t *ptr) {
                                            data_vector->push_back(obj);
-                                           _callback(obj, ptr);
-                                       });
+                                           if (_callback != nullptr) {
+                                               _callback(obj, ptr);
+                                           }
+                                       }, cross_encoders[i], _bypass_normalization, symbol_callback);
             thread_vector.push_back(std::move(decoder_thread));
         }
 

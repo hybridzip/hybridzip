@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_HZMTHREAD_H
-#define HYBRIDZIP_HZMTHREAD_H
+#ifndef HYBRIDZIP_HZRMTHREAD_H
+#define HYBRIDZIP_HZRMTHREAD_H
 
 #include <sys/types.h>
 #include <cstdint>
@@ -10,7 +10,7 @@
 #include <hzip/bitio/bitio.h>
 #include <hzip/other/constants.h>
 #include <hzip/utils/distribution.h>
-#include "hzblob.h"
+#include "hzip/core/blob/hzblob.h"
 #include <hzip/core/entropy/hzrans/hzrbin.h>
 
 void hzuGenBlob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,

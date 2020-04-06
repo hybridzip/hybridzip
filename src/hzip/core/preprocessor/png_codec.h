@@ -4,23 +4,8 @@
 #include <png.h>
 #include <cstdint>
 #include <string>
-#include <spqr.hpp>
+#include "types.h"
 
-class Pixar {
-public:
-    uint8_t ***buf;
-    uint32_t width;
-    uint32_t height;
-    ~Pixar() {
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                free(buf[i][j]);
-            }
-            free(buf[i]);
-        }
-        free(buf);
-    }
-};
 
 class PNGCodec {
 private:
@@ -34,7 +19,7 @@ public:
         png_file = fopen(filename.c_str(), "rb");
     }
 
-    Pixar read_rgb_pixels() {
+    Pixar read_pixels() {
         char header[8];    // 8 is the maximum size that can be checked
 
         /* open file and test for it being a png */

@@ -5,7 +5,7 @@
 #include <hzip/bitio/bitio.h>
 #include <hzip/utils/boost_utils.h>
 #include <hzip/core/models/single_order_context_model.h>
-#include <hzip/core/blob/hzmthread.h>
+#include <hzip/core/entropy/hzrans/hzrmthread.h>
 #include <hzip/core/preprocessor/burrows_wheeler_transform.h>
 #include <hzip/core/preprocessor/move_to_front_transform.h>
 #include <hzip/core/blob/hzblobpack.h>

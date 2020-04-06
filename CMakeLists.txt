@@ -24,7 +24,7 @@ add_library(hzip STATIC
         src/hzip/core/entropy/hzrans/hzrans64avx.h
         src/hzip/core/entropy/hzrans/hzrans.h
         src/hzip/core/blob/hzblob.h
-        src/hzip/core/blob/hzmthread.h
+        src/hzip/core/entropy/hzrans/hzrmthread.h
         src/hzip/utils/unary.h
         src/hzip/core/blob/hzblobpack.h
         src/hzip/bitio/bitio_byte_dumper.cpp
@@ -39,13 +39,15 @@ add_library(hzip STATIC
         src/hzip/core/preprocessor/burrows_wheeler_transform.h
         src/hzip/core/models/single_order_context_model.h
         src/hzip/core/preprocessor/move_to_front_transform.h
-        src/hzip/core/compressors/dark_ninja_compressor.h src/hzip/core/preprocessor/png_codec.h src/hzip/core/models/pivoted_gaussian_model.h src/hzip/core/compressors/white_rose_compressor.h)
+        src/hzip/core/compressors/dark_ninja_compressor.h src/hzip/core/preprocessor/png_codec.h
+        src/hzip/core/models/pivoted_gaussian_model.h
+        src/hzip/core/compressors/white_rose_compressor.h src/hzip/core/preprocessor/jpeg_codec.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 
-add_executable(hybridzip src/main.cpp)
+add_executable(hybridzip src/main.cpp src/hzip/core/preprocessor/types.h)
 
-target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png)
+target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png jpeg)
 
 if (${DISABLE_PROFILER})
     # Do nothing

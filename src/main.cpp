@@ -1,27 +1,26 @@
 #include <iostream>
-#include <hzip/core/preprocessor/png_codec.h>
-#include <hzip/core/models/pivoted_gaussian_model.h>
-#include <hzip/core/models/single_order_context_model.h>
-#include <hzip/core/preprocessor/burrows_wheeler_transform.h>
-#include <hzip/core/preprocessor/move_to_front_transform.h>
-#include <hzip/core/compressors/dark_ninja_compressor.h>
-#include <hzip/core/compressors/white_rose_compressor.h>
 #include <hzip/bitio/bitio.h>
+#include <hzip/core/preprocessor/jpeg_codec.h>
 
 int main() {
-    std::cout << "hybridzip - v1.0.0 (WhiteRoseCompression Test)" << std::endl;
-    std::string filename = "/home/supercmmetry/Documents/dickens/dickens";
+    std::cout << "hybridzip - v1.0.0 (JPEG-Compression Test)" << std::endl;
+    std::string filename = "/home/supercmmetry/Pictures/supercmmetry.jpg";
+    auto codec = JPEGCodec(filename);
+    auto coeffs = codec.read_coefficients();
 
-    auto clock = std::chrono::high_resolution_clock();
-    auto start = clock.now();
+    // print a 8x8 dct-block
+    std::cout << std::endl;
+    for (int channel = 0; channel < coeffs.nchannels; channel++) {
+        for (int block_index = 0; block_index < coeffs.coeff_arrays[channel].size(); block_index++) {
+            std::cout << "Block: " << block_index << std::endl;
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    std::cout << coeffs.coeff_arrays[channel][block_index][i][j] << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
 
-    auto rose = WhiteRoseCompressor(filename);
-    rose.compress(filename + ".hz");
-
-    std::cout << "Time taken to compress: " << (float) (clock.now() - start).count() / 1000000000.0f << std::endl;
-    start = clock.now();
-    rose = WhiteRoseCompressor(filename + ".hz");
-    rose.decompress(filename + ".hz.txt");
-    std::cout << "Time taken to decompress: " << (float) (clock.now() - start).count() / 1000000000.0f << std::endl;
     return 0;
 }

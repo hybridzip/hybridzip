@@ -10,10 +10,6 @@ find_package(Boost COMPONENTS system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 add_library(hzip STATIC
-        #hzip/cuda/gpu_info.h
-        #hzip/cuda/gpu_info.cu
-        #hzip/cuda/entropy/cuda_fgk.h
-        #hzip/cuda/entropy/cuda_fgk.cu
         src/hzip/bitio/bitio_buffer.cpp
         src/hzip/bitio/bitio.h
         src/hzip/bitio/bitio.cpp
@@ -42,11 +38,9 @@ add_library(hzip STATIC
         src/hzip/core/compressors/dark_ninja_compressor.h src/hzip/core/preprocessor/png_codec.h
         src/hzip/core/models/pivoted_gaussian_model.h
         src/hzip/core/compressors/white_rose_compressor.h
-        src/hzip/core/preprocessor/jpeg_codec.h
         src/hzip/core/preprocessor/delta_transform.h
         src/hzip/core/preprocessor/transforms.h
         src/hzip/core/models/models.h
-        src/hzip/core/compressors/tokyo_compressor.h
         src/hzip/core/compressors/compressors.h
         src/hzip/core/preprocessor/types.h)
 

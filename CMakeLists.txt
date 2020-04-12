@@ -41,11 +41,18 @@ add_library(hzip STATIC
         src/hzip/core/preprocessor/move_to_front_transform.h
         src/hzip/core/compressors/dark_ninja_compressor.h src/hzip/core/preprocessor/png_codec.h
         src/hzip/core/models/pivoted_gaussian_model.h
-        src/hzip/core/compressors/white_rose_compressor.h src/hzip/core/preprocessor/jpeg_codec.h)
+        src/hzip/core/compressors/white_rose_compressor.h
+        src/hzip/core/preprocessor/jpeg_codec.h
+        src/hzip/core/preprocessor/delta_transform.h
+        src/hzip/core/preprocessor/transforms.h
+        src/hzip/core/models/models.h
+        src/hzip/core/compressors/tokyo_compressor.h
+        src/hzip/core/compressors/compressors.h
+        src/hzip/core/preprocessor/types.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 
-add_executable(hybridzip src/main.cpp src/hzip/core/preprocessor/types.h)
+add_executable(hybridzip src/main.cpp )
 
 target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png jpeg)
 

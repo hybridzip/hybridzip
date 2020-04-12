@@ -15,7 +15,7 @@ private:
         return (a1 < b1 || a1 == b1 && leq(a2, a3, b2, b3));
     }
 
-    static void radixPass(int *a, int *b, int *r, int n, int K) { // count occurrences
+    void radixPass(int *a, int *b, int *r, int n, int K) { // count occurrences
         int *c = new int[K + 1]; // counter array
         for (int i = 0; i <= K; i++) c[i] = 0; // reset counters
         for (int i = 0; i < n; i++) c[r[a[i]]]++; // count occurrences

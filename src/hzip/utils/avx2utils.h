@@ -3,7 +3,7 @@
 
 #include <immintrin.h>
 #include <cstdint>
-#include <hzip/other/platform.h>
+#include <hzip/utils/platform.h>
 
 
 //vector = vector * scalar

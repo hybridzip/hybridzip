@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hzip/other/platform.h>
+#include <hzip/utils/platform.h>
 
 typedef struct bin_t {
     HZIP_SIZE_T obj;

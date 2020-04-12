@@ -11,7 +11,7 @@
 
 #include <hzip/utils/avx2utils.h>
 
-#include <hzip/other/platform.h>
+#include <hzip/utils/platform.h>
 
 
 struct hzrans64_t {

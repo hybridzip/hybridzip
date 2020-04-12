@@ -5,7 +5,7 @@
 #include <vector>
 #include <functional>
 #include <hzip/utils/unary.h>
-#include <hzip/bitio/bitio.h>
+#include <other/bitio/bitio.h>
 #include "hzblob.h"
 
 

@@ -2,7 +2,7 @@
 #define HYBRIDZIP_DISTRIBUTION_H
 
 #include <cstdint>
-#include <hzip/other/platform.h>
+#include "platform.h"
 
 HZIP_FORCED_INLINE uint64_t *hzip_get_init_dist(uint64_t size) {
     auto dist = new uint64_t[size];

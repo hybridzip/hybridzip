@@ -7,7 +7,7 @@
 #include <cassert>
 #include <stack>
 #include <malloc.h>
-#include <hzip/other/platform.h>
+#include <hzip/utils/platform.h>
 #include <hzip/utils/light_stack.h>
 
 

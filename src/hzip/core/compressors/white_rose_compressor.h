@@ -2,7 +2,7 @@
 #define HYBRIDZIP_WHITE_ROSE_COMPRESSOR_H
 
 #include <string>
-#include <hzip/bitio/bitio.h>
+#include <other/bitio/bitio.h>
 #include <hzip/utils/boost_utils.h>
 #include <hzip/core/models/single_order_context_model.h>
 #include <hzip/core/entropy/hzrans/hzrmthread.h>

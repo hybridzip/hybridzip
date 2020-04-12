@@ -5,16 +5,15 @@ project(hybridzip LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories("src")
+add_subdirectory(src/other)
 
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
+
 add_library(hzip STATIC
-        src/hzip/bitio/bitio_buffer.cpp
-        src/hzip/bitio/bitio.h
-        src/hzip/bitio/bitio.cpp
-        src/hzip/other/platform.h
-        src/hzip/other/constants.h
+        src/hzip/utils/platform.h
+        src/hzip/utils/constants.h
         src/hzip/core/entropy/hzrans/hzrans64.h
         src/hzip/utils/avx2utils.h
         src/hzip/core/entropy/hzrans/hzrans64avx.h
@@ -23,7 +22,6 @@ add_library(hzip STATIC
         src/hzip/core/entropy/hzrans/hzrmthread.h
         src/hzip/utils/unary.h
         src/hzip/core/blob/hzblobpack.h
-        src/hzip/bitio/bitio_byte_dumper.cpp
         src/hzip/utils/distribution.h
         src/hzip/utils/boost_utils.h
         src/hzip/core/entropy/hzrans/hzrbin.h
@@ -45,8 +43,9 @@ add_library(hzip STATIC
         src/hzip/core/preprocessor/types.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
+target_link_libraries(hzip PUBLIC bitio yajl)
 
-add_executable(hybridzip src/main.cpp )
+add_executable(hybridzip src/main.cpp)
 
 target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png jpeg)
 

@@ -3,8 +3,8 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include "../other/platform.h"
-#include "../other/constants.h"
+#include "hzip/utils/platform.h"
+#include "hzip/utils/constants.h"
 
 #ifndef HZ_BITIO_BUFFER_SIZE
 #define HZ_BITIO_BUFFER_SIZE 0x400

@@ -2,7 +2,7 @@
 #define HYBRIDZIP_BOOST_UTILS_H
 
 #include <boost/filesystem.hpp>
-#include <hzip/other/platform.h>
+#include <hzip/utils/platform.h>
 #include <string>
 
 namespace fs = boost::filesystem;

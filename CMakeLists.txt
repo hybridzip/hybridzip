@@ -5,7 +5,9 @@ project(hybridzip LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories("src")
-add_subdirectory(src/other)
+
+add_subdirectory(other)
+include_directories("other")
 
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
@@ -47,7 +49,7 @@ target_link_libraries(hzip PUBLIC bitio yajl)
 
 add_executable(hybridzip src/main.cpp)
 
-target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png jpeg)
+target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png turbojpeg)
 
 if (${DISABLE_PROFILER})
     # Do nothing

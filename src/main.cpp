@@ -1,5 +1,5 @@
 #include <iostream>
-#include <other/bitio/bitio.h>
+#include <bitio/bitio.h>
 #include <hzip/core/models/models.h>
 #include <hzip/core/preprocessor/transforms.h>
 #include <hzip/core/compressors/compressors.h>

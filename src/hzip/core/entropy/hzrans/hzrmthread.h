@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 #include <hzip/core/entropy/hzrans/hzrans.h>
-#include <other/bitio/bitio.h>
+#include <bitio/bitio.h>
 #include <hzip/utils/constants.h>
 #include <hzip/utils/distribution.h>
 #include "hzip/core/blob/hzblob.h"

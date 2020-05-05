@@ -42,14 +42,15 @@ add_library(hzip STATIC
         src/hzip/core/preprocessor/transforms.h
         src/hzip/core/models/models.h
         src/hzip/core/compressors/compressors.h
-        src/hzip/core/preprocessor/types.h)
+        src/hzip/core/preprocessor/types.h
+        src/hzip/core/preprocessor/jpeg_codec.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio yajl)
 
 add_executable(hybridzip src/main.cpp)
 
-target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png turbojpeg)
+target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png jpeg)
 
 if (${DISABLE_PROFILER})
     # Do nothing

@@ -17,36 +17,35 @@ add_library(hzip STATIC
         src/hzip/utils/platform.h
         src/hzip/utils/constants.h
         src/hzip/core/entropy/hzrans/hzrans64.h
-        src/hzip/utils/avx2utils.h
-        src/hzip/core/entropy/hzrans/hzrans64avx.h
         src/hzip/core/entropy/hzrans/hzrans.h
         src/hzip/core/blob/hzblob.h
-        src/hzip/core/entropy/hzrans/hzrmthread.h
-        src/hzip/utils/unary.h
+        src/hzip/core/entropy/hzrans/hzmthread.h
         src/hzip/core/blob/hzblobpack.h
         src/hzip/utils/distribution.h
         src/hzip/utils/boost_utils.h
-        src/hzip/core/entropy/hzrans/hzrbin.h
+        src/hzip/core/entropy/hzrans/hzbin.h
         src/hzip/archiver/hzarchiver.h
         src/hzip/archiver/hzdirtree.h
         src/hzip/utils/errors.h
-        src/hzip/utils/light_stack.h
-        src/hzip/utils/fast_math.h
-        src/hzip/core/preprocessor/burrows_wheeler_transform.h
-        src/hzip/core/models/single_order_context_model.h
-        src/hzip/core/preprocessor/move_to_front_transform.h
-        src/hzip/core/compressors/dark_ninja_compressor.h src/hzip/core/preprocessor/png_codec.h
-        src/hzip/core/models/pivoted_gaussian_model.h
-        src/hzip/core/compressors/white_rose_compressor.h
-        src/hzip/core/preprocessor/delta_transform.h
+        src/hzip/core/preprocessor/png_codec.h
         src/hzip/core/preprocessor/transforms.h
         src/hzip/core/models/models.h
         src/hzip/core/compressors/compressors.h
         src/hzip/core/preprocessor/types.h
-        src/hzip/core/preprocessor/jpeg_codec.h)
+        src/hzip/core/preprocessor/jpeg_codec.h
+        src/hzip/utils/utils.h
+        src/hzip/core/models/pivoted_gaussian_model.cpp
+        src/hzip/core/models/first_order_context_model.cpp
+        src/hzip/core/preprocessor/bw_transformer.cpp
+        src/hzip/core/preprocessor/delta_transformer.cpp
+        src/hzip/core/preprocessor/mtf_transformer.cpp
+        src/hzip/core/compressors/white_rose.cpp
+        src/hzip/core/compressors/white_rose.h
+        src/hzip/core/compressors/dark_ninja.h
+        src/hzip/core/compressors/dark_ninja.cpp src/hzip/utils/utils.cpp src/hzip/core/entropy/hzrans/hzmthread.cpp src/hzip/core/entropy/hzrans/hzbin.cpp src/hzip/core/entropy/hzrans/hzrans64.cpp src/hzip/core/models/pivoted_gaussian_model.h src/hzip/core/models/first_order_context_model.h src/hzip/core/blob/hzblobpack.cpp)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
-target_link_libraries(hzip PUBLIC bitio yajl)
+target_link_libraries(hzip PUBLIC bitio)
 
 add_executable(hybridzip src/main.cpp)
 

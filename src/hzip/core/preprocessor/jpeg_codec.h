@@ -10,7 +10,7 @@
 #include <jpegint.h>
 #include "types.h"
 
-class HZJPEGCodec {
+class hzj_codec {
 private:
     FILE *jpeg_file;
 
@@ -27,11 +27,11 @@ private:
     }
 
 public:
-    struct MCU_ARRAY {
+    struct hzj_mcu_array {
         std::vector<int **> *coeff_arrays;
         uint8_t nchannels;
 
-        MCU_ARRAY(uint8_t _nchannels) {
+        hzj_mcu_array(uint8_t _nchannels) {
             nchannels = _nchannels;
             coeff_arrays = new std::vector<int **>[nchannels];
         }
@@ -41,7 +41,7 @@ public:
         }
     };
 
-    struct HEADER {
+    struct hzj_header {
         struct COMP_SPEC {
             uint8_t component_id;
             uint8_t h_samp_factor;
@@ -76,7 +76,7 @@ public:
         uint8_t Y_density;
 
 
-        HEADER(j_decompress_ptr info) {
+        hzj_header(j_decompress_ptr info) {
             image_width = info->image_width;
             image_height = info->image_height;
             num_components = info->num_components;
@@ -170,20 +170,20 @@ public:
         }
     };
 
-    struct image_cp {
-        HEADER header;
-        MCU_ARRAY mcus;
+    struct hzj_image_struct {
+        hzj_header header;
+        hzj_mcu_array mcus;
     };
 
-    HZJPEGCodec(uint8_t *buf, uint64_t len) {
+    hzj_codec(uint8_t *buf, uint64_t len) {
         jpeg_file = fmemopen(buf, len, "rb");
     }
 
-    HZJPEGCodec(std::string filename) {
+    hzj_codec(std::string filename) {
         jpeg_file = fopen(filename.c_str(), "rb");
     }
 
-    image_cp read() {
+    hzj_image_struct read() {
         jpeg_decompress_struct info;
         jpeg_error_mgr err;
 
@@ -195,7 +195,7 @@ public:
         jpeg_read_header(&info, true);
 
         auto *coeff_arrays = jpeg_read_coefficients(&info);
-        auto dct_coeffs = MCU_ARRAY(info.num_components);
+        auto dct_coeffs = hzj_mcu_array(info.num_components);
 
         for (int ci = 0; ci < info.num_components; ci++) {
             jpeg_component_info *compptr = info.comp_info + ci;
@@ -219,10 +219,10 @@ public:
         jpeg_destroy_decompress(&info);
 
 
-        return image_cp{HEADER(&info), dct_coeffs};
+        return hzj_image_struct{hzj_header(&info), dct_coeffs};
     }
 
-    void write(image_cp image, FILE *out) {
+    void write(hzj_image_struct image, FILE *out) {
         j_compress_ptr info = new jpeg_compress_struct;
         jpeg_error_mgr err;
 

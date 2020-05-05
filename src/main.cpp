@@ -1,15 +1,14 @@
 #include <iostream>
-#include <hzip/core/preprocessor/jpeg_codec.h>
+#include <hzip/core/compressors/compressors.h>
 
 int main() {
     std::cout << "hybridzip - v1.0.0 (jpeg-dev)" << std::endl;
+    std::string filename = "/home/supercmmetry/Documents/dickens/dickens";
 
-
-    auto codec = HZJPEGCodec("/home/supercmmetry/Pictures/supercmmetry.jpg");
-    //codec.test();
-    auto image = codec.read();
-
-    codec.write(image, fopen("/home/supercmmetry/Pictures/supercmmetry.copy.jpg", "wb"));
+    auto rose = hzcodec::white_rose(filename);
+    rose.compress(filename + ".hz");
+    rose.set_file(filename + ".hz");
+    rose.decompress(filename + ".hz.txt");
 
     return 0;
 }

@@ -55,7 +55,6 @@ bitio_stream::bitio_stream(std::string filename, access_enum op, bool in_mem, ui
 
 
 void bitio_stream::close() {
-    free(byte_buffer);
     if (file != nullptr) fclose(file);
 }
 
@@ -293,7 +292,6 @@ bitio_stream::~bitio_stream() {
     if (is_inmem) {
         free(inmem_cache);
     }
-    free(byte_buffer);
 }
 
 

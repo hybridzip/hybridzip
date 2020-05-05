@@ -8,11 +8,11 @@
 namespace fs = boost::filesystem;
 
 namespace hzboost {
-    HZIP_FORCED_INLINE bool check_if_file_exists(std::string filename) {
+    HZ_INLINE bool check_if_file_exists(std::string filename) {
         return fs::exists(fs::path{filename});
     }
 
-    HZIP_FORCED_INLINE uint64_t get_file_size(std::string filename) {
+    HZ_INLINE uint64_t get_file_size(std::string filename) {
         if (!fs::exists(fs::path{filename})) {
 
             return 0;
@@ -20,7 +20,7 @@ namespace hzboost {
         return fs::file_size(fs::path{filename});
     }
 
-    HZIP_FORCED_INLINE void delete_file_if_exists(std::string filename) {
+    HZ_INLINE void delete_file_if_exists(std::string filename) {
         if (fs::exists(fs::path{filename})) {
             fs::remove(fs::path{filename});
         }

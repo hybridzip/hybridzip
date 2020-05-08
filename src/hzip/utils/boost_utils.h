@@ -7,7 +7,7 @@
 
 namespace fs = boost::filesystem;
 
-namespace hzboost {
+namespace boostutils {
     HZ_INLINE bool check_if_file_exists(std::string filename) {
         return fs::exists(fs::path{filename});
     }

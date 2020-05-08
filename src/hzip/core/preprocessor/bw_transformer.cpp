@@ -1,6 +1,6 @@
-#include "transforms.h"
+#include "bw_transformer.h"
 
-void hz_trans::bw_transformer::radix_pass(int *a, int *b, int *r, int n, int K) { // count occurrences
+void hztrans::bw_transformer::radix_pass(int *a, int *b, int *r, int n, int K) { // count occurrences
     int *c = new int[K + 1]; // counter array
     for (int i = 0; i <= K; i++) c[i] = 0; // reset counters
     for (int i = 0; i < n; i++) c[r[a[i]]]++; // count occurrences
@@ -14,7 +14,7 @@ void hz_trans::bw_transformer::radix_pass(int *a, int *b, int *r, int n, int K) 
     delete[] c;
 }
 
-void hz_trans::bw_transformer::suffix_array(int *T, int *SA, int n, int K) {
+void hztrans::bw_transformer::suffix_array(int *T, int *SA, int n, int K) {
     int n0 = (n + 2) / 3, n1 = (n + 1) / 3, n2 = n / 3, n02 = n0 + n2;
     int *R = new int[n02 + 3];
     R[n02] = R[n02 + 1] = R[n02 + 2] = 0;
@@ -76,13 +76,13 @@ void hz_trans::bw_transformer::suffix_array(int *T, int *SA, int n, int K) {
     delete[] R0;
 }
 
-hz_trans::bw_transformer::bw_transformer(int *data, int n, int K) {
+hztrans::bw_transformer::bw_transformer(int *data, int n, int K) {
     this->data = data;
     len = n;
     alphabet_size = K;
 }
 
-int hz_trans::bw_transformer::transform() {
+int hztrans::bw_transformer::transform() {
     int data_len = len + 1;
     int bw_index = 0;
     int *zdata = new int[data_len];
@@ -116,7 +116,7 @@ int hz_trans::bw_transformer::transform() {
     return bw_index;
 }
 
-void hz_trans::bw_transformer::invert(int bw_index) {
+void hztrans::bw_transformer::invert(int bw_index) {
     int data_len = len;
     int *zdata = new int[data_len];
     int *zzdata = new int[data_len + 1];

@@ -10,9 +10,13 @@
 #include <jpegint.h>
 #include "types.h"
 
-class hzj_codec {
+class hzj_iface {
 private:
     FILE *jpeg_file;
+
+    const uint16_t dct_trans_mat[0x40] = {
+            
+    };
 
     void dct_arr_alloc(int **&arr) {
         arr = new int *[8];
@@ -175,11 +179,11 @@ public:
         hzj_mcu_array mcus;
     };
 
-    hzj_codec(uint8_t *buf, uint64_t len) {
+    hzj_iface(uint8_t *buf, uint64_t len) {
         jpeg_file = fmemopen(buf, len, "rb");
     }
 
-    hzj_codec(std::string filename) {
+    hzj_iface(std::string filename) {
         jpeg_file = fopen(filename.c_str(), "rb");
     }
 
@@ -290,40 +294,7 @@ public:
 
 
     void test() {
-
-        std::string outname = "/home/supercmmetry/Pictures/supercmmetry.copy.jpg";
-        jpeg_decompress_struct info;
-        jpeg_error_mgr err;
-
-
-        info.err = jpeg_std_error(&err);
-        jpeg_create_decompress(&info);
-
-        jpeg_stdio_src(&info, jpeg_file);
-        jpeg_read_header(&info, true);
-
-
-        auto *coeff_arrays = jpeg_read_coefficients(&info);
-
-
-        struct jpeg_compress_struct cinfo;
-        struct jpeg_error_mgr jerr;
-        FILE * infile;
-
-        if ((infile = fopen(outname.c_str(), "wb")) == NULL) {
-            fprintf(stderr, "can't open %s\n", outname.c_str());
-            return;
-        }
-
-        cinfo.err = jpeg_std_error(&jerr);
-        jpeg_create_compress(&cinfo);
-        jpeg_stdio_dest(&cinfo, infile);
-
-        j_compress_ptr cinfo_ptr = &cinfo;
-        jpeg_copy_critical_parameters((j_decompress_ptr)&info, cinfo_ptr);
-        jpeg_write_coefficients(cinfo_ptr, coeff_arrays);
-        jpeg_finish_compress(cinfo_ptr);
-        jpeg_destroy_compress(cinfo_ptr);
+        
     }
 };
 

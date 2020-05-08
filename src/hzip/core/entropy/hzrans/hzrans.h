@@ -4,9 +4,6 @@
 
 #ifndef HYBRIDZIP_HZRANS_H
 #define HYBRIDZIP_HZRANS_H
-#ifndef HZRANS_USE_AVX
-#define HZRANS_USE_AVX 0
-#endif
 
 #ifndef HZRANS_SCALE
 #define HZRANS_SCALE 12

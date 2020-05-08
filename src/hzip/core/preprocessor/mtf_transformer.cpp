@@ -1,12 +1,12 @@
-#include "transforms.h"
+#include "mtf_transformer.h"
 
-hz_trans::mtf_transformer::mtf_transformer(int *data, int alphabet_size, uint64_t length) {
+hztrans::mtf_transformer::mtf_transformer(int *data, int alphabet_size, uint64_t length) {
     this->data = data;
     this->length = length;
     this->alphabet_size = alphabet_size;
 }
 
-void hz_trans::mtf_transformer::transform() {
+void hztrans::mtf_transformer::transform() {
     lru_cache.clear();
     for (int i = 0; i < alphabet_size; i++) {
         lru_cache.push_back(i);
@@ -24,7 +24,7 @@ void hz_trans::mtf_transformer::transform() {
     }
 }
 
-void hz_trans::mtf_transformer::invert() {
+void hztrans::mtf_transformer::invert() {
     lru_cache.clear();
     for (int i = 0; i < alphabet_size; i++) {
         lru_cache.push_back(i);

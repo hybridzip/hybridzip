@@ -1,17 +1,17 @@
 #include "white_rose.h"
 
-hzcomp_white_rose::white_rose::white_rose(std::string filename) {
+hzcodec::white_rose::white_rose(std::string filename) {
     // use a 1MB buffer.
     stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
-void hzcomp_white_rose::white_rose::set_file(std::string filename) {
+void hzcodec::white_rose::set_file(std::string filename) {
     // use a 1MB buffer.
     stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
-void hzcomp_white_rose::white_rose::compress(std::string out_file_name) {
-    hzboost::delete_file_if_exists(out_file_name);
+void hzcodec::white_rose::compress(std::string out_file_name) {
+    boostutils::delete_file_if_exists(out_file_name);
     auto focm = hzmodels::first_order_context_model(0x100);
 
     auto *data = new int[stream->get_file_size()];
@@ -21,10 +21,10 @@ void hzcomp_white_rose::white_rose::compress(std::string out_file_name) {
     }
     auto length = j;
 
-    auto bwt = hz_trans::bw_transformer(data, length, 0x100);
+    auto bwt = hztrans::bw_transformer(data, length, 0x100);
     auto bwt_index = bwt.transform();
 
-    auto mtf = hz_trans::mtf_transformer(data, 0x100, length);
+    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
     mtf.transform();
 
     // Now we contruct a First-Order-Context-Dictionary.
@@ -121,8 +121,8 @@ void hzcomp_white_rose::white_rose::compress(std::string out_file_name) {
     ostream.close();
 }
 
-void hzcomp_white_rose::white_rose::decompress(std::string out_file_name) {
-    hzboost::delete_file_if_exists(out_file_name);
+void hzcodec::white_rose::decompress(std::string out_file_name) {
+    boostutils::delete_file_if_exists(out_file_name);
     auto clock = std::chrono::high_resolution_clock();
     auto start = clock.now();
 
@@ -231,10 +231,10 @@ void hzcomp_white_rose::white_rose::decompress(std::string out_file_name) {
     auto length = i;
     vec.clear();
 
-    auto mtf = hz_trans::mtf_transformer(data, 0x100, length);
+    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
     mtf.invert();
 
-    auto bwt = hz_trans::bw_transformer(data, length, 0x100);
+    auto bwt = hztrans::bw_transformer(data, length, 0x100);
     bwt.invert(bwt_index);
 
     auto ostream = new bitio::bitio_stream(out_file_name, bitio::WRITE, false,1048576);

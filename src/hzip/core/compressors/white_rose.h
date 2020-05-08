@@ -9,7 +9,7 @@
 #include <hzip/utils/boost_utils.h>
 #include <hzip/core/models/models.h>
 
-namespace hzcomp_white_rose {
+namespace hzcodec {
     class white_rose {
     private:
         bitio::bitio_stream *stream;

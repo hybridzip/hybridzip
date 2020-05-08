@@ -9,7 +9,7 @@
 #include <hzip/utils/boost_utils.h>
 #include <hzip/core/models/models.h>
 
-namespace hzcomp_dark_ninja {
+namespace hzcodec {
     class dark_ninja {
     private:
         bitio::bitio_stream *stream;

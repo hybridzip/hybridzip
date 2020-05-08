@@ -8,7 +8,6 @@
 #include <vector>
 #include <hzip/core/entropy/hzrans/hzrans.h>
 #include <bitio/bitio.h>
-#include <hzip/utils/constants.h>
 #include <hzip/utils/distribution.h>
 #include <hzip/core/blob/hzblob.h>
 #include <hzip/core/entropy/hzrans/hzbin.h>

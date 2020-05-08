@@ -1,17 +1,17 @@
 #include "dark_ninja.h"
 
-hzcomp_dark_ninja::dark_ninja::dark_ninja(std::string filename) {
+hzcodec::dark_ninja::dark_ninja(std::string filename) {
     // use a 1MB buffer.
     stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
-void hzcomp_dark_ninja::dark_ninja::set_file(std::string filename) {
+void hzcodec::dark_ninja::set_file(std::string filename) {
     // use a 1MB buffer.
     stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
-void hzcomp_dark_ninja::dark_ninja::compress(std::string out_file_name) {
-    hzboost::delete_file_if_exists(out_file_name);
+void hzcodec::dark_ninja::compress(std::string out_file_name) {
+    boostutils::delete_file_if_exists(out_file_name);
     auto focm = hzmodels::first_order_context_model(0x100);
     auto callback = [&focm](uint64_t byte, uint64_t *ptr) {
         auto *preds = focm.predict(byte);
@@ -35,10 +35,10 @@ void hzcomp_dark_ninja::dark_ninja::compress(std::string out_file_name) {
     }
     auto length = j;
 
-    auto bwt = hz_trans::bw_transformer(data, length, 0x100);
+    auto bwt = hztrans::bw_transformer(data, length, 0x100);
     auto bwt_index = bwt.transform();
 
-    auto mtf = hz_trans::mtf_transformer(data, 0x100, length);
+    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
     mtf.transform();
 
     auto *extractors = new std::function<uint64_t(void)>;
@@ -63,8 +63,8 @@ void hzcomp_dark_ninja::dark_ninja::compress(std::string out_file_name) {
     ostream.close();
 }
 
-void hzcomp_dark_ninja::dark_ninja::decompress(std::string out_file_name) {
-    hzboost::delete_file_if_exists(out_file_name);
+void hzcodec::dark_ninja::decompress(std::string out_file_name) {
+    boostutils::delete_file_if_exists(out_file_name);
     auto focm = hzmodels::first_order_context_model(0x100);
 
     auto callback = [&focm](uint64_t byte, uint64_t *ptr) {
@@ -102,10 +102,10 @@ void hzcomp_dark_ninja::dark_ninja::decompress(std::string out_file_name) {
     auto length = i;
     vec.clear();
 
-    auto mtf = hz_trans::mtf_transformer(data, 0x100, length);
+    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
     mtf.invert();
 
-    auto bwt = hz_trans::bw_transformer(data, length, 0x100);
+    auto bwt = hztrans::bw_transformer(data, length, 0x100);
     bwt.invert(bwt_index);
 
     auto ostream = new bitio::bitio_stream(out_file_name, bitio::WRITE, false, 1048576);

@@ -12,8 +12,7 @@ namespace hzcompute::matrix {
         uint32_t B_rows = A_cols;
 
         uint32_t ic = 0;
-        for (int i = 0; i < A_rows; i++) {
-            int rs = i * A_cols;
+        for (int i = 0, rs = 0; i < A_rows; i++, rs += A_cols) {
             for (int j = 0; j < B_cols; j++) {
                 C[ic] = 0;
                 for (int k = 0, rsb = 0; k < B_rows; k++, rsb += B_cols) {
@@ -71,12 +70,14 @@ namespace hzcompute::matrix {
 
         free(B_trans);
 #else
-        for (int i = 0; i < A_rows; i++) {
-            int rs = i * B_cols;
+        uint32_t ic = 0;
+        for (int i = 0, rs = 0; i < A_rows; i++, rs += A_cols) {
             for (int j = 0; j < B_cols; j++) {
-                for (int k = 0; k < B_rows; k++) {
-                    (*C)[rs + j] += A[rs + k] * B[(k << 3) + j];
+                C[ic] = 0;
+                for (int k = 0, rsb = 0; k < B_rows; k++, rsb += B_cols) {
+                    C[ic] += A[rs + k] * B[rsb + j];
                 }
+                ic++;
             }
         }
 #endif

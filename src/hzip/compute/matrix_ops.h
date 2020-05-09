@@ -7,8 +7,10 @@
 
 namespace hzcompute::matrix {
 
-    // this is just for benchmarking purposes
-    inline void multiply_s(int32_t *A, uint32_t A_rows, uint32_t A_cols, int32_t *B, uint32_t B_cols, int32_t *C) {
+    // slow matmul functions:
+
+    template <typename elem_type>
+    inline void multiply_s(elem_type *A, uint32_t A_rows, uint32_t A_cols, elem_type *B, uint32_t B_cols, elem_type *C) {
         uint32_t B_rows = A_cols;
 
         uint32_t ic = 0;
@@ -23,7 +25,8 @@ namespace hzcompute::matrix {
         }
     }
 
-    inline void transpose(int32_t *A, uint32_t n_rows, uint32_t n_cols, int32_t *res) {
+    template <typename elem_type>
+    inline void transpose_s(elem_type *A, uint32_t n_rows, uint32_t n_cols, elem_type *res) {
         for (int i = 0, ta = 0; i < n_rows; i++, ta += n_cols) {
             for(int j = 0, tb = 0; j < n_cols; j++, tb += n_rows) {
                 res[tb + i] = A[ta + j];
@@ -33,13 +36,11 @@ namespace hzcompute::matrix {
 
     inline void multiply(int32_t *A, uint32_t A_rows, uint32_t A_cols, int32_t *B, uint32_t B_cols, int32_t *C) {
         uint32_t B_rows = A_cols;
-        uint32_t tcount = A_rows * B_cols;
-
 
 #ifdef HZ_USE_AVX2
         uint32_t rsb_max = B_rows * B_cols;
         int32_t *B_trans = new int32_t[rsb_max];
-        transpose(B, B_rows, B_cols, B_trans);
+        transpose_s<int32_t>(B, B_rows, B_cols, B_trans);
 
         uint32_t n_vecs = A_cols >> 0x3;
         uint8_t residue = A_cols & 0x7;
@@ -123,6 +124,10 @@ namespace hzcompute::matrix {
         }
 
 #endif
+    }
+
+    inline void multiply_8x8(double *A, double *B, double *C) {
+        
     }
 }
 #endif

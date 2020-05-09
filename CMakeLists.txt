@@ -54,7 +54,7 @@ add_library(hzip STATIC
         src/hzip/core/preprocessor/bw_transformer.h
         src/hzip/core/preprocessor/delta_transformer.h
         src/hzip/core/preprocessor/mtf_transformer.h
-        src/hzip/compute/matrix_ops.h src/hzip/compute/vector_utils.h src/hzip/compute/dct.h)
+        src/hzip/compute/matrix_ops.h src/hzip/compute/vector_utils.h src/hzip/compute/dct.h src/hzip/compute/dct.cpp)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio)

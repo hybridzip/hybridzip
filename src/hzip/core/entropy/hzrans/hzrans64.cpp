@@ -69,7 +69,7 @@
 
 
     for (int i = 0; i < state->size; i++) {
-        uint64_t value = 1 + (freq[i] + 1) * ((1ull << state->scale) - state->size) / sum;
+        uint64_t value = 1 + (freq[i] + 1) * mul_factor / sum;
         ssum += value - 1;
         state->ftable[i] = value;
     }

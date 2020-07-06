@@ -1,10 +1,10 @@
 #pragma once
 
-#include <hzip/other/platform.h>
+#include <hzip/utils/platform.h>
 
 typedef struct bin_t {
-    HZIP_SIZE_T obj;
-    HZIP_UINT n;
+    HZ_SIZE_T obj;
+    HZ_UINT n;
 } bin_t;
 
 

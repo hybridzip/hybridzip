@@ -2,7 +2,8 @@
 #define HYBRIDZIP_HZBLOB_H
 
 #include <cstdint>
-#include <hzip/other/platform.h>
+#include <memory>
+#include <hzip/utils/platform.h>
 
 struct hzrblob_t {
     uint32_t *data;

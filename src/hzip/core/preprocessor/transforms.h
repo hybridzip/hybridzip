@@ -1,6 +1,8 @@
 #ifndef HYBRIDZIP_TRANSFORMS_H
 #define HYBRIDZIP_TRANSFORMS_H
-#include "burrows_wheeler_transform.h"
-#include "move_to_front_transform.h"
-#include "delta_transform.h"
+
+#include "bw_transformer.h"
+#include "delta_transformer.h"
+#include "mtf_transformer.h"
+
 #endif

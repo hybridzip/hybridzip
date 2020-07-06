@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <chrono>
+#include <functional>
 #include <cstdint>
 #include <cassert>
 #include <stack>

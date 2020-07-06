@@ -11,7 +11,7 @@ void hzcodec::white_rose::set_file(std::string filename) {
 }
 
 void hzcodec::white_rose::compress(std::string out_file_name) {
-    boostutils::delete_file_if_exists(out_file_name);
+    fsutils::delete_file_if_exists(out_file_name);
     auto focm = hzmodels::first_order_context_model(0x100);
 
     auto *data = new int[stream->get_file_size()];
@@ -122,7 +122,7 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
 }
 
 void hzcodec::white_rose::decompress(std::string out_file_name) {
-    boostutils::delete_file_if_exists(out_file_name);
+    fsutils::delete_file_if_exists(out_file_name);
     auto clock = std::chrono::high_resolution_clock();
     auto start = clock.now();
 

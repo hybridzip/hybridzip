@@ -1,7 +1,6 @@
 #ifndef HYBRIDZIP_UTILS_H
 #define HYBRIDZIP_UTILS_H
 
-#include <functional>
 #include <cstdint>
 #include <stack>
 #include "common.h"

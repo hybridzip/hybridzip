@@ -11,7 +11,7 @@ void hzcodec::dark_ninja::set_file(std::string filename) {
 }
 
 void hzcodec::dark_ninja::compress(std::string out_file_name) {
-    boostutils::delete_file_if_exists(out_file_name);
+    fsutils::delete_file_if_exists(out_file_name);
     auto focm = hzmodels::first_order_context_model(0x100);
     auto callback = [&focm](uint64_t byte, uint64_t *ptr) {
         auto *preds = focm.predict(byte);
@@ -64,7 +64,7 @@ void hzcodec::dark_ninja::compress(std::string out_file_name) {
 }
 
 void hzcodec::dark_ninja::decompress(std::string out_file_name) {
-    boostutils::delete_file_if_exists(out_file_name);
+    fsutils::delete_file_if_exists(out_file_name);
     auto focm = hzmodels::first_order_context_model(0x100);
 
     auto callback = [&focm](uint64_t byte, uint64_t *ptr) {

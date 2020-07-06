@@ -5,8 +5,7 @@
 #include <string>
 #include <filesystem>
 
-
-namespace boostutils {
+namespace fsutils {
     HZ_INLINE bool check_if_file_exists(std::string filename) {
         return std::filesystem::exists(filename);
     }

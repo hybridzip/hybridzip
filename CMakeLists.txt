@@ -41,7 +41,6 @@ add_library(hzip STATIC
         src/hzip/core/compressors/white_rose.h
         src/hzip/core/compressors/dark_ninja.h
         src/hzip/core/compressors/dark_ninja.cpp
-        src/hzip/utils/utils.cpp
         src/hzip/core/entropy/hzrans/hzmthread.cpp
         src/hzip/core/entropy/hzrans/hzbin.cpp
         src/hzip/core/entropy/hzrans/hzrans64.cpp

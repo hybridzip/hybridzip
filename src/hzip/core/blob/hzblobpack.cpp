@@ -42,30 +42,21 @@ HZ_SIZE_T hz_blob_unpacker::unpack_header(unsigned int n) {
 hzrblob_set hz_blob_unpacker::unpack() {
     // first retrieve set count.
     auto tmp_stream = this->stream;
+
     auto lb_stream = [tmp_stream](uint64_t n) {
         uint64_t x = tmp_stream->read(n);
         return x;
     };
 
-    struct stream_functor {
-        bitio::bitio_stream *stream;
-
-        uint64_t operator()(uint64_t n) const {
-            return stream->read(n);
-        }
-    };
-
-    auto reader = stream_functor{.stream=this->stream};
-
-    auto set_count = unaryinv_bin<stream_functor>(reader).obj;
+    auto set_count = unaryinv_bin(lb_stream).obj;
 
     hzrblob_set set;
     set.count = set_count;
     set.blobs = new hzrblob_t[set_count];
 
     for (int i = 0; i < set_count; i++) {
-        set.blobs[i].size = unaryinv_bin<stream_functor>(reader).obj;
-        set.blobs[i].o_size = unaryinv_bin<stream_functor>(reader).obj;
+        set.blobs[i].size = unaryinv_bin(lb_stream).obj;
+        set.blobs[i].o_size = unaryinv_bin(lb_stream).obj;
     }
 
     for (int i = 0; i < set_count; i++) {

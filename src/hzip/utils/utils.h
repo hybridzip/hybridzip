@@ -2,6 +2,7 @@
 #define HYBRIDZIP_UTILS_H
 
 #include <cstdint>
+#include <functional>
 #include <stack>
 #include "common.h"
 
@@ -112,8 +113,7 @@ HZ_INLINE bin_t unarypx_bin(uint64_t n) {
     return bin_t{.obj=num, .n=(HZ_UINT) (1 + ((1 + lg2) << 1))};
 }
 
-template <typename T>
-HZ_INLINE bin_t unaryinv_bin(T readfunc) {
+HZ_INLINE bin_t unaryinv_bin(std::function<uint64_t(uint64_t)> readfunc) {
     uint64_t count = 0;
 
     while (readfunc(1) != 0) {

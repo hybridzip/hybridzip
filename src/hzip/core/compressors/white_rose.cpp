@@ -1,12 +1,12 @@
 #include "white_rose.h"
 
 hzcodec::white_rose::white_rose(std::string filename) {
-    // use a 1MB buffer.
+    // use a 1MB hz_buffer.
     stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
 void hzcodec::white_rose::set_file(std::string filename) {
-    // use a 1MB buffer.
+    // use a 1MB hz_buffer.
     stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 

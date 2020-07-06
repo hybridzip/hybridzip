@@ -1,12 +1,12 @@
 #include "dark_ninja.h"
 
 hzcodec::dark_ninja::dark_ninja(std::string filename) {
-    // use a 1MB buffer.
+    // use a 1MB hz_buffer.
     stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
 void hzcodec::dark_ninja::set_file(std::string filename) {
-    // use a 1MB buffer.
+    // use a 1MB hz_buffer.
     stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 

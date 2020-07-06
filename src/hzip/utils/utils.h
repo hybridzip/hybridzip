@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <stack>
 #include "common.h"
 
 // A light-weight efficient stack that maintains a stack of buffers to minimize memory allocations.

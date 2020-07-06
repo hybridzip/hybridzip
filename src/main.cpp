@@ -52,7 +52,7 @@ int main() {
             for (int i = 0; i < M; i++) {
                 for (int j = 0; j < M; j++) {
                     if (j % M == 0) {
-                        // std::cout << std::endl;
+                        // std:: << std::endl;
                     }
                     if (j % 2 == 1 && j + 1 != M) {
                         auto avg = (float) image.mcus.coeff_arrays[c][M * i + (j - 1)][k][l] +
@@ -68,7 +68,7 @@ int main() {
                         int iavg = (int) avg;
                         auto xor_val = 128 + (image.mcus.coeff_arrays[c][M * i + j][k][l] ^ iavg);
                         //auto xor_val = 128 + image.mcus.coeff_arrays[c][M * i + j][k][l];
-                        //std::cout <<  xor_val << "\t";
+                        //std:: <<  xor_val << "\t";
                         sum = 0;
                         for (int m = 0; m < 0x100; m++) {
                             sum += freq[prev][m];
@@ -79,13 +79,12 @@ int main() {
 //                        prev = xor_val;
 
                     } else {
-                        //std::cout << image.mcus.coeff_arrays[0][M * i + j][2][2] << "\t";
+                        //std:: << image.mcus.coeff_arrays[0][M * i + j][2][2] << "\t";
                     }
                 }
             }
         }
     }
-
 
     std::cout << "Minimum compressed size: " << bits / 4 << " bytes" << std::endl;
 

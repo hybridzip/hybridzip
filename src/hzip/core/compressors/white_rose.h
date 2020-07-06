@@ -6,7 +6,7 @@
 #include <hzip/core/entropy/hzrans/hzmthread.h>
 #include <hzip/core/blob/hzblobpack.h>
 #include <hzip/core/preprocessor/transforms.h>
-#include <hzip/utils/boost_utils.h>
+#include <hzip/utils/fsutils.h>
 #include <hzip/core/models/models.h>
 
 namespace hzcodec {

@@ -12,9 +12,6 @@ include_directories("src")
 add_subdirectory(other)
 include_directories("other")
 
-find_package(Boost COMPONENTS system filesystem REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-
 add_library(hzip STATIC
         src/hzip/utils/platform.h
         src/hzip/core/entropy/hzrans/hzrans64.h
@@ -23,7 +20,7 @@ add_library(hzip STATIC
         src/hzip/core/entropy/hzrans/hzmthread.h
         src/hzip/core/blob/hzblobpack.h
         src/hzip/utils/distribution.h
-        src/hzip/utils/boost_utils.h
+        src/hzip/utils/fsutils.h
         src/hzip/core/entropy/hzrans/hzbin.h
         src/hzip/archiver/hzarchiver.h
         src/hzip/archiver/hzdirtree.h
@@ -54,7 +51,10 @@ add_library(hzip STATIC
         src/hzip/core/preprocessor/bw_transformer.h
         src/hzip/core/preprocessor/delta_transformer.h
         src/hzip/core/preprocessor/mtf_transformer.h
-        src/hzip/compute/matrix_ops.h src/hzip/compute/vector_utils.h src/hzip/compute/dct.h src/hzip/compute/dct.cpp)
+        src/hzip/compute/matrix_ops.h
+        src/hzip/compute/vector_utils.h
+        src/hzip/compute/dct.h
+        src/hzip/compute/dct.cpp)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio)
@@ -84,7 +84,7 @@ endif ()
 target_compile_options(hzip PUBLIC ${ARCH_FLAGS})
 
 add_executable(hybridzip src/main.cpp)
-target_link_libraries(hybridzip PRIVATE hzip pthread ${Boost_FILESYSTEM_LIBRARY} png jpeg)
+target_link_libraries(hybridzip PRIVATE hzip pthread png jpeg)
 
 if (${ENABLE_PROFILING})
     target_link_libraries(hybridzip PRIVATE profiler)

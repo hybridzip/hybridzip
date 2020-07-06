@@ -1,6 +1,6 @@
 #include "hzblobpack.h"
 
-void hz_blob_packer::pack_header(bin_t bin)  {
+void hz_blob_packer::pack_header(bin_t bin) {
     bin_vec.push_back(bin);
 }
 
@@ -47,15 +47,25 @@ hzrblob_set hz_blob_unpacker::unpack() {
         return x;
     };
 
-    auto set_count = unaryinv_bin(lb_stream).obj;
+    struct stream_functor {
+        bitio::bitio_stream *stream;
+
+        uint64_t operator()(uint64_t n) const {
+            return stream->read(n);
+        }
+    };
+
+    auto reader = stream_functor{.stream=this->stream};
+
+    auto set_count = unaryinv_bin<stream_functor>(reader).obj;
 
     hzrblob_set set;
     set.count = set_count;
     set.blobs = new hzrblob_t[set_count];
 
     for (int i = 0; i < set_count; i++) {
-        set.blobs[i].size = unaryinv_bin(lb_stream).obj;
-        set.blobs[i].o_size = unaryinv_bin(lb_stream).obj;
+        set.blobs[i].size = unaryinv_bin<stream_functor>(reader).obj;
+        set.blobs[i].o_size = unaryinv_bin<stream_functor>(reader).obj;
     }
 
     for (int i = 0; i < set_count; i++) {

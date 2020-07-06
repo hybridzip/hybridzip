@@ -113,7 +113,8 @@ HZ_INLINE bin_t unarypx_bin(uint64_t n) {
     return bin_t{.obj=num, .n=(HZ_UINT) (1 + ((1 + lg2) << 1))};
 }
 
-HZ_INLINE bin_t unaryinv_bin(std::function<uint64_t(uint64_t)> readfunc) {
+template <typename T>
+HZ_INLINE bin_t unaryinv_bin(T readfunc) {
     uint64_t count = 0;
 
     while (readfunc(1) != 0) {

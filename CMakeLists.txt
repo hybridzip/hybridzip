@@ -53,7 +53,7 @@ add_library(hzip STATIC
         src/hzip/compute/matrix_ops.h
         src/hzip/compute/vector_utils.h
         src/hzip/compute/dct.h
-        src/hzip/compute/dct.cpp src/hzip/memory/memmgr.h src/hzip/memory/memmap.h src/hzip/memory/memmgr.cpp src/hzip/memory/memmap.cpp)
+        src/hzip/compute/dct.cpp src/hzip/memory/memmgr.h src/hzip/memory/memmap.h src/hzip/memory/memmgr.cpp src/hzip/memory/memmap.cpp src/hzip/memory/mem_interface.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio)
@@ -90,3 +90,8 @@ if (${ENABLE_PROFILING})
     message(STATUS "Linked to profiler")
 endif ()
 
+
+
+enable_testing()
+
+add_subdirectory(tests)

@@ -14,13 +14,15 @@ struct hz_memmap {
 private:
     uint64_t hash(void *ptr);
 
-
 public:
     uint64_t max_size;
     hz_map_elem **mapptr;
 
     hz_memmap(uint64_t size);
 
+    ~hz_memmap() {
+        free(mapptr);
+    }
 
     void add(hz_map_elem *elem);
 

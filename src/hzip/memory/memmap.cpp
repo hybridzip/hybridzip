@@ -1,7 +1,11 @@
+#include <iostream>
 #include "memmap.h"
 
 hz_memmap::hz_memmap(uint64_t size) {
-    mapptr = new hz_map_elem *[size];
+    mapptr =  (hz_map_elem **)malloc(sizeof(hz_map_elem*) * size);
+    for (int i = 0; i < size; i++) {
+        mapptr[i] = nullptr;
+    }
     max_size = size;
 }
 
@@ -33,7 +37,12 @@ void hz_memmap::remove(void *ptr) {
         curr = curr->next;
     }
 
-    prev->next = curr->next;
+    if (prev != curr) {
+        prev->next = curr->next;
+    } else {
+        mapptr[ptr_hash] = curr->next;
+    }
+
     free(curr->ptr);
     free(curr);
 }

@@ -1,7 +1,7 @@
 # Builder
 FROM alpine:latest AS build
 
-RUN apk update && apk add make cmake gcc g++ boost-dev
+RUN apk update && apk add make cmake gcc g++ boost-dev jpeg png
 
 RUN mkdir /app
 

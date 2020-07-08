@@ -4,9 +4,7 @@
 #include <cstdint>
 #include "memmap.h"
 
-#define HZ_MALLOC(type, n_elems) this->__hz_memmgr_obj->hz_malloc<type>(n_elems)
-#define HZ_FREE(ptr) this->__hz_memmgr_obj->hz_free(ptr)
-#define HZ_MEM_INIT(child) child.attach_memmgr(this->__hz_memmgr_obj)
+
 
 struct hz_memmgr {
     uint64_t allocation_size;

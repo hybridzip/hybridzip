@@ -8,7 +8,7 @@ int main() {
     auto mgr = new hz_memmgr;
 
     auto rose = hzcodec::white_rose("/home/supercmmetry/Documents/dickens/dickens");
-    rose.attach_memmgr(mgr);
+    HZ_MEM_INIT_FROM(mgr, rose);
 
     rose.compress("/home/supercmmetry/Documents/dickens/dickens.hz");
     rose.set_file("/home/supercmmetry/Documents/dickens/dickens.hz");

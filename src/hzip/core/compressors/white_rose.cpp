@@ -12,7 +12,11 @@ void hzcodec::white_rose::set_file(std::string filename) {
 
 void hzcodec::white_rose::compress(std::string out_file_name) {
     fsutils::delete_file_if_exists(out_file_name);
-    auto focm = hzmodels::first_order_context_model(0x100);
+
+    auto focm = hzmodels::first_order_context_model();
+    HZ_MEM_INIT(focm);
+
+    focm.set_alphabet_size(0x100);
 
     auto *data = HZ_MALLOC(int, stream->get_file_size());
 

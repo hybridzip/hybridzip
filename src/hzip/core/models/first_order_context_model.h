@@ -3,16 +3,22 @@
 
 #include <cstdint>
 #include <cmath>
+#include <hzip/memory/mem_interface.h>
 
-namespace hzmodels_first_order_context_model {
-    class first_order_context_model {
+namespace hzmodels {
+    class first_order_context_model: public hz_mem_iface {
     private:
         uint64_t **context_map;
         uint64_t prev_symbol;
         int alphabet_size;
         bool has_started = false;
     public:
-        first_order_context_model(int alphabet_size);
+
+        first_order_context_model() {
+            // empty-constructor
+        }
+
+        void set_alphabet_size(int alphabet_size);
 
         uint64_t *predict(uint64_t symbol);
 

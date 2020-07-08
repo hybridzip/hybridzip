@@ -1,14 +1,14 @@
 #include "first_order_context_model.h"
 
 
-hzmodels_first_order_context_model::first_order_context_model::~first_order_context_model() {
+hzmodels::first_order_context_model::~first_order_context_model() {
     for (int i = 0; i < alphabet_size; i++) {
-        free(context_map[i]);
+        HZ_FREE(context_map[i]);
     }
-    free(context_map);
+    HZ_FREE(context_map);
 }
 
-void hzmodels_first_order_context_model::first_order_context_model::update(uint64_t symbol, uint64_t delta) {
+void hzmodels::first_order_context_model::update(uint64_t symbol, uint64_t delta) {
     if (has_started) {
         context_map[prev_symbol][symbol] += delta;
     }
@@ -16,14 +16,15 @@ void hzmodels_first_order_context_model::first_order_context_model::update(uint6
     has_started = true;
 }
 
-uint64_t *hzmodels_first_order_context_model::first_order_context_model::predict(uint64_t symbol) {
+uint64_t *hzmodels::first_order_context_model::predict(uint64_t symbol) {
     return context_map[symbol];
 }
 
-hzmodels_first_order_context_model::first_order_context_model::first_order_context_model(int alphabet_size) {
-    context_map = new uint64_t*[alphabet_size];
+void hzmodels::first_order_context_model::set_alphabet_size(int alphabet_size) {
+    context_map = HZ_MALLOC(uint64_t*, alphabet_size);
     for (int i = 0; i < alphabet_size; i++) {
-        context_map[i] = new uint64_t[alphabet_size];
+
+        context_map[i] = HZ_MALLOC(uint64_t, alphabet_size);
         for (int j = 0; j < alphabet_size; j++) {
             context_map[i][j] = 1;
         }

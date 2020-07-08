@@ -32,19 +32,15 @@ add_library(hzip STATIC
         src/hzip/core/preprocessor/types.h
         src/hzip/core/preprocessor/jpeg_codec.h
         src/hzip/utils/utils.h
-        src/hzip/core/models/pivoted_gaussian_model.cpp
         src/hzip/core/models/first_order_context_model.cpp
         src/hzip/core/preprocessor/bw_transformer.cpp
         src/hzip/core/preprocessor/delta_transformer.cpp
         src/hzip/core/preprocessor/mtf_transformer.cpp
         src/hzip/core/compressors/white_rose.cpp
         src/hzip/core/compressors/white_rose.h
-        src/hzip/core/compressors/dark_ninja.h
-        src/hzip/core/compressors/dark_ninja.cpp
         src/hzip/core/entropy/hzrans/hzmthread.cpp
         src/hzip/core/entropy/hzrans/hzbin.cpp
         src/hzip/core/entropy/hzrans/hzrans64.cpp
-        src/hzip/core/models/pivoted_gaussian_model.h
         src/hzip/core/models/first_order_context_model.h
         src/hzip/core/blob/hzblobpack.cpp
         src/hzip/core/preprocessor/bw_transformer.h

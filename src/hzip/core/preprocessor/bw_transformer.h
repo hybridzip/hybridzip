@@ -3,9 +3,10 @@
 
 #include <vector>
 #include <cstdint>
+#include <hzip/memory/mem_interface.h>
 
 namespace hztrans {
-    class bw_transformer {
+    class bw_transformer: public hz_mem_iface {
 
     private:
         static inline bool leq(int a1, int a2, int b1, int b2) {

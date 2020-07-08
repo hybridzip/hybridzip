@@ -1,27 +1,27 @@
 #include "bw_transformer.h"
 
 void hztrans::bw_transformer::radix_pass(int *a, int *b, int *r, int n, int K) { // count occurrences
-    int *c = new int[K + 1]; // counter array
+    int *c = HZ_MALLOC(int, K + 1); // counter array
     for (int i = 0; i <= K; i++) c[i] = 0; // reset counters
     for (int i = 0; i < n; i++) c[r[a[i]]]++; // count occurrences
-    for (int i = 0, sum = 0; i <= K; i++) // exclusive prefix sums
-    {
+    for (int i = 0, sum = 0; i <= K; i++) {
         int t = c[i];
         c[i] = sum;
         sum += t;
     }
     for (int i = 0; i < n; i++) b[c[r[a[i]]]++] = a[i]; // sort
-    delete[] c;
+
+    HZ_FREE(c);
 }
 
 void hztrans::bw_transformer::suffix_array(int *T, int *SA, int n, int K) {
     int n0 = (n + 2) / 3, n1 = (n + 1) / 3, n2 = n / 3, n02 = n0 + n2;
-    int *R = new int[n02 + 3];
+    int *R = HZ_MALLOC(int, n02 + 3);
     R[n02] = R[n02 + 1] = R[n02 + 2] = 0;
-    int *SA12 = new int[n02 + 3];
+    int *SA12 = HZ_MALLOC(int, n02 + 3);
     SA12[n02] = SA12[n02 + 1] = SA12[n02 + 2] = 0;
-    int *R0 = new int[n0];
-    int *SA0 = new int[n0];
+    int *R0 = HZ_MALLOC(int, n0);
+    int *SA0 = HZ_MALLOC(int, n0);
 
     for (int i = 0, j = 0; i < n + (n0 - n1); i++) if (i % 3 != 0) R[j++] = i;
 
@@ -70,10 +70,10 @@ void hztrans::bw_transformer::suffix_array(int *T, int *SA, int n, int K) {
                 for (k++; t < n02; t++, k++) SA[k] = GetI();
         }
     }
-    delete[] R;
-    delete[] SA12;
-    delete[] SA0;
-    delete[] R0;
+    HZ_FREE(R);
+    HZ_FREE(SA12);
+    HZ_FREE(SA0);
+    HZ_FREE(R0);
 }
 
 hztrans::bw_transformer::bw_transformer(int *data, int n, int K) {
@@ -85,15 +85,15 @@ hztrans::bw_transformer::bw_transformer(int *data, int n, int K) {
 int hztrans::bw_transformer::transform() {
     int data_len = len + 1;
     int bw_index = 0;
-    int *zdata = new int[data_len];
+    int *zdata = HZ_MALLOC(int, data_len);
     zdata[0] = 0;
 
     for (int i = 0; i < len; i++) {
         zdata[i + 1] = data[i] + 1;
     }
 
-    int *T = new int[data_len + 3];
-    int *SA = new int[data_len + 3];
+    int *T = HZ_MALLOC(int, data_len + 3);
+    int *SA = HZ_MALLOC(int, data_len + 3);
 
     for (int i = 0; i < data_len; i++) {
         T[i] = zdata[i];
@@ -101,6 +101,8 @@ int hztrans::bw_transformer::transform() {
     }
 
     suffix_array(T, SA, data_len, alphabet_size + 1);
+
+    HZ_FREE(T);
 
     for (int i = 0, j = 0; i < data_len; i++) {
         int val = zdata[(SA[i] + data_len - 1) % data_len];
@@ -111,15 +113,16 @@ int hztrans::bw_transformer::transform() {
         }
     }
 
-    free(zdata);
+    HZ_FREE(zdata);
+    HZ_FREE(SA);
 
     return bw_index;
 }
 
 void hztrans::bw_transformer::invert(int bw_index) {
     int data_len = len;
-    int *zdata = new int[data_len];
-    int *zzdata = new int[data_len + 1];
+    int *zdata = HZ_MALLOC(int, data_len);
+    int *zzdata = HZ_MALLOC(int, data_len + 1);
 
     for (int i = 0; i < len; i++) {
         zdata[i] = data[i] + 1;
@@ -132,12 +135,11 @@ void hztrans::bw_transformer::invert(int bw_index) {
         zzdata[j++] = zdata[i];
     }
 
-    free(zdata);
+    HZ_FREE(zdata);
     zdata = zzdata;
 
     std::vector<int> jumpers;
     auto *base_list = new std::vector<int>[alphabet_size + 1];
-
 
     for (int i = 0; i <= alphabet_size; i++) {
         base_list[i] = std::vector<int>();
@@ -154,6 +156,8 @@ void hztrans::bw_transformer::invert(int bw_index) {
         }
     }
 
+    delete[] base_list;
+
     int index = bw_index;
     for (int count = 0, j = 0; count <= data_len; count++) {
         index = jumpers[index];
@@ -162,6 +166,6 @@ void hztrans::bw_transformer::invert(int bw_index) {
         }
     }
 
-    free(zdata);
+    HZ_FREE(zdata);
 }
 

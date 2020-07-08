@@ -8,9 +8,10 @@
 #include <hzip/core/preprocessor/transforms.h>
 #include <hzip/utils/fsutils.h>
 #include <hzip/core/models/models.h>
+#include <hzip/memory/mem_interface.h>
 
 namespace hzcodec {
-    class white_rose {
+    class white_rose: public hz_mem_iface {
     private:
         bitio::bitio_stream *stream;
     public:

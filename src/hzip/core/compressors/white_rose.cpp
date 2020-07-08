@@ -14,7 +14,8 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     fsutils::delete_file_if_exists(out_file_name);
     auto focm = hzmodels::first_order_context_model(0x100);
 
-    auto *data = new int[stream->get_file_size()];
+    auto *data = HZ_MALLOC(int, stream->get_file_size());
+
     uint64_t j = 0;
     while (!stream->is_eof()) {
         data[j++] = stream->read(0x8);
@@ -22,6 +23,8 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     auto length = j;
 
     auto bwt = hztrans::bw_transformer(data, length, 0x100);
+    HZ_MEM_INIT(bwt);
+
     auto bwt_index = bwt.transform();
 
     auto mtf = hztrans::mtf_transformer(data, 0x100, length);
@@ -90,6 +93,8 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     proc.set_cross_encoders(ces);
 
     hzrblob_set set = proc.encode();
+
+    HZ_FREE(data);
 
     auto ostream = bitio::bitio_stream(out_file_name, bitio::WRITE, false, 1048576);
 
@@ -223,7 +228,8 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
     auto vec = proc.decode(set, symbol_callback);
     set.destroy();
 
-    auto *data = new int[vec.size()];
+    auto *data = HZ_MALLOC(int, vec.size());
+
     int i = 0;
     for (auto iter : vec) {
         data[i++] = iter;
@@ -235,8 +241,12 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
     mtf.invert();
 
     auto bwt = hztrans::bw_transformer(data, length, 0x100);
+    HZ_MEM_INIT(bwt);
+
     bwt.invert(bwt_index);
 
     auto ostream = new bitio::bitio_stream(out_file_name, bitio::WRITE, false,1048576);
     ostream->force_write<int>(data, length);
+
+    HZ_FREE(data);
 }

@@ -49,10 +49,10 @@ add_library(hzip STATIC
         src/hzip/compute/matrix_ops.h
         src/hzip/compute/vector_utils.h
         src/hzip/compute/dct.h
-        src/hzip/compute/dct.cpp src/hzip/memory/memmgr.h src/hzip/memory/memmap.h src/hzip/memory/memmgr.cpp src/hzip/memory/memmap.cpp src/hzip/memory/mem_interface.h)
+        src/hzip/compute/dct.cpp src/hzip/memory/memmgr.h src/hzip/memory/memmap.h src/hzip/memory/memmgr.cpp src/hzip/memory/memmap.cpp src/hzip/memory/mem_interface.h src/hzip/errors/memory.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
-target_link_libraries(hzip PUBLIC bitio)
+target_link_libraries(hzip PUBLIC bitio loguru)
 
 # Find Intel Math Kernel Libs
 find_package(MKL)

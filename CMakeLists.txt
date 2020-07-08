@@ -86,6 +86,9 @@ if (${ENABLE_PROFILING})
     message(STATUS "Linked to profiler")
 endif ()
 
+if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+    add_compile_definitions(hzip DEBUG)
+endif ()
 
 
 enable_testing()

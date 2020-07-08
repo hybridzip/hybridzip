@@ -9,11 +9,11 @@ namespace MemoryErrors {
     class PeakLimitReachedException: public std::exception {
     public:
         PeakLimitReachedException() {
-            LOG_F(ERROR, "hzip.memory: Peak limit reached");
+            LOG_F(ERROR, "hzip.memory: peak limit reached");
         }
 
-        const char *what() const throw() {
-            return "hzip.memory: Peak limit reached";
+        [[nodiscard]] const char *what() const noexcept override {
+            return "hzip.memory: peak limit reached";
         }
     };
 }

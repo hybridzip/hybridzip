@@ -249,7 +249,7 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
 
     bwt.invert(bwt_index);
 
-    auto ostream = new bitio::bitio_stream(out_file_name, bitio::WRITE, false,1048576);
+    auto ostream = new bitio::bitio_stream(out_file_name, bitio::WRITE, false, 1048576);
     ostream->force_write<int>(data, length);
 
     HZ_FREE(data);

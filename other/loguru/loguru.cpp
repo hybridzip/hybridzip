@@ -1788,7 +1788,7 @@ namespace loguru
 			write_to_stderr(terminal_light_red());
 		}
 		write_to_stderr("\n");
-		write_to_stderr("Loguru caught a signal: ");
+		write_to_stderr("Caught signal: ");
 		write_to_stderr(signal_name);
 		write_to_stderr("\n");
 		if (g_colorlogtostderr && s_terminal_has_color) {

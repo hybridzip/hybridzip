@@ -9,7 +9,7 @@
 #include <stack>
 #include <malloc.h>
 #include <hzip/utils/platform.h>
-#include <hzip/utils/utils.h>
+#include <hzip/utils/stack.h>
 
 
 struct hzrans64_t {

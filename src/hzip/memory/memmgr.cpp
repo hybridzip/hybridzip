@@ -1,4 +1,5 @@
 #include "memmgr.h"
+#include <loguru/loguru.hpp>
 
 hz_memmgr::hz_memmgr() {
     sem_init(&mutex, 0, 1);
@@ -26,6 +27,8 @@ void hz_memmgr::set_peak(uint64_t _peak_size) {
     sem_wait(&mutex);
     peak_size = _peak_size;
     sem_post(&mutex);
+
+    LOG_F(WARNING, "hzip.memory: set peak size: %lu bytes", _peak_size);
 }
 
 uint64_t hz_memmgr::get_alloc_count() {

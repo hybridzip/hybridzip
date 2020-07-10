@@ -10,7 +10,7 @@
 #endif
 
 #include "hzrans64.h"
-
+#include <hzip/utils/stack.h>
 #include <functional>
 
 struct u64ptr {

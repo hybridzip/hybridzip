@@ -1,4 +1,5 @@
 #include "hzbin.h"
+#include <hzip/utils/stack.h>
 
 hzu_encoder::hzu_encoder(uint64_t alphabet_size, uint16_t scale, uint64_t buffer_size) {
     state = new hzrans64_t;

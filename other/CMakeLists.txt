@@ -3,3 +3,4 @@ cmake_minimum_required(VERSION 3.16)
 
 add_subdirectory(bitio)
 add_subdirectory(loguru)
+add_subdirectory(argparse)

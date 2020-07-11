@@ -1,0 +1,2 @@
+/usr/bin/ar qc libbitio.a  CMakeFiles/bitio.dir/bitio.cpp.o CMakeFiles/bitio.dir/bitio_buffer.cpp.o CMakeFiles/bitio.dir/bitio_byte_dumper.cpp.o
+/usr/bin/ranlib libbitio.a

@@ -76,6 +76,8 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     };
 
     auto proc = hzu_proc(1);
+    HZ_MEM_INIT(proc);
+
     proc.set_header(0x100, 24);
     proc.set_buffer_size(stream->get_file_size());
     proc.set_extractors(extractors);
@@ -136,6 +138,8 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
     auto start = clock.now();
 
     auto proc = hzu_proc(1);
+    HZ_MEM_INIT(proc);
+
     proc.set_header(0x100, 24);
     proc.set_buffer_size(stream->get_file_size());
     proc.bypass_normalization();

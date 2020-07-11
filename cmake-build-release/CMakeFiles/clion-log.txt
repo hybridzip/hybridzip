@@ -1,0 +1,4 @@
+/home/supercmmetry/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/201.7846.88/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DENABLE_O3=ON -G "CodeBlocks - Unix Makefiles" /home/supercmmetry/Projects/hybridzip
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/supercmmetry/Projects/hybridzip/cmake-build-release

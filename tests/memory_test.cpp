@@ -23,8 +23,8 @@ TEST(Memory, hzip_memory_unittest_segv) {
         memmgr->hz_free(ptr_vec[i]);
     }
 
-    ASSERT_EQ(memmgr->allocation_size, 2000 * sizeof(int));
-    ASSERT_EQ(memmgr->n_allocations, 1);
+    ASSERT_EQ(memmgr->get_alloc_size(), 2000 * sizeof(int));
+    ASSERT_EQ(memmgr->get_alloc_count(), 1);
 
     memmgr->hz_free(x);
 }

@@ -2,9 +2,12 @@
 
 void hzu_gen_blob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
                   hz_codec_callback callback, std::function<uint64_t(void)> extract, hzrblob_t *targ_blob,
-                  hz_cross_encoder cross_encoder, bool bypass_normalization) {
+                  hz_cross_encoder cross_encoder, bool bypass_normalization, hz_memmgr *mgr) {
 
-    auto encoder = hzu_encoder(alpha, scale, size);
+    auto encoder = hzu_encoder();
+    HZ_MEM_INIT_FROM(mgr, encoder);
+
+    encoder.set_header(alpha, scale, size);
     encoder.set_extractor(std::move(extract));
     encoder.set_distribution(dist);
     encoder.set_callback(std::move(callback));
@@ -23,8 +26,11 @@ void hzu_gen_blob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
 
 void hzu_degen_blob(hzrblob_t blob, uint64_t alpha, uint16_t scale, uint64_t *dist, hz_codec_callback _callback,
                     hz_cross_encoder cross_encoder,
-                    bool bypass_normalization, std::function<uint64_t()> symbol_callback) {
-    auto decoder = hzu_decoder(alpha, scale, blob.o_size);
+                    bool bypass_normalization, std::function<uint64_t()> symbol_callback, hz_memmgr* mgr) {
+    auto decoder = hzu_decoder();
+    HZ_MEM_INIT_FROM(mgr, decoder);
+
+    decoder.set_header(alpha, scale, blob.o_size);
     decoder.set_distribution(dist);
     decoder.set_callback(std::move(_callback));
     decoder.set_cross_encoder(std::move(cross_encoder));
@@ -60,7 +66,7 @@ void hzu_proc::set_cross_encoders(hz_cross_encoder *_cross_encoders) {
 }
 
 void hzu_proc::use_only_base_encoder() {
-    cross_encoders = new hz_cross_encoder[nthreads];
+    cross_encoders = HZ_MALLOC(hz_cross_encoder, nthreads);
     for (int i = 0; i < nthreads; i++) {
         cross_encoders[i] = nullptr;
     }
@@ -74,7 +80,7 @@ hzrblob_set hzu_proc::encode() {
     uint64_t block_size = size / nthreads;
     uint64_t block_residual = size % nthreads;
     std::vector<std::thread> thread_vector;
-    auto *blobs = new hzrblob_t[nthreads];
+    auto *blobs = HZ_MALLOC(hzrblob_t, nthreads);
 
     for (int i = 0; i < nthreads; i++) {
         uint64_t residual = 0;
@@ -83,8 +89,8 @@ hzrblob_set hzu_proc::encode() {
 
 
         std::thread thread(hzu_gen_blob, alphabet_size, scale, block_size + residual,
-                           hzip_get_init_dist(alphabet_size), callback, extractors[i], blobs + i,
-                           cross_encoders[i], _bypass_normalization);
+                           hzip_get_init_dist(HZ_MEM_MGR, alphabet_size), callback, extractors[i], blobs + i,
+                           cross_encoders[i], _bypass_normalization, HZ_MEM_MGR);
 
         thread_vector.push_back(std::move(thread));
     }
@@ -106,13 +112,13 @@ std::vector<uint64_t> hzu_proc::decode(hzrblob_set set, std::function<uint64_t()
         auto data_vector = new std::vector<uint64_t>;
         data_vectors.push_back(data_vector);
         auto _callback = this->callback;
-        std::thread decoder_thread(hzu_degen_blob, set.blobs[i], alphabet_size, scale, hzip_get_init_dist(0x100),
+        std::thread decoder_thread(hzu_degen_blob, set.blobs[i], alphabet_size, scale, hzip_get_init_dist(HZ_MEM_MGR, alphabet_size),
                                    [data_vector, _callback](uint64_t obj, uint64_t *ptr) {
                                        data_vector->push_back(obj);
                                        if (_callback != nullptr) {
                                            _callback(obj, ptr);
                                        }
-                                   }, cross_encoders[i], _bypass_normalization, symbol_callback);
+                                   }, cross_encoders[i], _bypass_normalization, symbol_callback, HZ_MEM_MGR);
         thread_vector.push_back(std::move(decoder_thread));
     }
 

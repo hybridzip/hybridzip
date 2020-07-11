@@ -11,16 +11,19 @@
 #include <hzip/utils/distribution.h>
 #include <hzip/core/blob/hzblob.h>
 #include <hzip/core/entropy/hzrans/hzbin.h>
+#include <hzip/memory/mem_interface.h>
+
 
 void hzu_gen_blob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
                   hz_codec_callback callback, std::function<uint64_t(void)> extract, hzrblob_t *targ_blob,
-                  hz_cross_encoder cross_encoder = nullptr, bool bypass_normalization = false);
+                  hz_cross_encoder cross_encoder = nullptr, bool bypass_normalization = false, hz_memmgr *mgr = nullptr);
 
 void hzu_degen_blob(hzrblob_t blob, uint64_t alpha, uint16_t scale, uint64_t *dist, hz_codec_callback _callback,
                     hz_cross_encoder cross_encoder,
-                    bool bypass_normalization = false, std::function<uint64_t()> symbol_callback= nullptr);
+                    bool bypass_normalization = false, std::function<uint64_t()> symbol_callback= nullptr,
+                    hz_memmgr *mgr = nullptr);
 
-class hzu_proc {
+class hzu_proc: public hz_mem_iface {
 private:
     uint nthreads;
     uint64_t alphabet_size;

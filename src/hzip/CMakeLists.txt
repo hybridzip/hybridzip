@@ -37,12 +37,12 @@ add_library(hzip STATIC
         compute/vector_utils.h
         compute/dct.h
         compute/dct.cpp
-        memory/memmgr.h 
+        memory/memmgr.h
         memory/memmap.h
         memory/memmgr.cpp
         memory/memmap.cpp
         memory/mem_interface.h
-        errors/memory.h 
+        errors/memory.h
         utils/stack.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
@@ -71,7 +71,13 @@ elseif (ENABLE_SSE2)
 endif ()
 
 target_compile_options(hzip PUBLIC ${ARCH_FLAGS})
-target_compile_options(hzip PUBLIC "-O3")
+
+if (${CMAKE_BUILD_TYPE} MATCHES "Release")
+    if (${ENABLE_POLLY})
+        target_compile_options(hzip PUBLIC "-mllvm" "-polly")
+    endif ()
+endif ()
+
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     add_compile_definitions(hzip DEBUG)

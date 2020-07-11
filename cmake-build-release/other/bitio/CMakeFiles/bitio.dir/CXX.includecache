@@ -1,0 +1,30 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/supercmmetry/Projects/hybridzip/other/bitio/bitio.cpp
+bitio.h
+/home/supercmmetry/Projects/hybridzip/other/bitio/bitio.h
+
+/home/supercmmetry/Projects/hybridzip/other/bitio/bitio.h
+fstream
+-
+iostream
+-
+vector
+-
+
+/home/supercmmetry/Projects/hybridzip/other/bitio/bitio_buffer.cpp
+bitio.h
+/home/supercmmetry/Projects/hybridzip/other/bitio/bitio.h
+
+/home/supercmmetry/Projects/hybridzip/other/bitio/bitio_byte_dumper.cpp
+bitio.h
+/home/supercmmetry/Projects/hybridzip/other/bitio/bitio.h
+cstring
+-
+

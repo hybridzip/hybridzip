@@ -9,20 +9,6 @@ hz_memmgr::hz_memmgr() {
     peak_size = 0;
 }
 
-void hz_memmgr::hz_free(void *ptr) {
-    if (ptr == nullptr) {
-        return;
-    }
-
-    sem_wait(&mutex);
-
-    n_allocations -= 1;
-    allocation_size -= memmap->get(ptr)->alloc_size;
-    memmap->remove(ptr);
-
-    sem_post(&mutex);
-}
-
 void hz_memmgr::set_peak(uint64_t _peak_size) {
     sem_wait(&mutex);
     peak_size = _peak_size;

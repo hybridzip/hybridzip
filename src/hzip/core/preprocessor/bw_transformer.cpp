@@ -139,7 +139,7 @@ void hztrans::bw_transformer::invert(int bw_index) {
     zdata = zzdata;
 
     std::vector<int> jumpers;
-    auto *base_list = new std::vector<int>[alphabet_size + 1];
+    auto *base_list = HZ_MALLOC(std::vector<int>, alphabet_size + 1);
 
     for (int i = 0; i <= alphabet_size; i++) {
         base_list[i] = std::vector<int>();
@@ -156,7 +156,7 @@ void hztrans::bw_transformer::invert(int bw_index) {
         }
     }
 
-    delete[] base_list;
+    HZ_FREE(base_list);
 
     int index = bw_index;
     for (int count = 0, j = 0; count <= data_len; count++) {

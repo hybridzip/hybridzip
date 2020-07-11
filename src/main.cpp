@@ -5,7 +5,7 @@
 #include <terminal.h>
 
 void setup_logger(int argc, const char **argv) {
-#ifdef DEBUG
+#ifndef DEBUG
     loguru::g_preamble_file = false;
 #endif
     char **args_copy = new char*[argc+1];
@@ -37,8 +37,7 @@ void run(hz_memmgr *mgr) {
     rose.decompress("/home/supercmmetry/Documents/dickens/dickens.hz.txt");
 }
 
-int main(int argc, const char **argv) noexcept {
-
+int main(int argc, const char **argv) {
     setup_logger(argc, argv);
     set_unhandled_exception_handler();
     auto parser = build_parser();
@@ -47,8 +46,6 @@ int main(int argc, const char **argv) noexcept {
     if (err) {
         LOG_F(WARNING, "args: %s", err.what().c_str());
     }
-
-
 
     auto mgr = new hz_memmgr;
 

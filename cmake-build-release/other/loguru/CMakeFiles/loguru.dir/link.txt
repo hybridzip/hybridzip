@@ -1,0 +1,2 @@
+/usr/bin/ar qc libloguru.a  CMakeFiles/loguru.dir/loguru.cpp.o
+/usr/bin/ranlib libloguru.a

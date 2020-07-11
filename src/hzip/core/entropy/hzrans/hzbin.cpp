@@ -1,8 +1,10 @@
 #include "hzbin.h"
 #include <hzip/utils/stack.h>
 
-hzu_encoder::hzu_encoder(uint64_t alphabet_size, uint16_t scale, uint64_t buffer_size) {
-    state = new hzrans64_t;
+void hzu_encoder::set_header(uint64_t alphabet_size, uint16_t scale, uint64_t buffer_size) {
+    state = HZ_NEW(hzrans64_t);
+    HZ_MEM_INIT_PTR(state);
+
     index = 0;
     distptr = nullptr;
     callback = nullptr;
@@ -43,7 +45,7 @@ void hzu_encoder::normalize(bool bypass_normalization) {
 }
 
 u32ptr hzu_encoder::encode() {
-    auto data = new hz_stack<uint32_t>();
+    auto data = HZ_NEW(hz_stack<uint32_t>);
 
     while (index--) {
         if (cross_encoder != nullptr) {
@@ -56,24 +58,28 @@ u32ptr hzu_encoder::encode() {
 
     index = 0; // reset index
 
-    auto _data = new uint32_t[data->size()];
+    auto _data = HZ_MALLOC(uint32_t, data->size());
 
     for (int i = 0; !data->empty(); i++) {
         _data[i] = data->top();
         data->pop();
     }
 
+    HZ_FREE(data);
+
     return u32ptr{.data = _data, .n = state->count};
 }
 
 hzu_encoder::~hzu_encoder() {
-    delete state;
-    free(distptr);
+    HZ_FREE(state);
+    HZ_FREE(distptr);
 }
 
 
-hzu_decoder::hzu_decoder(uint64_t alphabet_size, uint16_t scale, uint64_t buffer_size) {
-    state = new hzrans64_t;
+void hzu_decoder::set_header(uint64_t alphabet_size, uint16_t scale, uint64_t buffer_size) {
+    state = HZ_NEW(hzrans64_t);
+    HZ_MEM_INIT_PTR(state);
+
     size = buffer_size;
     distptr = nullptr;
     symbol_callback = nullptr;
@@ -101,8 +107,9 @@ void hzu_decoder::set_cross_encoder(hz_cross_encoder _cross_encoder) {
 
 u64ptr hzu_decoder::decode(uint32_t *raw, bool bypass_normalization) {
     hzrans64_dec_load_state(state, &raw);
-    auto *sym = new uint64_t[size];
-    auto *dummy_stack = new hz_stack<uint32_t>();
+    auto *sym = HZ_MALLOC(uint64_t, size);
+    auto *dummy_stack = HZ_NEW(hz_stack<uint32_t>);
+
     for (int i = 0; i < size; i++) {
         if (cross_encoder != nullptr) {
             cross_encoder(state, dummy_stack);
@@ -110,10 +117,12 @@ u64ptr hzu_decoder::decode(uint32_t *raw, bool bypass_normalization) {
         hzrans64_decode_s(state, distptr, i, &raw, sym + i, bypass_normalization, symbol_callback);
         callback(sym[i], distptr);
     }
+
+    HZ_FREE(dummy_stack);
     return u64ptr{.data = sym, .n = size};
 }
 
 hzu_decoder::~hzu_decoder() {
-    delete state;
-    free(distptr);
+    HZ_FREE(state);
+    HZ_FREE(distptr);
 }

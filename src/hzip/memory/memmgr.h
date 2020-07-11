@@ -21,7 +21,6 @@ public:
     ~hz_memmgr() {
         sem_wait(&mutex);
 
-        memmap->~hz_memmap();
         delete memmap;
 
         sem_post(&mutex);
@@ -32,14 +31,15 @@ public:
         sem_wait(&mutex);
 
         uint64_t curr_alloc_size = sizeof(T) * n_elems;
+
         if (peak_size != 0 && allocation_size + curr_alloc_size > peak_size) {
             sem_post(&mutex);
             throw MemoryErrors::PeakLimitReachedException();
         }
 
-        auto elem = (hz_map_elem *) malloc(sizeof(hz_map_elem));
+        auto elem = new hz_map_elem;
 
-        elem->ptr = malloc(sizeof(T) * n_elems);
+        elem->ptr = new T[n_elems];
         elem->alloc_size = n_elems * sizeof(T);
         elem->next = nullptr;
 
@@ -53,7 +53,20 @@ public:
         return (T *) elem->ptr;
     }
 
-    void hz_free(void *ptr);
+    template <typename Type>
+    void hz_free(Type ptr) {
+        if (ptr == nullptr) {
+            return;
+        }
+
+        sem_wait(&mutex);
+
+        n_allocations -= 1;
+        allocation_size -= memmap->get((void*) ptr)->alloc_size;
+        memmap->remove_by_type<Type>(ptr);
+
+        sem_post(&mutex);
+    }
 
     void set_peak(uint64_t _peak_size);
 

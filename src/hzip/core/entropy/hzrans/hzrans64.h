@@ -10,9 +10,9 @@
 #include <malloc.h>
 #include <hzip/utils/platform.h>
 #include <hzip/utils/stack.h>
+#include <hzip/memory/mem_interface.h>
 
-
-struct hzrans64_t {
+struct hzrans64_t: public hz_mem_iface {
     uint64_t x;
     uint64_t size;
     uint64_t *ftable;
@@ -23,29 +23,17 @@ struct hzrans64_t {
     uint64_t *ls;
     uint64_t *bs;
     uint64_t count;
-
-    ~hzrans64_t() {
-        free(ftable);
-        free(ls);
-        free(bs);
-    }
 };
 
  void hzrans64_alloc_frame(hzrans64_t *state, uint64_t block_size);
 
- uint64_t hzrans64_bs(hzrans64_t *state, uint16_t symbol);
-
  uint64_t hzrans64_inv_bs(hzrans64_t *state, uint64_t bs);
-
- void hzrans64_set_alphabet_size(hzrans64_t *state, uint64_t size);
 
  void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale);
 
  void hzrans64_encode_s(hzrans64_t *state, uint64_t index, hz_stack<uint32_t> *data);
 
-
  void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq);
-
 
  void
 hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol, uint64_t index);

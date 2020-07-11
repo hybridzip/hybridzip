@@ -1,22 +1,13 @@
 #include "hzrans64.h"
 
 
- void hzrans64_alloc_frame(hzrans64_t *state, uint64_t block_size) {
-    state->ls = new uint64_t[block_size];
-    state->bs = new uint64_t[block_size];
-}
-
- uint64_t hzrans64_bs(hzrans64_t *state, uint16_t symbol) {
-    uint64_t i = 0;
-    uint64_t cumsum = 0;
-    while (i <= symbol) {
-        cumsum += state->ftable[i++];
-    }
-    return cumsum;
+void hzrans64_alloc_frame(hzrans64_t *state, uint64_t block_size) {
+    state->ls = HZ_MEM_MGR_FROM(state)->hz_malloc<uint64_t>(block_size);
+    state->bs = HZ_MEM_MGR_FROM(state)->hz_malloc<uint64_t>(block_size);
 }
 
 
- uint64_t hzrans64_inv_bs(hzrans64_t *state, uint64_t bs) {
+uint64_t hzrans64_inv_bs(hzrans64_t *state, uint64_t bs) {
     uint64_t i, cumsum = 0;
     for (i = 0; i < state->size; i++) {
         if (cumsum > bs)
@@ -26,21 +17,17 @@
     return --i;
 }
 
- void hzrans64_set_alphabet_size(hzrans64_t *state, uint64_t size) {
-    state->size = size;
-}
-
- void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale) {
+void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale) {
     state->x = state->lower_bound;
     state->size = size;
-    state->ftable = (uint64_t *) malloc(sizeof(uint64_t) * size);
+    state->ftable = HZ_MEM_MGR_FROM(state)->hz_malloc<uint64_t>(size);
     state->scale = scale;
     state->up_prefix = (state->lower_bound >> scale) << 32;
     state->mask = (1ull << scale) - 1;
     state->count = 0;
 }
 
- void hzrans64_encode_s(hzrans64_t *state, uint64_t index, hz_stack<uint32_t> *data) {
+void hzrans64_encode_s(hzrans64_t *state, uint64_t index, hz_stack<uint32_t> *data) {
 
     uint64_t x = state->x;
     uint64_t ls = state->ls[index];
@@ -58,7 +45,7 @@
 }
 
 
- void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
+void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
     uint64_t sum = state->size;
     for (int i = 0; i < state->size; i++) {
         sum += freq[i];
@@ -82,7 +69,7 @@
 }
 
 
- void
+void
 hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol, uint64_t index) {
     state->bs[index] = 0;
     state->ls[index] = state->ftable[symbol];
@@ -92,13 +79,17 @@ hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol, uint64_t index) {
     }
 }
 
- void hzrans64_enc_flush(hzrans64_t *state, hz_stack<uint32_t> *data) {
+void hzrans64_enc_flush(hzrans64_t *state, hz_stack<uint32_t> *data) {
     data->push(state->x >> 32);
     data->push(state->x >> 0);
     state->count += 2;
+
+    HZ_MEM_MGR_FROM(state)->hz_free(state->ftable);
+    HZ_MEM_MGR_FROM(state)->hz_free(state->ls);
+    HZ_MEM_MGR_FROM(state)->hz_free(state->bs);
 }
 
- void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
+void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
     uint64_t x;
     x = (uint64_t) ((*data)[0]) << 0;
     x |= (uint64_t) ((*data)[1]) << 32;
@@ -106,7 +97,7 @@ hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol, uint64_t index) {
     state->x = x;
 }
 
- void
+void
 hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint64_t index, uint32_t **data, uint64_t *sym,
                   bool bypass_normalization, std::function<uint64_t()> symbol_callback) {
     uint64_t x = state->x;

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libargparse.a  
-/usr/bin/ranlib libargparse.a

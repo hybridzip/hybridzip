@@ -9,7 +9,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN cmake -DDISABLE_PROFILER=ON -DCMAKE_BUILD_TYPE=Release . && make
+RUN cmake -DCMAKE_BUILD_TYPE=Release . && make
 
 # Runner
 FROM alpine:latest

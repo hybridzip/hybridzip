@@ -72,13 +72,6 @@ endif ()
 
 target_compile_options(hzip PUBLIC ${ARCH_FLAGS})
 
-if (${CMAKE_BUILD_TYPE} MATCHES "Release")
-    if (${ENABLE_POLLY})
-        target_compile_options(hzip PUBLIC "-mllvm" "-polly")
-    endif ()
-endif ()
-
-
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     add_compile_definitions(hzip DEBUG)
 endif ()

@@ -6,10 +6,6 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     add_compile_definitions(hybridzip DEBUG)
 endif ()
 
-if (${EXPLICIT_CPP})
-    target_link_libraries(hybridzip PRIVATE stdc++)
-endif ()
-
 target_link_libraries(hybridzip PRIVATE hzip pthread png jpeg)
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")

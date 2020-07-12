@@ -9,12 +9,12 @@ argparse::ArgumentParser build_parser() {
     parser.add_argument()
             .names({"-p", "--peak-size"})
             .description("Set peak size for the process")
-            .required(true);
+            .required(false);
 
     parser.add_argument()
             .names({"-v", "--verbose"})
             .description("Set verbosity level")
-            .required(true);
+            .required(false);
 
     parser.enable_help();
 

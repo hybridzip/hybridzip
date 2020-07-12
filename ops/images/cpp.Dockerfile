@@ -1,7 +1,7 @@
 # Builder
 FROM alpine:latest AS build
 
-RUN apk update && apk add make cmake clang gcc g++ boost-dev jpeg libexecinfo-dev
+RUN apk update && apk add make cmake gcc g++ boost-dev jpeg libexecinfo-dev
 
 RUN mkdir /app
 
@@ -9,7 +9,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN cmake -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_BUILD_TYPE=Release . && make
+RUN cmake -DCMAKE_BUILD_TYPE=Release . && make
 
 # Runner
 FROM alpine:latest

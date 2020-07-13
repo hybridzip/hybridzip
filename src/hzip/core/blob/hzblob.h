@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <hzip/utils/platform.h>
 
-struct hzrblob_t {
+struct hzblob_t {
     uint32_t *data;
     uint64_t size;
     uint64_t o_size;
@@ -16,7 +16,7 @@ struct hzrblob_t {
 };
 
 struct hzrblob_set {
-    hzrblob_t *blobs;
+    hzblob_t *blobs;
     uint64_t count;
 
 

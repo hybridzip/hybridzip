@@ -6,7 +6,6 @@
 #include <immintrin.h>
 
 namespace hzcompute::matrix {
-
     // slow matmul functions:
 
     template <typename elem_type>
@@ -130,4 +129,5 @@ namespace hzcompute::matrix {
         
     }
 }
+
 #endif

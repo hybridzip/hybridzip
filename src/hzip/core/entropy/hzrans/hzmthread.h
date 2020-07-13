@@ -15,10 +15,10 @@
 
 
 void hzu_gen_blob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
-                  hz_codec_callback callback, std::function<uint64_t(void)> extract, hzrblob_t *targ_blob,
+                  hz_codec_callback callback, std::function<uint64_t(void)> extract, hzblob_t *targ_blob,
                   hz_cross_encoder cross_encoder = nullptr, bool bypass_normalization = false, hz_memmgr *mgr = nullptr);
 
-void hzu_degen_blob(hzrblob_t blob, uint64_t alpha, uint16_t scale, uint64_t *dist, hz_codec_callback _callback,
+void hzu_degen_blob(hzblob_t blob, uint64_t alpha, uint16_t scale, uint64_t *dist, hz_codec_callback _callback,
                     hz_cross_encoder cross_encoder,
                     bool bypass_normalization = false, std::function<uint64_t()> symbol_callback= nullptr,
                     hz_memmgr *mgr = nullptr);

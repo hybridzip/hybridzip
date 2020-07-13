@@ -43,7 +43,7 @@ add_library(hzip STATIC
         memory/memmap.cpp
         memory/mem_interface.h
         errors/memory.h
-        utils/stack.h)
+        utils/stack.h dispatcher/dispatcher.h dispatcher/job.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru)

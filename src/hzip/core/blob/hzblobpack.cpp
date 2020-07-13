@@ -52,7 +52,7 @@ hzrblob_set hz_blob_unpacker::unpack() {
 
     hzrblob_set set;
     set.count = set_count;
-    set.blobs = new hzrblob_t[set_count];
+    set.blobs = new hzblob_t[set_count];
 
     for (int i = 0; i < set_count; i++) {
         set.blobs[i].size = unaryinv_bin(lb_stream).obj;

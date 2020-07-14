@@ -7,6 +7,7 @@ hz_memmgr::hz_memmgr() {
     n_allocations = 0;
     allocation_size = 0;
     peak_size = 0;
+    parent = nullptr;
 }
 
 void hz_memmgr::set_peak(uint64_t _peak_size) {
@@ -31,4 +32,25 @@ uint64_t hz_memmgr::get_alloc_size() {
     sem_post(&mutex);
 
     return size;
+}
+
+void hz_memmgr::set_parent(hz_memmgr *p) {
+    parent = p;
+}
+
+uint64_t hz_memmgr::get_peak_size() {
+    sem_wait(&mutex);
+    int size = peak_size;
+    sem_post(&mutex);
+
+    return size;
+}
+
+void hz_memmgr::update(uint64_t alloc_size, uint64_t alloc_count) {
+    sem_wait(&mutex);
+
+    allocation_size = alloc_size;
+    n_allocations = alloc_count;
+
+    sem_post(&mutex);
 }

@@ -10,8 +10,6 @@ add_library(hzip STATIC
         utils/distribution.h
         utils/fsutils.h
         core/entropy/hzrans/hzbin.h
-        archiver/hzarchiver.h
-        archiver/hzdirtree.h
         core/preprocessor/png_codec.h
         core/preprocessor/transforms.h
         core/models/models.h
@@ -43,7 +41,7 @@ add_library(hzip STATIC
         memory/memmap.cpp
         memory/mem_interface.h
         errors/memory.h
-        utils/stack.h dispatcher/dispatcher.h dispatcher/job.h)
+        utils/stack.h dispatcher/dispatcher.h dispatcher/job.h archiver/archiver.h dispatcher/dispatcher.cpp)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru)

@@ -2,13 +2,13 @@
 #define HYBRIDZIP_JOB_H
 
 #include <cstdint>
+#include <hzip/archiver/archiver.h>
 
 struct hz_job {
     uint8_t *data;
     char *tag;
-    char *data_class;
     char *dest;
-    char *archive_path;
+    hz_archive *archive;
 };
 
 #endif

@@ -4,14 +4,28 @@
 #include <cstdint>
 #include <malloc.h>
 #include <hzip/utils/platform.h>
+#include <hzip/core/compressors/algorithms.h>
+#include <hzip/memory/mem_interface.h>
 
-struct hzblob_t {
+struct hzblob_t: public hz_mem_iface {
     uint32_t *data;
+    uint8_t *o_data;
     uint64_t size;
     uint64_t o_size;
+    hzcodec::ALGORITHM alg;
+
+    hzblob_t() {
+        data = nullptr;
+        o_data = nullptr;
+
+        size = 0;
+        o_size = 0;
+        alg = hzcodec::ALGORITHM::UNDEFINED;
+    }
 
     void destroy() {
-        free(data);
+        HZ_FREE(data);
+        HZ_FREE(o_data);
     }
 };
 

@@ -3,11 +3,12 @@
 
 #include <cstdint>
 #include <hzip/archiver/archiver.h>
+#include <hzip/core/blob/hzblob.h>
 
 struct hz_job {
-    uint8_t *data;
     char *tag;
     char *dest;
+    hzblob_t *blob;
     hz_archive *archive;
 };
 

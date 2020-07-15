@@ -11,7 +11,7 @@ TEST(MoveToFrontTransformTest, hzip_core_preprocessor_mtf) {
         data[i] = i + 1;
     }
 
-    auto mtf = hztrans::mtf_transformer<int16_t>(data, 0x100, 20);
+    auto mtf = hztrans::mtf_transformer(data, 0x100, 20);
 
     mtf.transform();
     mtf.invert();

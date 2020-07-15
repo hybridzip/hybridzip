@@ -18,7 +18,6 @@ add_library(hzip STATIC
         core/preprocessor/jpeg_codec.h
         utils/utils.h
         core/models/first_order_context_model.cpp
-        core/preprocessor/bw_transformer.cpp
         core/preprocessor/delta_transformer.cpp
         core/preprocessor/mtf_transformer.cpp
         core/compressors/white_rose.cpp

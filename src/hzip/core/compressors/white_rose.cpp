@@ -2,12 +2,12 @@
 
 hzcodec::white_rose::white_rose(std::string filename) {
     // use a 1MB hz_buffer.
-    stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
+    __deprecated_bitio_stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
 void hzcodec::white_rose::set_file(std::string filename) {
     // use a 1MB hz_buffer.
-    stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
+    __deprecated_bitio_stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
 void hzcodec::white_rose::compress(std::string out_file_name) {
@@ -18,11 +18,11 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
 
     focm.set_alphabet_size(0x100);
 
-    auto *data = HZ_MALLOC(int, stream->get_file_size());
+    auto *data = HZ_MALLOC(int, __deprecated_bitio_stream->get_file_size());
 
     uint64_t j = 0;
-    while (!stream->is_eof()) {
-        data[j++] = stream->read(0x8);
+    while (!__deprecated_bitio_stream->is_eof()) {
+        data[j++] = __deprecated_bitio_stream->read(0x8);
     }
     auto length = j;
 
@@ -79,7 +79,7 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     HZ_MEM_INIT(proc);
 
     proc.set_header(0x100, 24);
-    proc.set_buffer_size(stream->get_file_size());
+    proc.set_buffer_size(__deprecated_bitio_stream->get_file_size());
     proc.set_extractors(extractors);
     proc.bypass_normalization();
 
@@ -141,11 +141,11 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
     HZ_MEM_INIT(proc);
 
     proc.set_header(0x100, 24);
-    proc.set_buffer_size(stream->get_file_size());
+    proc.set_buffer_size(__deprecated_bitio_stream->get_file_size());
     proc.bypass_normalization();
 
 
-    hz_blob_unpacker unpacker(stream);
+    hz_blob_unpacker unpacker(__deprecated_bitio_stream);
 
     auto lb_stream = [&unpacker](uint64_t n) { return unpacker.unpack_header(n); };
 
@@ -231,7 +231,7 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
 
     auto set = unpacker.unpack();
 
-    stream->close();
+    __deprecated_bitio_stream->close();
 
     auto vec = proc.decode(set, symbol_callback);
     set.destroy();
@@ -261,5 +261,26 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
 
 hzblob_t hzcodec::white_rose::compress(hzblob_t *blob, hz_ptable *ptable) {
     // create a raw bitio_stream on blob data
+    auto length = blob->o_size;
+
+
+
+    auto focm = hzmodels::first_order_context_model();
+    HZ_MEM_INIT(focm);
+    focm.set_alphabet_size(0x100);
+
+    auto *data = HZ_MALLOC(int16_t, length);
+
+    for (uint64_t i = 0; i < length; i++) {
+        data[i] = blob->o_data[i];
+    }
+
+    auto bwt = hztrans::bw_transformer<int16_t>(data, length, 0x100);
+    HZ_MEM_INIT(bwt);
+
+    auto bwt_index = bwt.transform();
+
+//    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
+//    mtf.transform();
 
 }

@@ -13,7 +13,7 @@
 namespace hzcodec {
     class white_rose: public hz_mem_iface {
     private:
-        bitio::bitio_stream *stream;
+        bitio::bitio_stream *__deprecated_bitio_stream;
 
 
     public:
@@ -29,7 +29,7 @@ namespace hzcodec {
 
         void decompress(std::string out_file_name);
 
-        static hzblob_t compress(hzblob_t *blob, hz_ptable *ptable = nullptr);
+        hzblob_t compress(hzblob_t *blob, hz_ptable *ptable = nullptr);
 
 
     };

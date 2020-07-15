@@ -53,6 +53,16 @@ bitio_stream::bitio_stream(std::string filename, access_enum op, bool in_mem, ui
     }
 }
 
+bitio_stream::bitio_stream(uint8_t *raw, uint64_t length) {
+    is_raw_mem = true;
+    this->buffer_size = length;
+    byte_buffer = raw;
+    bit_count = 0;
+    eof = false;
+    bit_buffer = 0;
+    current_buffer_length = length;
+    byte_index = 0;
+}
 
 void bitio_stream::close() {
     if (file != nullptr) fclose(file);
@@ -66,10 +76,18 @@ inline void bitio_stream::load_buffer() {
 }
 
 inline void bitio_stream::load_byte() {
-    if (eof)
+    if (eof) {
         bit_buffer = 0;
-    if (byte_index == current_buffer_length)
-        load_buffer();
+    }
+
+    if (byte_index == current_buffer_length) {
+        if (!is_raw_mem) {
+            load_buffer();
+        } else {
+            throw bitio_exception("bitio: Out of bounds operation on constant memory buffer");
+        }
+    }
+
     bit_buffer = byte_buffer[byte_index++];
 }
 
@@ -293,5 +311,3 @@ bitio_stream::~bitio_stream() {
         free(inmem_cache);
     }
 }
-
-

@@ -258,3 +258,8 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
 
     HZ_FREE(data);
 }
+
+hzblob_t hzcodec::white_rose::compress(hzblob_t *blob, hz_ptable *ptable) {
+    // create a raw bitio_stream on blob data
+
+}

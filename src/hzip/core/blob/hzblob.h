@@ -8,6 +8,9 @@
 #include <hzip/memory/mem_interface.h>
 
 struct hzblob_t: public hz_mem_iface {
+    uint64_t id;
+    uint64_t ptable_id;
+
     uint32_t *data;
     uint8_t *o_data;
     uint64_t size;
@@ -15,9 +18,10 @@ struct hzblob_t: public hz_mem_iface {
     hzcodec::ALGORITHM alg;
 
     hzblob_t() {
+        id = 0;
+        ptable_id = 0;
         data = nullptr;
         o_data = nullptr;
-
         size = 0;
         o_size = 0;
         alg = hzcodec::ALGORITHM::UNDEFINED;
@@ -29,6 +33,13 @@ struct hzblob_t: public hz_mem_iface {
     }
 };
 
+struct hz_ptable: public hz_mem_iface {
+    uint64_t id;
+    uint8_t *raw;
+    uint64_t length;
+};
+
+// deprecated
 struct hzrblob_set {
     hzblob_t *blobs;
     uint64_t count;

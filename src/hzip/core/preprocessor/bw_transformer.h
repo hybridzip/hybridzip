@@ -116,7 +116,12 @@ namespace hztrans {
             auto *T = HZ_MALLOC(itype, data_len + 3);
             auto *SA = HZ_MALLOC(itype, data_len + 3);
 
-            for (int i = 0; i < data_len; i++) {
+            for (uint64_t i = 0; i < data_len + 3; i++) {
+                T[i] = 0;
+                SA[i] = 0;
+            }
+
+            for (uint64_t i = 0; i < data_len; i++) {
                 T[i] = zdata[i];
                 SA[i] = 1;
             }

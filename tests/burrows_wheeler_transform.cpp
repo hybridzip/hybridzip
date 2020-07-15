@@ -6,11 +6,11 @@ class BurrowsWheelerTransformTest: public testing::Test {};
 TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt) {
     auto data = new int16_t[20];
 
-    for (int16_t i = 0; i < 20; i++) {
+    for (int i = 0; i < 20; i++) {
         data[i] = i + 1;
     }
 
-    auto bwt = hztrans::bw_transformer<int16_t>(data, 20, 0x100);
+    auto bwt = hztrans::bw_transformer(data, 20, 0x100);
     bwt._hz_memmgr_attach_memmgr(new hz_memmgr);
 
     auto index = bwt.transform();

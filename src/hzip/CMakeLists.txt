@@ -19,7 +19,6 @@ add_library(hzip STATIC
         utils/utils.h
         core/models/first_order_context_model.cpp
         core/preprocessor/delta_transformer.cpp
-        core/preprocessor/mtf_transformer.cpp
         core/compressors/white_rose.cpp
         core/compressors/white_rose.h
         core/entropy/hzrans/hzmthread.cpp

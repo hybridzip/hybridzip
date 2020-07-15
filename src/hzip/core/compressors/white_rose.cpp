@@ -275,12 +275,12 @@ hzblob_t hzcodec::white_rose::compress(hzblob_t *blob, hz_ptable *ptable) {
         data[i] = blob->o_data[i];
     }
 
-    auto bwt = hztrans::bw_transformer<int16_t>(data, length, 0x100);
+    auto bwt = hztrans::bw_transformer(data, length, 0x100);
     HZ_MEM_INIT(bwt);
 
     auto bwt_index = bwt.transform();
 
-//    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
-//    mtf.transform();
+    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
+    mtf.transform();
 
 }

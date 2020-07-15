@@ -55,7 +55,7 @@ int main(int argc, const char **argv) {
 
     LOG_F(INFO, "hzip: started hybridzip server");
 
-    //run(mgr);
+//    run(mgr);
 
 
     return 0;

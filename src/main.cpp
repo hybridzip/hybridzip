@@ -1,5 +1,5 @@
 #include <iostream>
-#include <hzip/core/compressors/white_rose.h>
+#include <hzip/core/compressors/victini.h>
 #include <hzip/memory/memmgr.h>
 #include <loguru/loguru.hpp>
 #include <terminal.h>
@@ -29,7 +29,7 @@ void set_unhandled_exception_handler() {
 
 
 void run(hz_memmgr *mgr) {
-    auto rose = hzcodec::white_rose("/home/supercmmetry/Documents/dickens/dickens");
+    auto rose = hzcodec::victini("/home/supercmmetry/Documents/dickens/dickens");
     HZ_MEM_INIT_FROM(mgr, rose);
 
     rose.compress("/home/supercmmetry/Documents/dickens/dickens.hz");

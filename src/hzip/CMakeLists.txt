@@ -19,8 +19,8 @@ add_library(hzip STATIC
         utils/utils.h
         core/models/first_order_context_model.cpp
         core/preprocessor/delta_transformer.cpp
-        core/compressors/white_rose.cpp
-        core/compressors/white_rose.h
+        core/compressors/victini.cpp
+        core/compressors/victini.h
         core/entropy/hzrans/hzmthread.cpp
         core/entropy/hzrans/hzbin.cpp
         core/entropy/hzrans/hzrans64.cpp
@@ -39,7 +39,7 @@ add_library(hzip STATIC
         memory/memmap.cpp
         memory/mem_interface.h
         errors/memory.h
-        utils/stack.h processor/dispatcher.h processor/job.h archiver/archive.h processor/dispatcher.cpp core/compressors/algorithms.h processor/processor.h processor/processor.cpp)
+        utils/stack.h processor/dispatcher.h processor/job.h archiver/archive.h processor/dispatcher.cpp core/compressors/compressor_enums.h processor/processor.h processor/processor.cpp core/compressors/compressor_base.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru)

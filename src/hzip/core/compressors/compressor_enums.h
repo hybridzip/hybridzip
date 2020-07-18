@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_ALGORITHMS_H
-#define HYBRIDZIP_ALGORITHMS_H
+#ifndef HYBRIDZIP_COMPRESSOR_ENUMS_H
+#define HYBRIDZIP_COMPRESSOR_ENUMS_H
 
 namespace hzcodec::algorithms {
     enum ALGORITHM {

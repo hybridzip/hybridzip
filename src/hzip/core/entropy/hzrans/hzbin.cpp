@@ -18,7 +18,7 @@ void hzu_encoder::set_distribution(uint64_t *ptr) {
     distptr = ptr;
 }
 
-void hzu_encoder::set_cross_encoder(hz_cross_encoder _cross_encoder) {
+void hzu_encoder::set_cross_encoder(hz_cross_codec _cross_encoder) {
     cross_encoder = std::move(_cross_encoder);
 }
 
@@ -74,31 +74,25 @@ void hzu_decoder::set_distribution(uint64_t *ptr) {
     distptr = ptr;
 }
 
-void hzu_decoder::set_callback(hz_codec_callback _callback) {
-    callback = std::move(_callback);
+void hzu_decoder::set_cross_decoder(hz_cross_codec _cross_decoder) {
+    cross_decoder = std::move(_cross_decoder);
 }
 
-void hzu_decoder::set_cross_encoder(hz_cross_encoder _cross_encoder) {
-    cross_encoder = std::move(_cross_encoder);
-}
-
-u64ptr hzu_decoder::decode(uint32_t *raw, bool bypass_normalization) {
+u64ptr hzu_decoder::decode(uint32_t *raw) {
     hzrans64_dec_load_state(state, &raw);
     auto *sym = HZ_MALLOC(uint64_t, size);
     auto *dummy_stack = HZ_NEW(hz_stack<uint32_t>);
 
     for (int i = 0; i < size; i++) {
-        if (cross_encoder != nullptr) {
-            cross_encoder(state, dummy_stack);
+        if (cross_decoder != nullptr) {
+            cross_decoder(state, dummy_stack);
         }
 
-        hzrans64_decode_s(state, distptr, &raw, sym + i, bypass_normalization);
+        hzrans64_decode_s(state, distptr, &raw, sym + i);
 
         if (sym_override_ptr != nullptr) {
             sym[i] = *sym_override_ptr;
         }
-
-        callback(sym[i], distptr);
     }
 
     HZ_FREE(dummy_stack);

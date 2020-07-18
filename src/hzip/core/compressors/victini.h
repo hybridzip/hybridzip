@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_WHITE_ROSE_H
-#define HYBRIDZIP_WHITE_ROSE_H
+#ifndef HYBRIDZIP_VICTINI_H
+#define HYBRIDZIP_VICTINI_H
 
 #include <string>
 #include <bitio/bitio.h>
@@ -10,16 +10,17 @@
 #include <hzip/core/models/models.h>
 #include <hzip/memory/mem_interface.h>
 
+#include "compressor_base.h"
+
 namespace hzcodec {
-    class white_rose : public hz_mem_iface {
+class victini : public hz_abstract_codec, public hz_mem_iface {
     private:
         bitio::bitio_stream *__deprecated_bitio_stream;
 
-
     public:
-        white_rose(std::string filename);
+        victini(std::string filename);
 
-        white_rose() {
+        victini() {
             // empty-constructor
         };
 
@@ -32,7 +33,9 @@ namespace hzcodec {
         // deprecated
         void decompress(std::string out_file_name);
 
-        hzblob_t *compress(hzblob_t *blob, hz_mstate *mstate);
+        hzblob_t *compress(hzblob_t *blob, hz_mstate *mstate) override;
+
+        hzblob_t *decompress(hzblob_t *blob, hz_mstate *mstate) override;
     };
 }
 

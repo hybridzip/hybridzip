@@ -24,6 +24,6 @@ struct u32ptr {
 };
 
 typedef std::function<void(uint64_t, uint64_t *)> hz_codec_callback;
-typedef std::function<void(hzrans64_t *, hz_stack<uint32_t> *data)> hz_cross_encoder;
+typedef std::function<void(hzrans64_t *, hz_stack<uint32_t> *data)> hz_cross_codec;
 
 #endif //HYBRIDZIP_HZRANS_H

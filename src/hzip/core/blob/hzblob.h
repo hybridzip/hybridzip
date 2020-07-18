@@ -4,13 +4,13 @@
 #include <cstdint>
 #include <malloc.h>
 #include <hzip/utils/platform.h>
-#include <hzip/core/compressors/algorithms.h>
+#include <hzip/core/compressors/compressor_enums.h>
 #include <hzip/memory/mem_interface.h>
 #include <hzip/utils/common.h>
 
 struct hz_mstate: public hz_mem_iface {
     uint64_t id;
-    bin_t *bins;
+    uint64_t *bins;
     uint64_t length;
 
     hz_mstate() {

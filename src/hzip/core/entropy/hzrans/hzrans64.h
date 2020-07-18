@@ -39,7 +39,6 @@ void hzrans64_enc_flush(hzrans64_t *state, hz_stack<uint32_t> *data);
 
 void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data);
 
-void hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint32_t **data, uint64_t *sym,
-                       bool bypass_normalization = false);
+void hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint32_t **data, uint64_t *sym);
 
 #endif

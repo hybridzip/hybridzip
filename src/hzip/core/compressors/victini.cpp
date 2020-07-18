@@ -1,17 +1,17 @@
-#include "white_rose.h"
+#include "victini.h"
 
-hzcodec::white_rose::white_rose(std::string filename) {
+hzcodec::victini::victini(std::string filename) {
     // use a 1MB hz_buffer.
     __deprecated_bitio_stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
-void hzcodec::white_rose::set_file(std::string filename) {
+void hzcodec::victini::set_file(std::string filename) {
     // use a 1MB hz_buffer.
     __deprecated_bitio_stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
 // deprecated
-void hzcodec::white_rose::compress(std::string out_file_name) {
+void hzcodec::victini::compress(std::string out_file_name) {
     fsutils::delete_file_if_exists(out_file_name);
 
     auto focm = hzmodels::first_order_context_model();
@@ -84,7 +84,7 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     proc.set_extractors(extractors);
     proc.bypass_normalization();
 
-    auto *ces = new hz_cross_encoder;
+    auto *ces = new hz_cross_codec;
     int64_t index = length;
     *ces = [dict, cdict, &index, data](hzrans64_t *state, hz_stack<uint32_t> *_data) {
         index--;
@@ -132,9 +132,8 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     //set.destroy();
     ostream.close();
 }
-
 // deprecated
-void hzcodec::white_rose::decompress(std::string out_file_name) {
+void hzcodec::victini::decompress(std::string out_file_name) {
     fsutils::delete_file_if_exists(out_file_name);
     auto clock = std::chrono::high_resolution_clock();
     auto start = clock.now();
@@ -196,7 +195,7 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
     uint64_t index = 0;
     int prev_symbol = -1;
     auto sym_optr = new uint64_t;
-    auto *ces = new hz_cross_encoder;
+    auto *ces = new hz_cross_codec;
     *ces = [dict, cdict, &prev_symbol, sym_optr](hzrans64_t *state, hz_stack<uint32_t> *data) {
         uint64_t x = state->x;
         uint64_t bs = x & state->mask;
@@ -257,7 +256,7 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
     HZ_FREE(data);
 }
 
-hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
+hzblob_t *hzcodec::victini::compress(hzblob_t *blob, hz_mstate *mstate) {
     // create a raw bitio_stream on blob data
     auto length = blob->o_size;
 
@@ -317,8 +316,8 @@ hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
 
     // Generate mstate object.
 
-    mstate->length = 65537;
-    mstate->bins = HZ_MALLOC(bin_t, mstate->length);
+    mstate->length = 65538;
+    mstate->bins = HZ_MALLOC(uint64_t, mstate->length);
 
     bool store_norm_dict = false;
 
@@ -328,20 +327,20 @@ hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
 
 
     int b_index = 0;
-    mstate->bins[b_index++] = unarypx_bin(store_norm_dict);
+    mstate->bins[b_index++] = bwt_index;
+    mstate->bins[b_index++] = store_norm_dict;
 
     for (int i = 0; i < 0x100; i++) {
         for (int k = 0; k < 0x100; k++) {
             if (store_norm_dict) {
-                mstate->bins[b_index++] = unarypx_bin(dict[i][k]);
+                mstate->bins[b_index++] = dict[i][k];
             } else {
-                mstate->bins[b_index++] = unarypx_bin(dict_f[i][k]);
+                mstate->bins[b_index++] = dict_f[i][k];
             }
         }
     }
 
     // Perform cross-encoding.
-    uint64_t pos = 0;
     uint64_t index = length;
 
     auto cross_encoder = [dict, cdict, &index, data](hzrans64_t *state, hz_stack<uint32_t> *_data) {
@@ -365,11 +364,135 @@ hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
 
     u32ptr blob_data = encoder.encode();
 
-    auto cblob = new hzblob_t;
+    auto cblob = HZ_NEW(hzblob_t);
+    HZ_MEM_INIT_PTR(cblob);
+
     cblob->data = blob_data.data;
     cblob->size = blob_data.n;
+    cblob->o_size = length;
     cblob->alg = hzcodec::algorithms::WHITE_ROSE;
     cblob->mstate = mstate;
 
     return cblob;
+}
+
+hzblob_t *hzcodec::victini::decompress(hzblob_t *blob, hz_mstate *mstate) {
+    uint64_t length = blob->o_size;
+
+    // Parse mstate.
+    uint64_t k = 0;
+
+    uint64_t bwt_index = mstate->bins[k++];
+    bool is_norm_dict = mstate->bins[k++];
+
+    uint64_t dict[256][256];
+    uint64_t cdict[256][256];
+
+
+    // populate the dictionary.
+    for (int i = 0; i < 0x100; i++) {
+        for (int j = 0; j < 0x100; j++) {
+            dict[i][j] = mstate->bins[k++];
+        }
+    }
+    // check if we need to normalize the dictionary.
+    if (!is_norm_dict) {
+        for (int i = 0; i < 0x100; i++) {
+            auto row = dict[i];
+            uint64_t sum = 0;
+            for (int k = 0; k < 0x100; k++) {
+                sum += row[k];
+            }
+            uint64_t dsum = 0;
+            for (int k = 0; k < 0x100; k++) {
+                dict[i][k] = 1 + (row[k] * 16776960 / sum);
+                dsum += dict[i][k];
+            }
+            dsum = 16777216 - dsum;
+            for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+                dict[i][k]++;
+            }
+        }
+    }
+
+    // populate cumulative values.
+    for (int i = 0; i < 0x100; i++) {
+        uint64_t sum = 0;
+        for (int k = 0; k < 0x100; k++) {
+            cdict[i][k] = sum;
+            sum += dict[i][k];
+        }
+    }
+
+    // create a cross-decoder.
+    // a cross-decoder usually handles add_to_seq for the core entropy codec.
+    int prev_symbol = -1;
+    auto sym_optr = new uint64_t;
+    auto cross_decoder = [dict, cdict, &prev_symbol, sym_optr](hzrans64_t *state, hz_stack<uint32_t> *data) {
+        uint64_t x = state->x;
+        uint64_t bs = x & state->mask;
+        uint8_t symbol = 0;
+
+        if (prev_symbol == -1) {
+            for (int i = 0; i < 0x100; i++) {
+                if (((i + 1) << 16) > bs) {
+                    symbol = i - 1;
+                    break;
+                }
+            }
+            state->ls = 65536;
+            state->bs = (symbol + 1) << 16;
+        } else {
+            for (int i = 0; i < 0x100; i++) {
+                if (cdict[prev_symbol][i] > bs) {
+                    symbol = i - 1;
+                    break;
+                }
+            }
+            state->ls = dict[prev_symbol][symbol];
+            state->bs = cdict[prev_symbol][symbol];
+        }
+        prev_symbol = symbol;
+        *sym_optr = prev_symbol;
+    };
+
+    auto decoder = hzu_decoder();
+    HZ_MEM_INIT(decoder);
+
+    decoder.set_header(0x100, 24, length);
+    decoder.set_cross_decoder(cross_decoder);
+    decoder.set_distribution(hzip_get_init_dist(HZ_MEM_MGR, 0x100));
+    decoder.override_symbol_ptr(sym_optr);
+
+    auto dataptr = decoder.decode(blob->data);
+
+    auto *sdata = HZ_MALLOC(int16_t, length);
+
+    for (uint64_t i = 0; i < length; i++) {
+        sdata[i] = dataptr.data[i];
+    }
+
+    free(dataptr.data);
+
+    auto mtf = hztrans::mtf_transformer(sdata, 0x100, length);
+    mtf.invert();
+
+    auto bwt = hztrans::bw_transformer(sdata, length, 0x100);
+    HZ_MEM_INIT(bwt);
+
+    bwt.invert(bwt_index);
+
+    auto dblob = HZ_NEW(hzblob_t);
+    HZ_MEM_INIT_PTR(dblob);
+
+    dblob->o_data = HZ_MALLOC(uint8_t, length);
+    dblob->o_size = length;
+
+    for (uint64_t i = 0; i < length; i++) {
+        dblob->o_data[i] = sdata[i];
+    }
+
+    HZ_FREE(sdata);
+
+    return dblob;
 }

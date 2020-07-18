@@ -46,7 +46,7 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     uint64_t cdict[256][256];
 
     for (int i = 0; i < 0x100; i++) {
-        auto row = focm.predict(i);
+        auto row = focm.get_dist(i);
         uint64_t sum = 0;
         for (int k = 0; k < 0x100; k++) {
             sum += row[k];
@@ -89,11 +89,11 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     *ces = [dict, cdict, &index, data](hzrans64_t *state, hz_stack<uint32_t> *_data) {
         index--;
         if (index != 0) {
-            state->ls[index] = dict[data[index - 1]][data[index]];
-            state->bs[index] = cdict[data[index - 1]][data[index]];
+            state->ls = dict[data[index - 1]][data[index]];
+            state->bs = cdict[data[index - 1]][data[index]];
         } else {
-            state->ls[index] = 65536;
-            state->bs[index] = (((uint64_t) data[index] + 1)) << 16;
+            state->ls = 65536;
+            state->bs = (((uint64_t) data[index] + 1)) << 16;
         }
     };
 
@@ -129,7 +129,7 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     //Then pack the ans-encoded socm-mtf-bwt-data
     packer.pack(set);
     packer.commit(ostream);
-    set.destroy();
+    //set.destroy();
     ostream.close();
 }
 
@@ -195,8 +195,9 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
     // a cross-decoder usually handles add_to_seq for the core entropy codec.
     uint64_t index = 0;
     int prev_symbol = -1;
+    auto sym_optr = new uint64_t;
     auto *ces = new hz_cross_encoder;
-    *ces = [dict, cdict, &index, &prev_symbol](hzrans64_t *state, hz_stack<uint32_t> *data) {
+    *ces = [dict, cdict, &prev_symbol, sym_optr](hzrans64_t *state, hz_stack<uint32_t> *data) {
         uint64_t x = state->x;
         uint64_t bs = x & state->mask;
         uint8_t symbol = 0;
@@ -204,39 +205,34 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
         if (prev_symbol == -1) {
             for (int i = 0; i < 0x100; i++) {
                 if (((i + 1) << 16) > bs) {
-                    symbol = --i;
+                    symbol = i - 1;
                     break;
                 }
             }
-            state->ls[index] = 65536;
-            state->bs[index] = (symbol + 1) << 16;
+            state->ls = 65536;
+            state->bs = (symbol + 1) << 16;
         } else {
             for (int i = 0; i < 0x100; i++) {
                 if (cdict[prev_symbol][i] > bs) {
-                    symbol = --i;
+                    symbol = i - 1;
                     break;
                 }
             }
-            state->ls[index] = dict[prev_symbol][symbol];
-            state->bs[index] = cdict[prev_symbol][symbol];
+            state->ls = dict[prev_symbol][symbol];
+            state->bs = cdict[prev_symbol][symbol];
         }
         prev_symbol = symbol;
-        index++;
+        *sym_optr = prev_symbol;
     };
 
     proc.set_cross_encoders(ces);
-
-    // now we define a symbol callback.
-    auto symbol_callback = [&prev_symbol]() {
-        return prev_symbol;
-    };
 
     auto set = unpacker.unpack();
 
     __deprecated_bitio_stream->close();
 
-    auto vec = proc.decode(set, symbol_callback);
-    set.destroy();
+    auto vec = proc.decode(set, sym_optr);
+    //set.destroy();
 
     auto *data = HZ_MALLOC(int, vec.size());
 
@@ -267,6 +263,7 @@ hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
 
     auto focm = hzmodels::first_order_context_model();
     HZ_MEM_INIT(focm);
+
     focm.set_alphabet_size(0x100);
 
     auto *data = HZ_MALLOC(int16_t, length);
@@ -282,5 +279,91 @@ hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
 
     auto mtf = hztrans::mtf_transformer(data, 0x100, length);
     mtf.transform();
+
+    // Now we contruct a First-Order-Context-Dictionary.
+    for (uint64_t i = 0; i < length; i++) {
+        focm.update(data[i], 32);
+    }
+
+    // Now we perform a one-time normalization for all possible contexts to increase speed.
+    // Populate p-values and cumulative values.
+    uint64_t dict[256][256];
+    uint64_t dict_f[256][256];
+    uint64_t cdict[256][256];
+
+    for (int i = 0; i < 0x100; i++) {
+        auto row = focm.get_dist(i);
+        uint64_t sum = 0;
+        for (int k = 0; k < 0x100; k++) {
+            sum += row[k];
+            dict_f[i][k] = row[k];
+        }
+        uint64_t dsum = 0;
+        for (int k = 0; k < 0x100; k++) {
+            dict[i][k] = 1 + (row[k] * 16776960 / sum);
+            dsum += dict[i][k];
+        }
+        dsum = 16777216 - dsum;
+        for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+            dict[i][k]++;
+        }
+
+        sum = 0;
+        for (int k = 0; k < 0x100; k++) {
+            cdict[i][k] = sum;
+            sum += dict[i][k];
+        }
+    }
+
+    // Generate mstate object.
+
+    mstate->length = 65537;
+    mstate->bins = HZ_MALLOC(bin_t, mstate->length);
+
+    bool store_norm_dict = false;
+
+    if (length >= 16777216) {
+        store_norm_dict = true;
+    }
+
+
+    int b_index = 0;
+    mstate->bins[b_index++] = unarypx_bin(store_norm_dict);
+
+    for (int i = 0; i < 0x100; i++) {
+        for (int k = 0; k < 0x100; k++) {
+            if (store_norm_dict) {
+                mstate->bins[b_index++] = unarypx_bin(dict[i][k]);
+            } else {
+                mstate->bins[b_index++] = unarypx_bin(dict_f[i][k]);
+            }
+        }
+    }
+
+    // Perform cross-encoding.
+    uint64_t pos = 0;
+    uint64_t index = 0;
+    auto extractor = [data, &pos]() {
+        return data[pos++];
+    };
+
+
+    auto cross_encoder = [dict, cdict, &index, data](hzrans64_t *state, hz_stack<uint32_t> *_data) {
+        index--;
+        if (index != 0) {
+            state->ls = dict[data[index - 1]][data[index]];
+            state->bs = cdict[data[index - 1]][data[index]];
+        } else {
+            state->ls = 65536;
+            state->bs = (((uint64_t) data[index] + 1)) << 16;
+        }
+    };
+
+    auto encoder = hzu_encoder();
+    HZ_MEM_INIT(encoder);
+
+    encoder.set_distribution(hzip_get_init_dist(HZ_MEM_MGR, 0x100));
+    encoder.set_extractor(extractor);
+    encoder.set_cross_encoder(cross_encoder);
 
 }

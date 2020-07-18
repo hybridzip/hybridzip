@@ -21,7 +21,7 @@ namespace hzmodels {
 
         void set_alphabet_size(int alphabet_size);
 
-        uint64_t *predict(uint64_t symbol);
+        uint64_t *get_dist(uint64_t symbol);
 
         void update(uint64_t symbol, uint64_t delta = 1);
 

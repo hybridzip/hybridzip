@@ -1,12 +1,5 @@
 #include "hzrans64.h"
 
-
-void hzrans64_alloc_frame(hzrans64_t *state, uint64_t block_size) {
-    state->ls = HZ_MEM_MGR_FROM(state)->hz_malloc<uint64_t>(block_size);
-    state->bs = HZ_MEM_MGR_FROM(state)->hz_malloc<uint64_t>(block_size);
-}
-
-
 uint64_t hzrans64_inv_bs(hzrans64_t *state, uint64_t bs) {
     uint64_t i, cumsum = 0;
     for (i = 0; i < state->size; i++) {
@@ -27,11 +20,11 @@ void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale) {
     state->count = 0;
 }
 
-void hzrans64_encode_s(hzrans64_t *state, uint64_t index, hz_stack<uint32_t> *data) {
+void hzrans64_encode_s(hzrans64_t *state, hz_stack<uint32_t> *data) {
 
     uint64_t x = state->x;
-    uint64_t ls = state->ls[index];
-    uint64_t bs = state->bs[index];
+    uint64_t ls = state->ls;
+    uint64_t bs = state->bs;
     uint64_t upper_bound = ls * state->up_prefix;
 
     if (x >= upper_bound) {
@@ -70,12 +63,12 @@ void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
 
 
 void
-hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol, uint64_t index) {
-    state->bs[index] = 0;
-    state->ls[index] = state->ftable[symbol];
+hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol) {
+    state->bs = 0;
+    state->ls = state->ftable[symbol];
 
     for (int i = 0; i < symbol; i++) {
-        state->bs[index] += state->ftable[i];
+        state->bs += state->ftable[i];
     }
 }
 
@@ -85,8 +78,6 @@ void hzrans64_enc_flush(hzrans64_t *state, hz_stack<uint32_t> *data) {
     state->count += 2;
 
     HZ_MEM_MGR_FROM(state)->hz_free(state->ftable);
-    HZ_MEM_MGR_FROM(state)->hz_free(state->ls);
-    HZ_MEM_MGR_FROM(state)->hz_free(state->bs);
 }
 
 void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
@@ -98,22 +89,19 @@ void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
 }
 
 void
-hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint64_t index, uint32_t **data, uint64_t *sym,
-                  bool bypass_normalization, std::function<uint64_t()> symbol_callback) {
+hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint32_t **data, uint64_t *sym,
+                  bool bypass_normalization) {
     uint64_t x = state->x;
 
     if (!bypass_normalization) {
         hzrans64_create_ftable_nf(state, _ls);
         uint64_t symbol = hzrans64_inv_bs(state, x & state->mask);
         *sym = symbol;
-        hzrans64_add_to_seq(state, symbol, index);
-    }
-    if (symbol_callback != nullptr) {
-        *sym = symbol_callback();
+        hzrans64_add_to_seq(state, symbol);
     }
 
-    uint64_t ls = state->ls[index];
-    uint64_t bs = state->bs[index];
+    uint64_t ls = state->ls;
+    uint64_t bs = state->bs;
 
     x = (ls * (x >> state->scale)) + (x & state->mask) - bs;
     if (x < state->lower_bound) {

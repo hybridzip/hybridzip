@@ -6,6 +6,7 @@
 #include <hzip/utils/platform.h>
 #include <hzip/core/compressors/algorithms.h>
 #include <hzip/memory/mem_interface.h>
+#include <hzip/utils/common.h>
 
 struct hzblob_t: public hz_mem_iface {
     uint64_t id;
@@ -35,12 +36,12 @@ struct hzblob_t: public hz_mem_iface {
 
 struct hz_mstate: public hz_mem_iface {
     uint64_t id;
-    uint8_t *raw;
+    bin_t *bins;
     uint64_t length;
 
     hz_mstate() {
         id = 0;
-        raw = nullptr;
+        bins = nullptr;
         length = 0;
     }
 };

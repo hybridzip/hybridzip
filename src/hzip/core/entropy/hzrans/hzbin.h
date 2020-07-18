@@ -42,7 +42,7 @@ class hzu_decoder: public hz_mem_iface {
 private:
     hz_codec_callback callback;
     hz_cross_encoder cross_encoder;
-    std::function<uint64_t()> symbol_callback;
+    uint64_t *sym_override_ptr;
     uint64_t *distptr;
     uint64_t size;
     hzrans64_t *state;
@@ -56,7 +56,7 @@ public:
 
     void set_callback(hz_codec_callback _callback);
 
-    void set_symbol_callback(std::function<uint64_t()> _symbol_callback);
+    void override_symbol_ptr(uint64_t *ptr);
 
     void set_cross_encoder(hz_cross_encoder _cross_encoder);
 

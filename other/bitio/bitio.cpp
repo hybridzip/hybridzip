@@ -55,6 +55,7 @@ bitio_stream::bitio_stream(std::string filename, access_enum op, bool in_mem, ui
 
 bitio_stream::bitio_stream(uint8_t *raw, uint64_t length) {
     is_raw_mem = true;
+    this->file = nullptr;
     this->buffer_size = length;
     byte_buffer = raw;
     bit_count = 0;
@@ -92,7 +93,9 @@ inline void bitio_stream::load_byte() {
 }
 
 inline void bitio_stream::wflush() {
-    fwrite(byte_buffer, 1, buffer_size, file);
+    if (file != nullptr) {
+        fwrite(byte_buffer, 1, buffer_size, file);
+    }
 }
 
 uint64_t bitio_stream::read(uint8_t n) {
@@ -220,7 +223,10 @@ void bitio_stream::flush() {
         bit_buffer <<= 8 - bit_count;
         byte_buffer[byte_index++] = bit_buffer;
     }
-    fwrite(byte_buffer, 1, byte_index, file);
+
+    if (file != nullptr) {
+        fwrite(byte_buffer, 1, byte_index, file);
+    }
 }
 
 bool bitio_stream::is_eof() {

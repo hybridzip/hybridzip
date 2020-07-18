@@ -16,7 +16,7 @@ void hzmodels::first_order_context_model::update(uint64_t symbol, uint64_t delta
     has_started = true;
 }
 
-uint64_t *hzmodels::first_order_context_model::predict(uint64_t symbol) {
+uint64_t *hzmodels::first_order_context_model::get_dist(uint64_t symbol) {
     return context_map[symbol];
 }
 

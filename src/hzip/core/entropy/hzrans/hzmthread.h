@@ -20,7 +20,7 @@ void hzu_gen_blob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
 
 void hzu_degen_blob(hzblob_t blob, uint64_t alpha, uint16_t scale, uint64_t *dist, hz_codec_callback _callback,
                     hz_cross_encoder cross_encoder,
-                    bool bypass_normalization = false, std::function<uint64_t()> symbol_callback= nullptr,
+                    bool bypass_normalization = false, uint64_t *sym_optr = nullptr,
                     hz_memmgr *mgr = nullptr);
 
 class hzu_proc: public hz_mem_iface {
@@ -52,7 +52,7 @@ public:
 
     hzrblob_set encode();
 
-    std::vector<uint64_t> decode(hzrblob_set set, std::function<uint64_t()> symbol_callback=nullptr);
+    std::vector<uint64_t> decode(hzrblob_set set, uint64_t *sym_optr=nullptr);
 };
 
 

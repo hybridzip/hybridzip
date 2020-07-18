@@ -13,7 +13,6 @@ void hzu_encoder::set_header(uint64_t alphabet_size, uint16_t scale, uint64_t bu
     if (scale > 31) scale = 31;
 
     hzrans64_codec_init(state, alphabet_size, scale);
-    hzrans64_alloc_frame(state, buffer_size);
 }
 
 void hzu_encoder::set_extractor(std::function<uint64_t(void)> _extract) {
@@ -36,7 +35,7 @@ void hzu_encoder::normalize(bool bypass_normalization) {
     uint64_t symbol = extract();
     if (!bypass_normalization) {
         hzrans64_create_ftable_nf(state, distptr);
-        hzrans64_add_to_seq(state, symbol, index);
+        hzrans64_add_to_seq(state, symbol);
     }
     index++;
     if (callback != nullptr) {
@@ -51,7 +50,7 @@ u32ptr hzu_encoder::encode() {
         if (cross_encoder != nullptr) {
             cross_encoder(state, data);
         }
-        hzrans64_encode_s(state, index, data);
+        hzrans64_encode_s(state, data);
     }
 
     hzrans64_enc_flush(state, data);
@@ -82,11 +81,11 @@ void hzu_decoder::set_header(uint64_t alphabet_size, uint16_t scale, uint64_t bu
 
     size = buffer_size;
     distptr = nullptr;
-    symbol_callback = nullptr;
+    sym_override_ptr = nullptr;
+
     if (scale > 31) scale = 31;
 
     hzrans64_codec_init(state, alphabet_size, scale);
-    hzrans64_alloc_frame(state, buffer_size);
 }
 
 void hzu_decoder::set_distribution(uint64_t *ptr) {
@@ -95,10 +94,6 @@ void hzu_decoder::set_distribution(uint64_t *ptr) {
 
 void hzu_decoder::set_callback(hz_codec_callback _callback) {
     callback = std::move(_callback);
-}
-
-void hzu_decoder::set_symbol_callback(std::function<uint64_t()> _symbol_callback) {
-    symbol_callback = std::move(_symbol_callback);
 }
 
 void hzu_decoder::set_cross_encoder(hz_cross_encoder _cross_encoder) {
@@ -114,7 +109,13 @@ u64ptr hzu_decoder::decode(uint32_t *raw, bool bypass_normalization) {
         if (cross_encoder != nullptr) {
             cross_encoder(state, dummy_stack);
         }
-        hzrans64_decode_s(state, distptr, i, &raw, sym + i, bypass_normalization, symbol_callback);
+
+        hzrans64_decode_s(state, distptr, &raw, sym + i, bypass_normalization);
+
+        if (sym_override_ptr != nullptr) {
+            sym[i] = *sym_override_ptr;
+        }
+
         callback(sym[i], distptr);
     }
 
@@ -125,4 +126,8 @@ u64ptr hzu_decoder::decode(uint32_t *raw, bool bypass_normalization) {
 hzu_decoder::~hzu_decoder() {
     HZ_FREE(state);
     HZ_FREE(distptr);
+}
+
+void hzu_decoder::override_symbol_ptr(uint64_t *ptr) {
+    sym_override_ptr = ptr;
 }

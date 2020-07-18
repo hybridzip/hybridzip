@@ -33,4 +33,8 @@ void hzmodels::first_order_context_model::set_alphabet_size(int alphabet_size) {
     this->alphabet_size = alphabet_size;
 }
 
+void hzmodels::first_order_context_model::write_to_mstate(hz_mstate *mstate) {
+
+}
+
 

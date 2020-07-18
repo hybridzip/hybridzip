@@ -10,6 +10,7 @@ void hzcodec::white_rose::set_file(std::string filename) {
     __deprecated_bitio_stream = new bitio::bitio_stream(filename, bitio::READ, false, 1048576);
 }
 
+// deprecated
 void hzcodec::white_rose::compress(std::string out_file_name) {
     fsutils::delete_file_if_exists(out_file_name);
 
@@ -132,6 +133,7 @@ void hzcodec::white_rose::compress(std::string out_file_name) {
     ostream.close();
 }
 
+// deprecated
 void hzcodec::white_rose::decompress(std::string out_file_name) {
     fsutils::delete_file_if_exists(out_file_name);
     auto clock = std::chrono::high_resolution_clock();
@@ -259,11 +261,9 @@ void hzcodec::white_rose::decompress(std::string out_file_name) {
     HZ_FREE(data);
 }
 
-hzblob_t hzcodec::white_rose::compress(hzblob_t *blob, hz_ptable *ptable) {
+hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
     // create a raw bitio_stream on blob data
     auto length = blob->o_size;
-
-
 
     auto focm = hzmodels::first_order_context_model();
     HZ_MEM_INIT(focm);

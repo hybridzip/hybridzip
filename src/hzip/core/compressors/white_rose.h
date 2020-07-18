@@ -11,7 +11,7 @@
 #include <hzip/memory/mem_interface.h>
 
 namespace hzcodec {
-    class white_rose: public hz_mem_iface {
+    class white_rose : public hz_mem_iface {
     private:
         bitio::bitio_stream *__deprecated_bitio_stream;
 
@@ -23,15 +23,16 @@ namespace hzcodec {
             // empty-constructor
         };
 
+        // deprecated
         void set_file(std::string filename);
 
+        // deprecated
         void compress(std::string out_file_name);
 
+        // deprecated
         void decompress(std::string out_file_name);
 
-        hzblob_t compress(hzblob_t *blob, hz_ptable *ptable = nullptr);
-
-
+        hzblob_t *compress(hzblob_t *blob, hz_mstate *mstate);
     };
 }
 

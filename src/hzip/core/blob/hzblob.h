@@ -33,10 +33,16 @@ struct hzblob_t: public hz_mem_iface {
     }
 };
 
-struct hz_ptable: public hz_mem_iface {
+struct hz_mstate: public hz_mem_iface {
     uint64_t id;
     uint8_t *raw;
     uint64_t length;
+
+    hz_mstate() {
+        id = 0;
+        raw = nullptr;
+        length = 0;
+    }
 };
 
 // deprecated

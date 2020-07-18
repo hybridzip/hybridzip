@@ -8,15 +8,9 @@ void hzu_gen_blob(uint64_t alpha, uint16_t scale, uint64_t size, uint64_t *dist,
     HZ_MEM_INIT_FROM(mgr, encoder);
 
     encoder.set_header(alpha, scale, size);
-    encoder.set_extractor(std::move(extract));
     encoder.set_distribution(dist);
-    encoder.set_callback(std::move(callback));
+    encoder.set_size(size);
     encoder.set_cross_encoder(std::move(cross_encoder));
-
-
-    for (uint64_t i = 0; i < size; i++) {
-        encoder.normalize(bypass_normalization);
-    }
 
     auto dptr = encoder.encode();
     targ_blob->data = dptr.data;

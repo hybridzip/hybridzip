@@ -342,11 +342,7 @@ hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
 
     // Perform cross-encoding.
     uint64_t pos = 0;
-    uint64_t index = 0;
-    auto extractor = [data, &pos]() {
-        return data[pos++];
-    };
-
+    uint64_t index = length;
 
     auto cross_encoder = [dict, cdict, &index, data](hzrans64_t *state, hz_stack<uint32_t> *_data) {
         index--;
@@ -363,7 +359,7 @@ hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
     HZ_MEM_INIT(encoder);
 
     encoder.set_distribution(hzip_get_init_dist(HZ_MEM_MGR, 0x100));
-    encoder.set_extractor(extractor);
     encoder.set_cross_encoder(cross_encoder);
+    encoder.set_size(length);
 
 }

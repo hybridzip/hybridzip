@@ -7,7 +7,6 @@ void hzu_encoder::set_header(uint64_t alphabet_size, uint16_t scale, uint64_t bu
 
     index = 0;
     distptr = nullptr;
-    callback = nullptr;
     cross_encoder = nullptr;
     size = buffer_size;
     if (scale > 31) scale = 31;
@@ -15,32 +14,12 @@ void hzu_encoder::set_header(uint64_t alphabet_size, uint16_t scale, uint64_t bu
     hzrans64_codec_init(state, alphabet_size, scale);
 }
 
-void hzu_encoder::set_extractor(std::function<uint64_t(void)> _extract) {
-    extract = std::move(_extract);
-}
-
 void hzu_encoder::set_distribution(uint64_t *ptr) {
     distptr = ptr;
 }
 
-void hzu_encoder::set_callback(hz_codec_callback _callback) {
-    callback = std::move(_callback);
-}
-
 void hzu_encoder::set_cross_encoder(hz_cross_encoder _cross_encoder) {
     cross_encoder = std::move(_cross_encoder);
-}
-
-void hzu_encoder::normalize(bool bypass_normalization) {
-    uint64_t symbol = extract();
-    if (!bypass_normalization) {
-        hzrans64_create_ftable_nf(state, distptr);
-        hzrans64_add_to_seq(state, symbol);
-    }
-    index++;
-    if (callback != nullptr) {
-        callback(symbol, distptr);
-    }
 }
 
 u32ptr hzu_encoder::encode() {
@@ -74,6 +53,9 @@ hzu_encoder::~hzu_encoder() {
     HZ_FREE(distptr);
 }
 
+void hzu_encoder::set_size(uint64_t _size) {
+    index = _size;
+}
 
 void hzu_decoder::set_header(uint64_t alphabet_size, uint16_t scale, uint64_t buffer_size) {
     state = HZ_NEW(hzrans64_t);

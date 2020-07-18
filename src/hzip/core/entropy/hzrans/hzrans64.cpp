@@ -54,7 +54,6 @@ void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
         state->ftable[i] = value;
     }
 
-
     //disperse residues.
     ssum = mul_factor - ssum;
     for (int i = 0; ssum > 0; i++, ssum--)

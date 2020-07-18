@@ -358,8 +358,18 @@ hzblob_t *hzcodec::white_rose::compress(hzblob_t *blob, hz_mstate *mstate) {
     auto encoder = hzu_encoder();
     HZ_MEM_INIT(encoder);
 
+    encoder.set_header(0x100, 24, length);
     encoder.set_distribution(hzip_get_init_dist(HZ_MEM_MGR, 0x100));
     encoder.set_cross_encoder(cross_encoder);
     encoder.set_size(length);
 
+    u32ptr blob_data = encoder.encode();
+
+    auto cblob = new hzblob_t;
+    cblob->data = blob_data.data;
+    cblob->size = blob_data.n;
+    cblob->alg = hzcodec::algorithms::WHITE_ROSE;
+    cblob->mstate = mstate;
+
+    return cblob;
 }

@@ -8,32 +8,6 @@
 #include <hzip/memory/mem_interface.h>
 #include <hzip/utils/common.h>
 
-struct hzblob_t: public hz_mem_iface {
-    uint64_t id;
-    uint64_t ptable_id;
-
-    uint32_t *data;
-    uint8_t *o_data;
-    uint64_t size;
-    uint64_t o_size;
-    hzcodec::ALGORITHM alg;
-
-    hzblob_t() {
-        id = 0;
-        ptable_id = 0;
-        data = nullptr;
-        o_data = nullptr;
-        size = 0;
-        o_size = 0;
-        alg = hzcodec::ALGORITHM::UNDEFINED;
-    }
-
-    void destroy() {
-        HZ_FREE(data);
-        HZ_FREE(o_data);
-    }
-};
-
 struct hz_mstate: public hz_mem_iface {
     uint64_t id;
     bin_t *bins;
@@ -43,6 +17,29 @@ struct hz_mstate: public hz_mem_iface {
         id = 0;
         bins = nullptr;
         length = 0;
+    }
+};
+
+struct hzblob_t: public hz_mem_iface {
+    hz_mstate *mstate;
+    uint32_t *data;
+    uint64_t size;
+    uint8_t *o_data;
+    uint64_t o_size;
+    hzcodec::algorithms::ALGORITHM alg;
+
+    hzblob_t() {
+        mstate = nullptr;
+        data = nullptr;
+        o_data = nullptr;
+        size = 0;
+        o_size = 0;
+        alg = hzcodec::algorithms::UNDEFINED;
+    }
+
+    void destroy() {
+        HZ_FREE(data);
+        HZ_FREE(o_data);
     }
 };
 

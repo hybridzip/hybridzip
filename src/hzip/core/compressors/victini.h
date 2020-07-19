@@ -13,9 +13,12 @@
 #include "compressor_base.h"
 
 namespace hzcodec {
-class victini : public hz_abstract_codec, public hz_mem_iface {
+    class victini : public hz_abstract_codec, public hz_mem_iface {
     private:
         bitio::bitio_stream *__deprecated_bitio_stream;
+
+        void generate_mstate(hz_mstate *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data, uint64_t length,
+                             uint64_t bwt_index);
 
     public:
         victini(std::string filename);
@@ -33,9 +36,9 @@ class victini : public hz_abstract_codec, public hz_mem_iface {
         // deprecated
         void decompress(std::string out_file_name);
 
-        hzblob_t *compress(hzblob_t *blob, hz_mstate *mstate) override;
+        hzblob_t *compress(hzblob_t *blob) override;
 
-        hzblob_t *decompress(hzblob_t *blob, hz_mstate *mstate) override;
+        hzblob_t *decompress(hzblob_t *blob) override;
     };
 }
 

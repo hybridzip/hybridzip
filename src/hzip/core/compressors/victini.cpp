@@ -132,6 +132,7 @@ void hzcodec::victini::compress(std::string out_file_name) {
     //set.destroy();
     ostream.close();
 }
+
 // deprecated
 void hzcodec::victini::decompress(std::string out_file_name) {
     fsutils::delete_file_if_exists(out_file_name);
@@ -256,14 +257,10 @@ void hzcodec::victini::decompress(std::string out_file_name) {
     HZ_FREE(data);
 }
 
-hzblob_t *hzcodec::victini::compress(hzblob_t *blob, hz_mstate *mstate) {
+hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
+    auto mstate = blob->mstate;
     // create a raw bitio_stream on blob data
     auto length = blob->o_size;
-
-    auto focm = hzmodels::first_order_context_model();
-    HZ_MEM_INIT(focm);
-
-    focm.set_alphabet_size(0x100);
 
     auto *data = HZ_MALLOC(int16_t, length);
 
@@ -279,66 +276,15 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob, hz_mstate *mstate) {
     auto mtf = hztrans::mtf_transformer(data, 0x100, length);
     mtf.transform();
 
-    // Now we contruct a First-Order-Context-Dictionary.
-    for (uint64_t i = 0; i < length; i++) {
-        focm.update(data[i], 32);
+    auto *dict = HZ_MALLOC(uint64_t*, 256);
+    auto *cdict = HZ_MALLOC(uint64_t*, 256);
+
+    for (int i = 0; i < 256; i++) {
+        dict[i] = HZ_MALLOC(uint64_t, 256);
+        cdict[i] = HZ_MALLOC(uint64_t, 256);
     }
 
-    // Now we perform a one-time normalization for all possible contexts to increase speed.
-    // Populate p-values and cumulative values.
-    uint64_t dict[256][256];
-    uint64_t dict_f[256][256];
-    uint64_t cdict[256][256];
-
-    for (int i = 0; i < 0x100; i++) {
-        auto row = focm.get_dist(i);
-        uint64_t sum = 0;
-        for (int k = 0; k < 0x100; k++) {
-            sum += row[k];
-            dict_f[i][k] = row[k];
-        }
-        uint64_t dsum = 0;
-        for (int k = 0; k < 0x100; k++) {
-            dict[i][k] = 1 + (row[k] * 16776960 / sum);
-            dsum += dict[i][k];
-        }
-        dsum = 16777216 - dsum;
-        for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
-            dict[i][k]++;
-        }
-
-        sum = 0;
-        for (int k = 0; k < 0x100; k++) {
-            cdict[i][k] = sum;
-            sum += dict[i][k];
-        }
-    }
-
-    // Generate mstate object.
-
-    mstate->length = 65538;
-    mstate->bins = HZ_MALLOC(uint64_t, mstate->length);
-
-    bool store_norm_dict = false;
-
-    if (length >= 16777216) {
-        store_norm_dict = true;
-    }
-
-
-    int b_index = 0;
-    mstate->bins[b_index++] = bwt_index;
-    mstate->bins[b_index++] = store_norm_dict;
-
-    for (int i = 0; i < 0x100; i++) {
-        for (int k = 0; k < 0x100; k++) {
-            if (store_norm_dict) {
-                mstate->bins[b_index++] = dict[i][k];
-            } else {
-                mstate->bins[b_index++] = dict_f[i][k];
-            }
-        }
-    }
+    generate_mstate(mstate, dict, cdict, data, length, bwt_index);
 
     // Perform cross-encoding.
     uint64_t index = length;
@@ -364,19 +310,29 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob, hz_mstate *mstate) {
 
     u32ptr blob_data = encoder.encode();
 
+    for (int i = 0; i < 256; i++) {
+        HZ_FREE(dict[i]);
+        HZ_FREE(cdict[i]);
+    }
+
+    HZ_FREE(dict);
+    HZ_FREE(cdict);
+    HZ_FREE(data);
+
     auto cblob = HZ_NEW(hzblob_t);
     HZ_MEM_INIT_PTR(cblob);
 
     cblob->data = blob_data.data;
     cblob->size = blob_data.n;
     cblob->o_size = length;
-    cblob->alg = hzcodec::algorithms::WHITE_ROSE;
+    cblob->alg = hzcodec::algorithms::VICTINI;
     cblob->mstate = mstate;
 
     return cblob;
 }
 
-hzblob_t *hzcodec::victini::decompress(hzblob_t *blob, hz_mstate *mstate) {
+hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
+    auto mstate = blob->mstate;
     uint64_t length = blob->o_size;
 
     // Parse mstate.
@@ -385,8 +341,13 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob, hz_mstate *mstate) {
     uint64_t bwt_index = mstate->bins[k++];
     bool is_norm_dict = mstate->bins[k++];
 
-    uint64_t dict[256][256];
-    uint64_t cdict[256][256];
+    auto *dict = HZ_MALLOC(uint64_t*, 256);
+    auto *cdict = HZ_MALLOC(uint64_t*, 256);
+
+    for (int i = 0; i < 256; i++) {
+        dict[i] = HZ_MALLOC(uint64_t, 256);
+        cdict[i] = HZ_MALLOC(uint64_t, 256);
+    }
 
 
     // populate the dictionary.
@@ -427,7 +388,8 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob, hz_mstate *mstate) {
     // create a cross-decoder.
     // a cross-decoder usually handles add_to_seq for the core entropy codec.
     int prev_symbol = -1;
-    auto sym_optr = new uint64_t;
+    auto sym_optr = HZ_NEW(uint64_t);
+
     auto cross_decoder = [dict, cdict, &prev_symbol, sym_optr](hzrans64_t *state, hz_stack<uint32_t> *data) {
         uint64_t x = state->x;
         uint64_t bs = x & state->mask;
@@ -466,6 +428,15 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob, hz_mstate *mstate) {
 
     auto dataptr = decoder.decode(blob->data);
 
+    for (int i = 0; i < 256; i++) {
+        HZ_FREE(dict[i]);
+        HZ_FREE(cdict[i]);
+    }
+
+    HZ_FREE(dict);
+    HZ_FREE(cdict);
+    HZ_FREE(sym_optr);
+
     auto *sdata = HZ_MALLOC(int16_t, length);
 
     for (uint64_t i = 0; i < length; i++) {
@@ -487,12 +458,120 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob, hz_mstate *mstate) {
 
     dblob->o_data = HZ_MALLOC(uint8_t, length);
     dblob->o_size = length;
+    dblob->mstate = mstate;
+    dblob->alg = hzcodec::algorithms::VICTINI;
 
     for (uint64_t i = 0; i < length; i++) {
         dblob->o_data[i] = sdata[i];
     }
 
+
     HZ_FREE(sdata);
 
     return dblob;
+}
+
+void hzcodec::victini::generate_mstate(hz_mstate *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data,
+                                       uint64_t length, uint64_t bwt_index) {
+    if (mstate->is_empty()) {
+        auto focm = hzmodels::first_order_context_model();
+        HZ_MEM_INIT(focm);
+
+        focm.set_alphabet_size(0x100);
+        // Now we contruct a First-Order-Context-Dictionary.
+        for (uint64_t i = 0; i < length; i++) {
+            focm.update(data[i], 32);
+        }
+
+        // Now we perform a one-time normalization for all possible contexts to increase speed.
+        // Populate p-values and cumulative values.
+        uint64_t dict_f[256][256];
+
+        for (int i = 0; i < 0x100; i++) {
+            auto row = focm.get_dist(i);
+            uint64_t sum = 0;
+            for (int k = 0; k < 0x100; k++) {
+                sum += row[k];
+                dict_f[i][k] = row[k];
+            }
+            uint64_t dsum = 0;
+            for (int k = 0; k < 0x100; k++) {
+                dict[i][k] = 1 + (row[k] * 16776960 / sum);
+                dsum += dict[i][k];
+            }
+            dsum = 16777216 - dsum;
+            for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+                dict[i][k]++;
+            }
+
+            sum = 0;
+            for (int k = 0; k < 0x100; k++) {
+                cdict[i][k] = sum;
+                sum += dict[i][k];
+            }
+        }
+
+
+        // Generate mstate object.
+
+        mstate->length = 65538;
+        mstate->bins = HZ_MALLOC(uint64_t, mstate->length);
+
+        bool store_norm_dict = false;
+
+        if (length >= 16777216) {
+            store_norm_dict = true;
+        }
+
+
+        int b_index = 0;
+        mstate->bins[b_index++] = bwt_index;
+        mstate->bins[b_index++] = store_norm_dict;
+
+        for (int i = 0; i < 0x100; i++) {
+            for (int k = 0; k < 0x100; k++) {
+                if (store_norm_dict) {
+                    mstate->bins[b_index++] = dict[i][k];
+                } else {
+                    mstate->bins[b_index++] = dict_f[i][k];
+                }
+            }
+        }
+
+    } else {
+        uint64_t b_index = 1;
+
+        bool is_norm_dict = mstate->bins[b_index++];
+
+        for (int i = 0; i < 0x100; i++) {
+            for (int j = 0; j < 0x100; j++) {
+                dict[i][j] = mstate->bins[b_index++];
+            }
+        }
+        // check if we need to normalize the dictionary.
+        if (!is_norm_dict) {
+            for (int i = 0; i < 0x100; i++) {
+                auto row = dict[i];
+                uint64_t sum = 0;
+                for (int k = 0; k < 0x100; k++) {
+                    sum += row[k];
+                }
+                uint64_t dsum = 0;
+                for (int k = 0; k < 0x100; k++) {
+                    dict[i][k] = 1 + (row[k] * 16776960 / sum);
+                    dsum += dict[i][k];
+                }
+                dsum = 16777216 - dsum;
+                for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+                    dict[i][k]++;
+                }
+
+                sum = 0;
+                for (int k = 0; k < 0x100; k++) {
+                    cdict[i][k] = sum;
+                    sum += dict[i][k];
+                }
+            }
+        }
+    }
 }

@@ -18,6 +18,10 @@ struct hz_mstate: public hz_mem_iface {
         bins = nullptr;
         length = 0;
     }
+
+    bool is_empty() {
+        return bins == nullptr;
+    }
 };
 
 struct hzblob_t: public hz_mem_iface {

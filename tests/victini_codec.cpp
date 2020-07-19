@@ -34,4 +34,9 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini) {
         ASSERT_EQ(dblob->o_data[i], blob->o_data[i]);
         ASSERT_EQ(ddblob->o_data[i], blob->o_data[i]);
     }
+
+    cblob->destroy();
+    ccblob->destroy();
+    dblob->destroy();
+    ddblob->destroy();
 }

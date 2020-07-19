@@ -47,19 +47,4 @@ struct hzblob_t: public hz_mem_iface {
     }
 };
 
-// deprecated
-struct hzrblob_set {
-    hzblob_t *blobs;
-    uint64_t count;
-
-
-    void destroy() {
-        for (int i = 0; i < count; i++) {
-            blobs[i].destroy();
-        }
-        free(blobs);
-    }
-};
-
-
 #endif

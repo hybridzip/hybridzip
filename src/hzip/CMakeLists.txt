@@ -5,8 +5,6 @@ add_library(hzip STATIC
         core/entropy/hzrans/hzrans64.h
         core/entropy/hzrans/hzrans.h
         core/blob/hzblob.h
-        core/entropy/hzrans/hzmthread.h
-        core/blob/hzblobpack.h
         utils/distribution.h
         utils/fsutils.h
         core/entropy/hzrans/hzbin.h
@@ -21,11 +19,9 @@ add_library(hzip STATIC
         core/preprocessor/delta_transformer.cpp
         core/compressors/victini.cpp
         core/compressors/victini.h
-        core/entropy/hzrans/hzmthread.cpp
         core/entropy/hzrans/hzbin.cpp
         core/entropy/hzrans/hzrans64.cpp
         core/models/first_order_context_model.h
-        core/blob/hzblobpack.cpp
         core/preprocessor/bw_transformer.h
         core/preprocessor/delta_transformer.h
         core/preprocessor/mtf_transformer.h

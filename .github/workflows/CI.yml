@@ -24,7 +24,7 @@ jobs:
           cmake --build test_build --target gtest_run
 
       - name: Run tests
-        run: test_build/bin/gtest_run
+        run: ./test_build/bin/gtest_run
 
   publish_docker:
     needs: run_tests

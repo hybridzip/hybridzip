@@ -17,10 +17,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install clang
 
       - name: Compile tests
-        run: cmake -DCMAKE_CXX_COMPILER=clang++ . && cmake --target gtest-run
-
-      - name: List dirs now
-        run: ls
+        run: cmake -DCMAKE_CXX_COMPILER=clang++ . && cmake --target gtest_run
 
       - name: Run tests
         run: cd bin && ./gtest_run

@@ -9,7 +9,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN cmake -DCMAKE_BUILD_TYPE=Release . && make
+RUN cmake -DCMAKE_BUILD_TYPE=Release . && make hybridzip
 
 # Runner
 FROM ubuntu:latest

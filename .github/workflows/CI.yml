@@ -19,12 +19,11 @@ jobs:
       - name: Compile tests
 
         run: |
-          mkdir test_build
           cmake -DCMAKE_CXX_COMPILER=clang++ .
-          cmake --build test_build --target gtest_run
+          make gtest_run
 
       - name: Run tests
-        run: ./test_build/bin/gtest_run
+        run: bin/gtest_run
 
   publish_docker:
     needs: run_tests

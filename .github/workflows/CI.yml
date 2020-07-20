@@ -13,7 +13,7 @@ jobs:
       - name: Checkout-repo
         uses: actions/checkout@v1
 
-      - name: Install build dependencies
+      - name: Install clang
         run: sudo apt-get install clang
 
       - name: Compile tests

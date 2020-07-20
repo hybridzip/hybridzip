@@ -75,7 +75,7 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_const) {
 
 
     for (int i = 0; i < N; i++) {
-        ASSERT_EQ(data[i], 255);
+        ASSERT_EQ(data[i], 254);
     }
 }
 

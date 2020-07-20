@@ -4,29 +4,47 @@
 #include <cstdint>
 #include <malloc.h>
 #include <hzip/utils/platform.h>
+#include <hzip/core/compressors/compressor_enums.h>
+#include <hzip/memory/mem_interface.h>
+#include <hzip/utils/common.h>
 
-struct hzrblob_t {
+struct hz_mstate: public hz_mem_iface {
+    uint64_t id;
+    uint64_t *bins;
+    uint64_t length;
+
+    hz_mstate() {
+        id = 0;
+        bins = nullptr;
+        length = 0;
+    }
+
+    bool is_empty() {
+        return bins == nullptr;
+    }
+};
+
+struct hzblob_t: public hz_mem_iface {
+    hz_mstate *mstate;
     uint32_t *data;
     uint64_t size;
+    uint8_t *o_data;
     uint64_t o_size;
+    hzcodec::algorithms::ALGORITHM alg;
+
+    hzblob_t() {
+        mstate = nullptr;
+        data = nullptr;
+        o_data = nullptr;
+        size = 0;
+        o_size = 0;
+        alg = hzcodec::algorithms::UNDEFINED;
+    }
 
     void destroy() {
-        free(data);
+        HZ_FREE(data);
+        HZ_FREE(o_data);
     }
 };
-
-struct hzrblob_set {
-    hzrblob_t *blobs;
-    uint64_t count;
-
-
-    void destroy() {
-        for (int i = 0; i < count; i++) {
-            blobs[i].destroy();
-        }
-        free(blobs);
-    }
-};
-
 
 #endif

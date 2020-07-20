@@ -19,7 +19,7 @@ jobs:
       - name: Compile tests
         run: cmake -DCMAKE_CXX_COMPILER=clang++ . && cmake --target gtest-run
 
-      - name: List dirs
+      - name: List dirs now
         run: ls
 
       - name: Run tests

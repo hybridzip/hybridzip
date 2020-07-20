@@ -1,4 +1,4 @@
-name: Push To Package Registry
+name: Push To Docker Registry
 on:
   push:
     branches:
@@ -7,6 +7,18 @@ on:
     branches:
       - master
 jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout-repo
+        uses: actions/checkout@v1
+
+      - name: Compile tests
+        run: cmake --target gtest-run
+
+      - name: Run tests
+        run: cd bin && gtest_run
+
   publish_docker:
     runs-on: ubuntu-latest
     steps:
@@ -22,7 +34,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
 
         run: |
-          docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+          echo $DOCKER_PASSWORD | docker login -u="$DOCKER_USERNAME" --password-stdin
           docker image build -t supercmmetry/hybridzip:latest -f ./ops/images/cpp.Dockerfile .
           docker push supercmmetry/hybridzip:latest
 

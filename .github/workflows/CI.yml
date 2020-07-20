@@ -6,7 +6,6 @@ on:
 
 jobs:
   publish_docker:
-    needs: run_tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout-repo

@@ -88,7 +88,7 @@ u64ptr hzu_decoder::decode(uint32_t *raw) {
             cross_decoder(state, dummy_stack);
         }
 
-        hzrans64_decode_s(state, distptr, &raw, sym + i);
+        hzrans64_decode_s(state, &raw);
 
         if (sym_override_ptr != nullptr) {
             sym[i] = *sym_override_ptr;

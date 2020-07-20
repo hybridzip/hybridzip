@@ -27,16 +27,6 @@ void set_unhandled_exception_handler() {
     });
 }
 
-
-void run(hz_memmgr *mgr) {
-    auto rose = hzcodec::victini("/home/supercmmetry/Documents/dickens/dickens");
-    HZ_MEM_INIT_FROM(mgr, rose);
-
-    rose.compress("/home/supercmmetry/Documents/dickens/dickens.hz");
-    rose.set_file("/home/supercmmetry/Documents/dickens/dickens.hz");
-    rose.decompress("/home/supercmmetry/Documents/dickens/dickens.hz.txt");
-}
-
 int main(int argc, const char **argv) {
     setup_logger(argc, argv);
     set_unhandled_exception_handler();
@@ -54,9 +44,6 @@ int main(int argc, const char **argv) {
     }
 
     LOG_F(INFO, "hzip: started hybridzip server");
-
-    run(mgr);
-
 
     return 0;
 }

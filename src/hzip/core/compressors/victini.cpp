@@ -2,7 +2,6 @@
 
 hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     auto mstate = blob->mstate;
-    // create a raw bitio_stream on blob data
     auto length = blob->o_size;
 
     auto *data = HZ_MALLOC(int16_t, length);
@@ -11,7 +10,7 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
         data[i] = blob->o_data[i];
     }
 
-    auto bwt = hztrans::bw_transformer(data, length, 0x100);
+    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, length, 0x100);
     HZ_MEM_INIT(bwt);
 
     auto bwt_index = bwt.transform();
@@ -39,7 +38,7 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
             state->bs = cdict[data[index - 1]][data[index]];
         } else {
             state->ls = 65536;
-            state->bs = (((uint64_t) data[index] + 1)) << 16;
+            state->bs = ((uint64_t) data[index]) << 16;
         }
     };
 
@@ -141,12 +140,12 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
         if (prev_symbol == -1) {
             for (int i = 0; i < 0x100; i++) {
                 if (((i + 1) << 16) > bs) {
-                    symbol = i - 1;
+                    symbol = i;
                     break;
                 }
             }
             state->ls = 65536;
-            state->bs = (symbol + 1) << 16;
+            state->bs = symbol << 16;
         } else {
             for (int i = 0; i < 0x100; i++) {
                 if (cdict[prev_symbol][i] > bs) {
@@ -157,6 +156,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
             state->ls = dict[prev_symbol][symbol];
             state->bs = cdict[prev_symbol][symbol];
         }
+
         prev_symbol = symbol;
         *sym_optr = prev_symbol;
     };
@@ -191,7 +191,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     auto mtf = hztrans::mtf_transformer(sdata, 0x100, length);
     mtf.invert();
 
-    auto bwt = hztrans::bw_transformer(sdata, length, 0x100);
+    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(sdata, length, 0x100);
     HZ_MEM_INIT(bwt);
 
     bwt.invert(bwt_index);

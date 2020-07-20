@@ -21,7 +21,6 @@ void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale) {
 }
 
 void hzrans64_encode_s(hzrans64_t *state, hz_stack<uint32_t> *data) {
-
     uint64_t x = state->x;
     uint64_t ls = state->ls;
     uint64_t bs = state->bs;
@@ -88,9 +87,8 @@ void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
 }
 
 void
-hzrans64_decode_s(hzrans64_t *state, uint64_t *_ls, uint32_t **data, uint64_t *sym) {
+hzrans64_decode_s(hzrans64_t *state, uint32_t **data) {
     uint64_t x = state->x;
-
     uint64_t ls = state->ls;
     uint64_t bs = state->bs;
 

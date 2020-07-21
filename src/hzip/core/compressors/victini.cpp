@@ -1,7 +1,9 @@
 #include "victini.h"
+#include <hzip/utils/utils.h>
 
 hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     auto mstate = blob->mstate;
+    auto header = blob->header;
     auto length = blob->o_size;
 
     auto *data = HZ_MALLOC(int16_t, length);
@@ -26,7 +28,20 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
         cdict[i] = HZ_MALLOC(uint64_t, 256);
     }
 
-    gen_model_from_mstate(mstate, dict, cdict, data, length, bwt_index);
+    // Write blob-header.
+    header.raw = HZ_MALLOC(uint8_t, 32);
+    auto h_stream = new bitio::bitio_stream(header.raw, 32);
+
+    bin_t bwt_index_bin = unarypx_bin(bwt_index);
+    h_stream->write(bwt_index_bin.obj, bwt_index_bin.n);
+    h_stream->flush();
+
+    header.length = h_stream->get_byte_count();
+
+    delete h_stream;
+
+    // Manage mstate
+    gen_model_from_mstate(mstate, dict, cdict, data, length);
 
     // Perform cross-encoding.
     uint64_t index = length;
@@ -69,6 +84,7 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     cblob->o_size = length;
     cblob->alg = hzcodec::algorithms::VICTINI;
     cblob->mstate = mstate;
+    cblob->header = header;
 
     return cblob;
 }
@@ -77,10 +93,17 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     auto mstate = blob->mstate;
     uint64_t length = blob->o_size;
 
+    // Parse blob_header using bitio
+    auto h_stream = new bitio::bitio_stream(blob->header.raw, blob->header.length);
+
+    uint64_t bwt_index = unaryinv_bin([h_stream](uint64_t n) {
+        return h_stream->read(n);
+    }).obj;
+
+    delete h_stream;
+
     // Parse mstate.
     uint64_t k = 0;
-
-    uint64_t bwt_index = mstate->bins[k++];
     bool is_norm_dict = mstate->bins[k++];
 
     auto *dict = HZ_MALLOC(uint64_t*, 256);
@@ -199,6 +222,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     auto dblob = HZ_NEW(hzblob_t);
     HZ_MEM_INIT_PTR(dblob);
 
+
     dblob->o_data = HZ_MALLOC(uint8_t, length);
     dblob->o_size = length;
     dblob->mstate = mstate;
@@ -215,7 +239,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
 }
 
 void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data,
-                                             uint64_t length, uint64_t bwt_index) {
+                                             uint64_t length) {
     if (mstate->is_empty()) {
         auto focm = hzmodels::first_order_context_model();
         HZ_MEM_INIT(focm);
@@ -256,8 +280,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
 
         // Generate mstate object.
-
-        mstate->length = 65538;
+        mstate->length = 65537;
         mstate->bins = HZ_MALLOC(uint64_t, mstate->length);
 
         bool store_norm_dict = false;
@@ -268,7 +291,6 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
 
         int b_index = 0;
-        mstate->bins[b_index++] = bwt_index;
         mstate->bins[b_index++] = store_norm_dict;
 
         for (int i = 0; i < 0x100; i++) {
@@ -282,7 +304,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
         }
 
     } else {
-        uint64_t b_index = 1;
+        uint64_t b_index = 0;
 
         bool is_norm_dict = mstate->bins[b_index++];
 

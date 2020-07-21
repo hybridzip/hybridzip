@@ -317,3 +317,7 @@ bitio_stream::~bitio_stream() {
         free(inmem_cache);
     }
 }
+
+uint64_t bitio_stream::get_byte_count() const {
+    return byte_index;
+}

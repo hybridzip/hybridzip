@@ -151,5 +151,7 @@ namespace bitio {
         bool is_eof();
 
         uint64_t get_file_size();
+
+        [[nodiscard]] uint64_t get_byte_count() const;
     };
 }

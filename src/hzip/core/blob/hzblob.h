@@ -19,12 +19,27 @@ struct hz_mstate: public hz_mem_iface {
         length = 0;
     }
 
-    bool is_empty() {
+    [[nodiscard]] bool is_empty() const {
         return bins == nullptr;
     }
 };
 
+struct hz_blob_header: public hz_mem_iface {
+    uint8_t *raw;
+    uint64_t length;
+
+    hz_blob_header() {
+        raw = nullptr;
+        length = 0;
+    }
+
+    [[nodiscard]] bool is_empty() const {
+        return raw == nullptr;
+    }
+};
+
 struct hzblob_t: public hz_mem_iface {
+    hz_blob_header header{};
     hz_mstate *mstate;
     uint32_t *data;
     uint64_t size;

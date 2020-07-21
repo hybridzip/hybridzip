@@ -13,8 +13,7 @@
 namespace hzcodec {
     class victini : public hz_abstract_codec, public hz_mem_iface {
     private:
-        void gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data, uint64_t length,
-                                   uint64_t bwt_index);
+        void gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data, uint64_t length);
 
     public:
         victini() = default;

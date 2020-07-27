@@ -1,323 +1,419 @@
-/*
-MIT License
-
-Copyright (c) 2020 Vishaal Selvaraj
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
- */
-
-
 #include "bitio.h"
 
-using namespace bitio;
+bitio::bitio_exception::bitio_exception(std::string msg) {
+    this->msg = "bitio: " + std::move(msg);
+}
 
-bitio_stream::bitio_stream(std::string filename, access_enum op, bool in_mem, uint64_t buffer_size) {
-    file = nullptr;
-    this->filename = filename;
-    mode = op;
+const char *bitio::bitio_exception::what() const noexcept {
+    return msg.c_str();
+}
 
-    if ((op == READ) && !(file = fopen(filename.c_str(), "rb"))) {
-        return;
-    } else if (op == WRITE) {
-        file = fopen(filename.c_str(), "wb");
-    } else if (op == APPEND) {
-        file = fopen(filename.c_str(), "a");
+bitio::stream::stream(FILE *file, bool is_writeable, uint64_t buffer_size) {
+    if (buffer_size == 0) {
+        throw bitio_exception("Buffer size must be greater than 0.");
     }
 
-    this->buffer_size = buffer_size;
-    byte_buffer = (unsigned char *) malloc(sizeof(unsigned char) * buffer_size);
-    bit_count = 0;
-    eof = false;
-    bit_buffer = 0;
-    current_buffer_length = 0;
-    byte_index = 0;
+    this->file = file;
+    this->max_size = buffer_size;
+    this->buffer = new uint8_t[buffer_size];
 
-    if (in_mem) {
-        move_to_memory();
-    }
-}
-
-bitio_stream::bitio_stream(uint8_t *raw, uint64_t length) {
-    is_raw_mem = true;
-    this->file = nullptr;
-    this->buffer_size = length;
-    byte_buffer = raw;
-    bit_count = 0;
-    eof = false;
-    bit_buffer = 0;
-    current_buffer_length = length;
-    byte_index = 0;
-}
-
-void bitio_stream::close() {
-    if (file != nullptr) fclose(file);
-}
-
-inline void bitio_stream::load_buffer() {
-    auto tmp_len = fread(byte_buffer, 1, buffer_size, file);
-    current_buffer_length = tmp_len != 0 ? tmp_len : current_buffer_length;
-    eof = tmp_len == 0;
-    byte_index = 0;
-}
-
-inline void bitio_stream::load_byte() {
-    if (eof) {
-        bit_buffer = 0;
+    if (is_writeable) {
+        stream_size = 0xffffffffffffffff;
+        size = max_size;
+        this->is_writeable = is_writeable;
+    } else {
+        evaluate_stream_size();
     }
 
-    if (byte_index == current_buffer_length) {
-        if (!is_raw_mem) {
-            load_buffer();
-        } else {
-            throw bitio_exception("bitio: Out of bounds operation on constant memory buffer");
+    fread(buffer, 1, max_size, file);
+    fseek(file, 0, SEEK_SET);
+
+    head = 0x0;
+    ctx = EMPTY;
+}
+
+bitio::stream::stream(uint8_t *raw, uint64_t buffer_size) {
+    if (buffer_size == 0) {
+        throw bitio_exception("Buffer size must be greater than 0.");
+    }
+
+    this->buffer = raw;
+    this->max_size = buffer_size;
+    this->size = buffer_size;
+    this->stream_size = buffer_size;
+}
+
+void bitio::stream::load_buffer() {
+    if (file != nullptr) {
+        size = fread(buffer, 1, max_size, file);
+
+        if (is_writeable) {
+            size = max_size;
         }
     }
-
-    bit_buffer = byte_buffer[byte_index++];
 }
 
-inline void bitio_stream::wflush() {
-    if (file != nullptr) {
-        fwrite(byte_buffer, 1, buffer_size, file);
-    }
-}
-
-uint64_t bitio_stream::read(uint8_t n) {
+uint64_t bitio::stream::read(uint8_t n) {
     if (n == 0) {
         return 0;
     }
 
+    if (n > 0x40) {
+        throw bitio_exception("Read operations can only support upto 64-bits.");
+    }
+
+    try_read_init();
+
+    // Transform from SW-Domain to R-Domain.
+    if (ctx == SEEK || ctx == WRITE) {
+        bit_count = 8 - bit_count;
+    }
+
+    bit_set = buffer[index] << (8 - bit_count);
+
+    ctx = READ;
+
+    check_eof(n);
+
     uint64_t value = 0;
     if (bit_count == 0) {
-        load_byte();
         bit_count = 8;
+        next(1);
     }
 
-    if (bit_count >= n) {
-        value += (bit_buffer & reverse_bit_masks[n]) >> (8 - n);
-        bit_buffer <<= n;
+    // If the bitset is enough, then use the bitset and then return.
+    if (n <= bit_count) {
+        value = bit_set >> (8 - n);
+        bit_set <<= n;
         bit_count -= n;
-    } else {
-        value += bit_buffer >> (8 - bit_count);
-        char target_bits = n - bit_count;
-        char nbytes = target_bits >> 3;
-        bit_buffer = 0;
-        bit_count = 0;
 
-        while (nbytes--) {
-            load_byte();
-            value <<= 8;
-            value += bit_buffer;
+        if (bit_count == 0) {
+            bit_count = 8;
+            next(1);
         }
-        load_byte();
+
+        return value;
+    }
+
+    auto nbytes = n >> 3;
+    auto nbits = n & 7;
+
+    // First use the bit_set to fulfill partial bits.
+    if (nbits >= bit_count) {
+        value += bit_set >> (8 - bit_count);
+        nbits -= bit_count;
         bit_count = 8;
-
-        char rembits = target_bits & bit_masks[3];
-
-        value <<= rembits;
-        value += (bit_buffer & reverse_bit_masks[rembits]) >> (8 - rembits);
-        bit_buffer <<= rembits;
-        bit_count -= rembits;
-    }
-    return value & ui64_masks[n];
-}
-
-void bitio_stream::seek(int64_t n) {
-    if (n == 0) return;
-    if (n > 0) {
-        skip(n);
+        next(1);
     } else {
+        value += bit_set >> (8 - bit_count);
+        nbits += 8 - bit_count;
 
-        auto nbits = -n;
-        auto nbytes = nbits >> 0x3;
-        auto rbits = nbits & 0x7;
+        nbytes += nbits >> 3;
+        nbits = nbits & 7;
 
-        int64_t al_offset = (int64_t) byte_index - (int64_t) nbytes - 1 - (int64_t) current_buffer_length;
-
-        fseek(file, al_offset, SEEK_CUR);
-
-        load_buffer();
-        byte_index++;
-
-        if (rbits <= 8 - bit_count) {
-            bit_count += rbits;
-            bit_buffer = byte_buffer[byte_index - 1];
-            bit_buffer <<= 8 - bit_count;
-        } else {
-            bit_buffer = byte_buffer[--byte_index];
-            bit_buffer <<= 8 - bit_count;
-
-            if (byte_index == 0) {
-                fseek(file, -1 - (int64_t) current_buffer_length, SEEK_CUR);
-                load_buffer();
-                bit_buffer = byte_buffer[byte_index++];
-                bit_buffer <<= 8 - bit_count;
-            }
-
-            lim_skip(8 - rbits);
-        }
-
-    }
-}
-
-// wrapper for lim_skip to allow skips beyond 64-bits.
-void bitio_stream::skip(uint64_t n) {
-    while (n > 0) {
-        if (n > 0x40) {
-            lim_skip(0x40);
-            n -= 0x40;
-        } else {
-            lim_skip(n);
-            n = 0;
-        }
-    }
-}
-
-void bitio_stream::write(uint64_t obj, uint64_t n) {
-    uint64_t i = 0;
-    obj <<= 0x40 - n;
-
-    unsigned char mask_index = 0;
-    while (i++ < n) {
-        bit_buffer <<= 1;
-        bit_buffer += (obj & ui64_single_bit_masks[0x3f - mask_index++]) != 0;;
-        bit_count++;
-        if (bit_count == 8) {
-            byte_buffer[byte_index++] = bit_buffer;
-            if (byte_index == buffer_size) {
-                wflush();
-                byte_index = 0;
-            }
-            bit_buffer = 0;
-            bit_count = 0;
-        }
-
-    }
-}
-
-// aligns to next-byte, meaningful only for read operations.
-void bitio_stream::align() {
-    lim_skip(bit_count);
-    //load_byte();
-}
-
-// write residues and align to next-byte.
-void bitio_stream::flush() {
-    if (bit_count != 0) {
-        bit_buffer <<= 8 - bit_count;
-        byte_buffer[byte_index++] = bit_buffer;
+        bit_count = 8;
+        next(1);
+        nbytes--;
     }
 
-    if (file != nullptr) {
-        fwrite(byte_buffer, 1, byte_index, file);
+
+    while (nbytes > 0) {
+        value <<= 0x8;
+        value += buffer[index];
+        next(1);
+        nbytes--;
     }
+
+    bit_set = buffer[index];
+    bit_count = 8;
+
+    value <<= nbits;
+    value += bit_set >> (8 - nbits);
+
+    bit_set <<= nbits;
+    bit_count -= nbits;
+    return value;
 }
 
-bool bitio_stream::is_eof() {
-    if (eof) return true;
-    if (byte_index == current_buffer_length) {
-        auto *tmp_ptr = new char[1];
-        eof = fread(tmp_ptr, 1, 1, file) == 0;
-        free(tmp_ptr);
-
-        if (!eof) fseek(file, -1, SEEK_CUR);
-    }
-    return eof;
-}
-
-uint64_t bitio_stream::get_file_size() {
-    FILE *tmp = fopen(filename.c_str(), "rb");
+void bitio::stream::evaluate_stream_size() {
     uint64_t count = 0;
     char *tmp_ptr = new char[1];
-    while (fread(tmp_ptr, 1, 1, tmp) != 0) {
+    while (fread(tmp_ptr, 1, 1, file) != 0) {
         count++;
     }
     free(tmp_ptr);
-    fclose(tmp);
-    return count;
+    fseek(file, -count, SEEK_CUR);
+
+    stream_size = count;
 }
 
-inline void bitio_stream::lim_skip(uint8_t n) {
-    if (bit_count == 0) {
-        load_byte();
-        bit_count = 8;
+void bitio::stream::check_eof(int64_t shift) {
+    if (((head << 3) + shift > (stream_size << 3))) {
+        throw bitio_exception("EOF encountered.");
+    }
+}
+
+void bitio::stream::close() {
+    if (file != nullptr) {
+        fclose(file);
     }
 
-    if (bit_count >= n) {
-        bit_buffer <<= n;
-        bit_count -= n;
-    } else {
-        char target_bits = n - bit_count;
-        char nbytes = target_bits >> 3;
-        bit_buffer = 0;
-        bit_count = 0;
+    free(buffer);
+}
 
-        while (nbytes--) {
-            load_byte();
+void bitio::stream::write(uint64_t obj, uint8_t n) {
+    if (n == 0) {
+        return;
+    }
+
+    if (n > 0x40) {
+        throw bitio_exception("Write operations can only support upto 64-bits.");
+    }
+
+    if (ctx != WRITE) {
+        bit_set = buffer[index];
+
+        // Transform from R-Domain to SW-Domain
+        if (ctx == READ) {
+            bit_count = 8 - bit_count;
         }
-        load_byte();
-        bit_count = 8;
 
-        char rembits = target_bits & bit_masks[3];
-        bit_buffer <<= rembits;
-        bit_count -= rembits;
+        if (bit_count > 0 && index == size - 1) {
+            fseek(file, -size, SEEK_CUR);
+        }
+    }
+
+    ctx = WRITE;
+
+    check_eof(n);
+
+    obj <<= 0x40 - n;
+
+    if (bit_count == 8) {
+        set(bit_set);
+        bit_count = 0;
+    }
+
+    for (uint8_t i = 0; i < n; i++) {
+        uint8_t bit = (obj & ui64_single_bit_masks[0x3f - i]) >> (0x3f - i);
+        bit_set >>= (8 - bit_count);
+        bit_set <<= 1;
+        bit_set += bit;
+        bit_count++;
+        bit_set <<= (8 - bit_count);
+        buffer[index] = bit_set;
+
+        if (bit_count == 8) {
+            set(bit_set);
+            bit_count = 0;
+        }
+    }
+
+}
+
+void bitio::stream::flush() {
+    if (file != nullptr) {
+        if (bit_count == 0) {
+            fwrite(buffer, 1, index, file);
+        } else {
+            fwrite(buffer, 1, index + 1, file);
+        }
     }
 }
 
-uint64_t bitio_stream::peek(uint8_t n) {
-    uint64_t peek_val = read(n);
-    seek(-n);
-    return peek_val;
+uint64_t bitio::stream::get_stream_size() const {
+    return stream_size;
 }
 
-void bitio_stream::force_align() {
+void bitio::stream::seek(int64_t n) {
+    if (n == 0) {
+        return;
+    }
+    // Prevent data-loss while doing seek operations
+    if (ctx == WRITE && index == 0) {
+        flush();
+    }
+
+
+    // Transform from R-Domain to SW-Domain.
+    if (ctx == READ) {
+        bit_count = 8 - bit_count;
+    }
+
+    ctx = SEEK;
+
+    if (n > 0) {
+        check_eof(n);
+
+        while (n >= 0x40) {
+            forward_seek(0x40);
+            n -= 0x40;
+        }
+
+        forward_seek(n);
+        return;
+    }
+
+    n = -n;
+
+    uint64_t nbytes = n >> 0x3;
+    uint8_t nbits = n & 0x7;
+
+    check_sof(n);
+
+    back(nbytes);
+
+    if (nbits > 0) {
+        if (nbits <= bit_count) {
+            bit_count -= nbits;
+        } else {
+            nbits -= bit_count;
+            bit_count = 8;
+            back(1);
+            bit_count -= nbits;
+        }
+    }
+}
+
+void bitio::stream::forward_seek(uint8_t n) {
+    if (n == 0) {
+        return;
+    }
+
+    try_read_init();
+
+    // Transform from SW-Domain to R-Domain.
+    if (ctx == SEEK || ctx == WRITE) {
+        bit_count = 8 - bit_count;
+    }
+
+    bit_set = buffer[index] << (8 - bit_count);
+
+    ctx = READ;
+
+    check_eof(n);
+
     if (bit_count == 0) {
-        lim_skip(0x8);
+        bit_count = 8;
+        next(1);
+    }
+
+    // If the bitset is enough, then use the bitset and then return.
+    if (n <= bit_count) {
+        bit_set <<= n;
+        bit_count -= n;
+
+        if (bit_count == 0) {
+            bit_count = 8;
+            next(1);
+        }
+
+        return;
+    }
+
+    auto nbytes = n >> 3;
+    auto nbits = n & 7;
+
+    // First use the bit_set to fulfill partial bits.
+    if (nbits >= bit_count) {
+        nbits -= bit_count;
+        bit_count = 8;
+        next(1);
     } else {
-        lim_skip(bit_count);
+        nbits += 8 - bit_count;
+
+        nbytes += nbits >> 3;
+        nbits = nbits & 7;
+
+        bit_count = 8;
+        next(1);
+        nbytes--;
+    }
+
+
+    next(nbytes);
+
+    bit_set = buffer[index];
+    bit_count = 8;
+
+    bit_set <<= nbits;
+    bit_count -= nbits;
+}
+
+void bitio::stream::check_sof(int64_t shift) {
+    if ((head << 3) - shift + bit_count < 0) {
+        throw bitio_exception("SOF reached.");
     }
 }
 
-void bitio_stream::move_to_memory() {
-    // Make file to point to data in RAM instead of Secondary storage.
-    // Move entire file to RAM from SS.
-    is_inmem = true;
-    uint64_t file_size = get_file_size();
-    inmem_cache = new uint8_t[file_size];
+void bitio::stream::next(uint64_t nbytes) {
+    check_eof(nbytes << 3);
 
-    fread(inmem_cache, 1, file_size, file);
-    fclose(file);
-    if (mode == READ) {
-        file = fmemopen(inmem_cache, file_size, "rb");
-    } else if (mode == WRITE) {
-        file = fmemopen(inmem_cache, file_size, "wb");
-    } else if (mode == APPEND) {
-        file = fmemopen(inmem_cache, file_size, "a");
+    while (nbytes--) {
+        if (index == size - 1) {
+            load_buffer();
+            index = 0;
+            bit_set = buffer[0] << (8 - bit_count);
+        } else {
+            index++;
+            bit_set = buffer[index] << (8 - bit_count);
+        }
+
+        head += 1;
     }
 }
 
-bitio_stream::~bitio_stream() {
-    if (is_inmem) {
-        free(inmem_cache);
+void bitio::stream::back(uint64_t nbytes) {
+    check_sof(nbytes << 3);
+
+    while (nbytes--) {
+        if (index == 0) {
+            auto offset = head - (int64_t) size;
+            if (offset < 0) {
+                fseek(file, 0, SEEK_SET);
+                // ctx = SEEK_ZERO;
+            } else {
+                fseek(file, offset, SEEK_SET);
+            }
+
+            load_buffer();
+            index = size - 1;
+        } else {
+            index--;
+        }
+
+        head -= 1;
     }
 }
 
-uint64_t bitio_stream::get_byte_count() const {
-    return byte_index;
+void bitio::stream::set(uint8_t byte) {
+    buffer[index] = byte;
+
+    if (index == size - 1) {
+        fwrite(buffer, 1, max_size, file);
+        index = 0;
+        bit_set = buffer[0];
+    } else {
+        index++;
+        bit_set = buffer[index];
+    }
+
+    head += 1;
+
 }
+
+void bitio::stream::try_read_init() {
+    if (ctx == EMPTY) {
+        load_buffer();
+        index = 0;
+        bit_set = buffer[0];
+        bit_count = 8;
+        ctx = INVALID;
+    }
+}
+
+
+
+
+
+

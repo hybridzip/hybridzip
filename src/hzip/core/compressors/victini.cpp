@@ -30,13 +30,13 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
 
     // Write blob-header.
     header.raw = HZ_MALLOC(uint8_t, 32);
-    auto h_stream = new bitio::bitio_stream(header.raw, 32);
+    auto h_stream = new bitio::stream(header.raw, 32);
 
     bin_t bwt_index_bin = unarypx_bin(bwt_index);
     h_stream->write(bwt_index_bin.obj, bwt_index_bin.n);
     h_stream->flush();
 
-    header.length = h_stream->get_byte_count();
+    header.length = h_stream->get_stream_size();
 
     delete h_stream;
 
@@ -94,7 +94,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     uint64_t length = blob->o_size;
 
     // Parse blob_header using bitio
-    auto h_stream = new bitio::bitio_stream(blob->header.raw, blob->header.length);
+    auto h_stream = new bitio::stream(blob->header.raw, blob->header.length);
 
     uint64_t bwt_index = unaryinv_bin([h_stream](uint64_t n) {
         return h_stream->read(n);

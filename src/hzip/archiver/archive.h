@@ -5,7 +5,7 @@
 
 class hz_archive {
 private:
-    bitio::bitio_stream stream;
+    bitio::stream *stream;
 
 public:
 

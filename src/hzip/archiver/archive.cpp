@@ -20,6 +20,11 @@ void hz_archive::scan() {
         return stream->read(n);
     };
 
+    auto seekfn = [this, stream](uint64_t n) {
+        this->metadata.eof += n;
+        stream->seek(n);
+    };
+
     if (is_defrag_active) {
         sem_wait(&defrag_mutex);
     }
@@ -40,8 +45,10 @@ void hz_archive::scan() {
             }
             case JOURNAL:
                 break;
-            case BLOB:
+            case BLOB: {
+                scan_blob_segment(readfn, seekfn);
                 break;
+            }
         }
     }
 }
@@ -105,4 +112,21 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)>& 
             break;
         }
     }
+}
+
+void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)>& seek) {
+    // BLOB format: <block-length (elias-gamma)> <blob-id (64-bit)> <blob-data>
+
+    // Read block-info
+    hza_block_info info{};
+
+    info.sof = metadata.eof - 0x8;
+    info.size = unaryinv_bin(read).obj;
+
+    uint64_t blob_id = read(0x40);
+
+    // Skip the blob data
+    seek((info.size << 3) - 0x40);
+
+    metadata.blob_map[blob_id] = info.sof;
 }

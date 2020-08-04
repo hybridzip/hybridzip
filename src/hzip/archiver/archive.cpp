@@ -8,6 +8,7 @@ hz_archive::hz_archive(std::string archive_path) {
     // todo: Create archive if non-existent
 
     is_defrag_active = false;
+
     scan();
 }
 

@@ -135,7 +135,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
                 dsum += dict[i][k];
             }
             dsum = 16777216 - dsum;
-            for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+            for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
                 dict[i][k]++;
             }
         }
@@ -267,7 +267,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
                 dsum += dict[i][k];
             }
             dsum = 16777216 - dsum;
-            for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+            for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
                 dict[i][k]++;
             }
 
@@ -327,7 +327,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
                     dsum += dict[i][k];
                 }
                 dsum = 16777216 - dsum;
-                for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+                for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
                     dict[i][k]++;
                 }
 

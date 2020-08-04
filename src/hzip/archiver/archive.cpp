@@ -5,6 +5,7 @@ hz_archive::hz_archive(std::string archive_path) {
     path = std::move(archive_path);
     sem_init(&rw_mutex, 0, 1);
     sem_init(&defrag_mutex, 0, 1);
+
     // todo: Create archive if non-existent
 
     is_defrag_active = false;
@@ -15,6 +16,7 @@ hz_archive::hz_archive(std::string archive_path) {
 void hz_archive::scan() {
     FILE *file = fopen(path.c_str(), "rb+");
     auto stream = new bitio::stream(file);
+
     auto readfn = [this, stream](uint64_t n) {
         this->metadata.eof += n;
         return stream->read(n);
@@ -43,9 +45,11 @@ void hz_archive::scan() {
                 scan_metadata_segment(readfn);
                 break;
             }
-            case JOURNAL:
+            case hza_marker::JOURNAL: {
+                scan_journal_segment(readfn);
                 break;
-            case BLOB: {
+            }
+            case hza_marker::BLOB: {
                 scan_blob_segment(readfn, seekfn);
                 break;
             }
@@ -53,7 +57,7 @@ void hz_archive::scan() {
     }
 }
 
-void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)>& read) {
+void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read) {
     // Read block-info
     hza_block_info info{};
 
@@ -114,19 +118,35 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)>& 
     }
 }
 
-void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)>& seek) {
+void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read,
+                                   const std::function<void(uint64_t)> &seek) {
     // BLOB format: <block-length (elias-gamma)> <blob-id (64-bit)> <blob-data>
 
-    // Read block-info
-    hza_block_info info{};
-
-    info.sof = metadata.eof - 0x8;
-    info.size = unaryinv_bin(read).obj;
+    auto sof = metadata.eof - 0x8;
+    auto size = unaryinv_bin(read).obj;
 
     uint64_t blob_id = read(0x40);
 
     // Skip the blob data
-    seek((info.size << 3) - 0x40);
+    seek(size - 0x40);
 
-    metadata.blob_map[blob_id] = info.sof;
+    metadata.blob_map[blob_id] = sof;
+}
+
+void hz_archive::scan_journal_segment(const std::function<uint64_t(uint64_t)> &read) {
+    // JOURNAL_ENTRY format: <block-size> | <jtask (1-bit)> <target_sof (64-bit)> <data (8-bit array)>
+    // Read block-info
+    auto size = unaryinv_bin(read).obj;
+
+    hza_journal_entry entry{};
+    entry.task = (hza_jtask) read(0x1);
+    entry.target_sof = read(0x40);
+    entry.length = ((size - 0x41) >> 3);
+    entry.data = new uint8_t[entry.length];
+
+    for (uint64_t i = 0; i < entry.length; i++) {
+        entry.data[i] = read(0x8);
+    }
+
+    journal.entries.push_back(entry);
 }

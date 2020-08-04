@@ -36,10 +36,16 @@ struct hza_file {
 };
 
 struct hza_journal_entry {
-    uint64_t obj_sof;
+    hza_jtask task;
+    uint64_t target_sof;
+    uint64_t length;
     uint8_t *data;
 };
 
+// Block-info
+// marker: 8-bit
+// sof: 64-bit
+// size: elias-gamma :- represents the block size in bits.
 struct hza_block_info {
     hza_marker marker;
     uint64_t sof;
@@ -85,9 +91,11 @@ private:
 
     void scan();
 
-    void scan_metadata_segment(const std::function<uint64_t(uint64_t)>& read);
+    void scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read);
 
-    void scan_blob_segment(const std::function<uint64_t(uint64_t)>& read, const std::function<void(uint64_t)>& seek);
+    void scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
+
+    void scan_journal_segment(const std::function<uint64_t(uint64_t)> &read);
 
 public:
     hz_archive(std::string archive_path);

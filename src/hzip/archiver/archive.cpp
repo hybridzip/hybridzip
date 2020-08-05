@@ -86,7 +86,7 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &
             break;
         }
         case hza_metadata_entry_type::FILEINFO: {
-            // FILEINFO format: <path_length in Elias Gamma Code> <file_path> <blob_count in Elias Gamma Code>
+            // FILEINFO format: <path_length in elias-gamma> <file_path> <blob_count in elias-gamma>
             // <blob_id1 (64-bit)> <blob_id2 (64-bit)> ...
 
             uint64_t path_length = unaryinv_bin(read).obj;
@@ -138,7 +138,7 @@ void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read
 }
 
 void hz_archive::scan_journal_segment(const std::function<uint64_t(uint64_t)> &read) {
-    // JOURNAL_ENTRY format: <block-size> | <jtask (1-bit)> <target_sof (64-bit)> <data (8-bit array)>
+    // JOURNAL_ENTRY format: <block-size (elias-gamma)> | <jtask (1-bit)> <target_sof (64-bit)> <data (8-bit array)>
     // Read block-info
     auto size = unaryinv_bin(read).obj;
 
@@ -155,7 +155,8 @@ void hz_archive::scan_journal_segment(const std::function<uint64_t(uint64_t)> &r
     journal.entries.push_back(entry);
 }
 
-void hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek) {
+void
+hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek) {
     hza_fragment fragment{};
     fragment.sof = metadata.eof - 0x8;
     fragment.length = unaryinv_bin(read).obj;
@@ -179,4 +180,29 @@ void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &re
     seek(size - 0x40);
 
     metadata.mstate_map[mstate_id] = sof;
+}
+
+void hz_archive::delete_at_sof(uint64_t sof) {
+
+}
+
+hz_archive::hza_connection hz_archive::create_conn() {
+    uint64_t id = stream_map.size();
+
+    FILE *fp = fopen(path.c_str(), "rb+");
+    stream_map[id] = new bitio::stream(fp);
+
+    return hza_connection{
+        .id=id,
+        .archive=this
+    };
+}
+
+void hz_archive::hza_connection::close() {
+    // todo: Synchronize
+    archive->stream_map[id]->flush();
+    archive->stream_map[id]->close();
+    free(archive->stream_map[id]);
+
+    archive->stream_map.erase(id);
 }

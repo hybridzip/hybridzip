@@ -15,7 +15,8 @@ enum hza_marker {
     METADATA = 0x1,
     JOURNAL = 0x2,
     BLOB = 0x3,
-    END = 0x4
+    MSTATE = 0x4,
+    END = 0xff
 };
 
 enum hza_metadata_entry_type {
@@ -67,6 +68,7 @@ struct hza_metadata {
     uint64_t eof;
     std::unordered_map<std::string, hza_metadata_file_entry> file_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
+    std::unordered_map<uint64_t, uint64_t> mstate_map;
     std::vector<hza_fragment> fragments;
 };
 
@@ -95,10 +97,11 @@ private:
 
     void scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
+    void scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
+
     void scan_journal_segment(const std::function<uint64_t(uint64_t)> &read);
 
     void scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
-    
 public:
     hz_archive(std::string archive_path);
 

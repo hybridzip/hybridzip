@@ -27,10 +27,6 @@ void hz_archive::scan() {
         stream->seek(n);
     };
 
-    if (is_defrag_active) {
-        sem_wait(&defrag_mutex);
-    }
-
     metadata.eof = 0;
 
     while (true) {
@@ -51,6 +47,10 @@ void hz_archive::scan() {
             }
             case hza_marker::BLOB: {
                 scan_blob_segment(readfn, seekfn);
+                break;
+            }
+            case hza_marker::MSTATE: {
+                scan_mstate_segment(readfn, seekfn);
                 break;
             }
             case hza_marker::EMPTY: {
@@ -164,4 +164,19 @@ void hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, co
 
     // Skip data block
     seek(fragment.length);
+}
+
+void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read,
+                                     const std::function<void(uint64_t)> &seek) {
+    // MSTATE format: <block-length (elias-gamma)> <mstate-id (64-bit)> <mstate-data>
+
+    auto sof = metadata.eof - 0x8;
+    auto size = unaryinv_bin(read).obj;
+
+    uint64_t mstate_id = read(0x40);
+
+    // Skip the blob data
+    seek(size - 0x40);
+
+    metadata.mstate_map[mstate_id] = sof;
 }

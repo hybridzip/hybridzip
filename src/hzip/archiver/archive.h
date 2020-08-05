@@ -97,6 +97,8 @@ private:
 
     void scan_journal_segment(const std::function<uint64_t(uint64_t)> &read);
 
+    void scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
+    
 public:
     hz_archive(std::string archive_path);
 

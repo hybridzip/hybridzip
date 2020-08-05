@@ -53,6 +53,10 @@ void hz_archive::scan() {
                 scan_blob_segment(readfn, seekfn);
                 break;
             }
+            case hza_marker::EMPTY: {
+                scan_fragment(readfn, seekfn);
+                break;
+            }
         }
     }
 }
@@ -149,4 +153,15 @@ void hz_archive::scan_journal_segment(const std::function<uint64_t(uint64_t)> &r
     }
 
     journal.entries.push_back(entry);
+}
+
+void hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek) {
+    hza_fragment fragment{};
+    fragment.sof = metadata.eof - 0x8;
+    fragment.length = unaryinv_bin(read).obj;
+
+    metadata.fragments.push_back(fragment);
+
+    // Skip data block
+    seek(fragment.length);
 }

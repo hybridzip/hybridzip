@@ -78,16 +78,17 @@ struct hza_journal {
 
 class hz_archive {
 private:
+    enum hza_context {
+        READ = 0x0,
+        WRITE = 0x1,
+        DEFRAG = 0x2
+    };
+
     std::string path;
     hza_metadata metadata;
     hza_journal journal;
-
-    // maps connection id to a bitio::stream
-    std::unordered_map<uint64_t, bitio::stream*> stream_map;
-
-    sem_t rw_mutex;
-    sem_t defrag_mutex;
-    bool is_defrag_active;
+    bitio::stream *stream;
+    sem_t *mutex;
 
     void scan();
 
@@ -101,19 +102,10 @@ private:
 
     void scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
-    void delete_at_sof(uint64_t sof);
+    void create_metadata_file_entry(uint64_t conn_id, hza_metadata_file_entry entry);
+
 public:
-    struct hza_connection {
-        uint64_t id;
-        hz_archive *archive;
-        // todo: Implement archive permissions
-
-        void close();
-    };
-
-    hz_archive(std::string archive_path);
-
-    hza_connection create_conn();
+    hz_archive(const std::string& archive_path);
 };
 
 #endif

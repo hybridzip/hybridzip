@@ -1,30 +1,35 @@
 #include "archive.h"
+#include <filesystem>
+#include <fcntl.h>
 #include <hzip/utils/utils.h>
 
-hz_archive::hz_archive(std::string archive_path) {
-    path = std::move(archive_path);
-    sem_init(&rw_mutex, 0, 1);
-    sem_init(&defrag_mutex, 0, 1);
+hz_archive::hz_archive(const std::string& archive_path) {
+    path = std::filesystem::absolute(archive_path);
+
+    FILE *fp = fopen(path.c_str(), "rb+");
+    stream = new bitio::stream(fp);
+
+    char *sname = str_to_hex(path);
+
+    // Mutex shared across processes and threads.
+    mutex = sem_open(sname, O_CREAT, 0777, 1);
 
     // todo: Create archive if non-existent
-
-    is_defrag_active = false;
 
     scan();
 }
 
 void hz_archive::scan() {
-    FILE *file = fopen(path.c_str(), "rb+");
-    auto stream = new bitio::stream(file);
+    sem_wait(mutex);
 
-    auto readfn = [this, stream](uint64_t n) {
+    auto readfn = [this](uint64_t n) {
         this->metadata.eof += n;
-        return stream->read(n);
+        return this->stream->read(n);
     };
 
-    auto seekfn = [this, stream](uint64_t n) {
+    auto seekfn = [this](uint64_t n) {
         this->metadata.eof += n;
-        stream->seek(n);
+        this->stream->seek(n);
     };
 
     metadata.eof = 0;
@@ -59,6 +64,8 @@ void hz_archive::scan() {
             }
         }
     }
+
+    sem_post(mutex);
 }
 
 void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read) {
@@ -182,27 +189,10 @@ void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &re
     metadata.mstate_map[mstate_id] = sof;
 }
 
-void hz_archive::delete_at_sof(uint64_t sof) {
+void hz_archive::create_metadata_file_entry(uint64_t conn_id, hza_metadata_file_entry entry) {
+    sem_wait(mutex);
 
-}
 
-hz_archive::hza_connection hz_archive::create_conn() {
-    uint64_t id = stream_map.size();
 
-    FILE *fp = fopen(path.c_str(), "rb+");
-    stream_map[id] = new bitio::stream(fp);
-
-    return hza_connection{
-        .id=id,
-        .archive=this
-    };
-}
-
-void hz_archive::hza_connection::close() {
-    // todo: Synchronize
-    archive->stream_map[id]->flush();
-    archive->stream_map[id]->close();
-    free(archive->stream_map[id]);
-
-    archive->stream_map.erase(id);
+    sem_post(mutex);
 }

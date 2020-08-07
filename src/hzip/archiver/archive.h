@@ -16,6 +16,7 @@ enum hza_marker {
     JOURNAL = 0x2,
     BLOB = 0x3,
     MSTATE = 0x4,
+    RESIDUAL = 0xfe,
     END = 0xff
 };
 
@@ -88,6 +89,7 @@ private:
     hza_metadata metadata;
     hza_journal journal;
     bitio::stream *stream;
+    sem_t *archive_mutex;
     sem_t *mutex;
 
     void scan();
@@ -102,10 +104,12 @@ private:
 
     void scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
-    void create_metadata_file_entry(uint64_t conn_id, hza_metadata_file_entry entry);
+    void create_metadata_file_entry(std::string file_path, hza_metadata_file_entry entry);
 
 public:
     hz_archive(const std::string& archive_path);
+
+    void close();
 };
 
 #endif

@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fcntl.h>
 #include <hzip/utils/utils.h>
+#include <loguru/loguru.hpp>
 
 hz_archive::hz_archive(const std::string& archive_path) {
     path = std::filesystem::absolute(archive_path);
@@ -11,8 +12,16 @@ hz_archive::hz_archive(const std::string& archive_path) {
 
     char *sname = str_to_hex(path);
 
-    // Mutex shared across processes and threads.
-    mutex = sem_open(sname, O_CREAT, 0777, 1);
+    // Lock archive.
+    LOG_F(INFO, "hzip.archive: Requesting access to archive: %s", path.c_str());
+
+    archive_mutex = sem_open(sname, O_CREAT, 0777, 1);
+    sem_wait(archive_mutex);
+
+    LOG_F(INFO, "hzip.archive: Access granted to archive: %s", path.c_str());
+
+    mutex = new sem_t;
+    sem_init(mutex, 0, 1);
 
     // todo: Create archive if non-existent
 
@@ -74,7 +83,7 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &
 
     info.marker = hza_marker::METADATA;
     info.sof = metadata.eof - 0x8;
-    info.size = unaryinv_bin(read).obj;
+    info.size = elias_gamma_inv(read).obj;
 
     // Read metadata entry type
     auto entry_type = (hza_metadata_entry_type) read(0x1);
@@ -96,7 +105,7 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &
             // FILEINFO format: <path_length in elias-gamma> <file_path> <blob_count in elias-gamma>
             // <blob_id1 (64-bit)> <blob_id2 (64-bit)> ...
 
-            uint64_t path_length = unaryinv_bin(read).obj;
+            uint64_t path_length = elias_gamma_inv(read).obj;
             char *_path = new char[path_length];
 
             for (uint64_t i = 0; i < path_length; i++) {
@@ -108,7 +117,7 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &
             file_path.assign(_path, path_length);
             free(_path);
 
-            uint64_t blob_count = unaryinv_bin(read).obj;
+            uint64_t blob_count = elias_gamma_inv(read).obj;
             auto *blob_ids = new uint64_t[blob_count];
 
             for (uint64_t i = 0; i < blob_count; i++) {
@@ -134,7 +143,7 @@ void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read
     // BLOB format: <block-length (elias-gamma)> <blob-id (64-bit)> <blob-data>
 
     auto sof = metadata.eof - 0x8;
-    auto size = unaryinv_bin(read).obj;
+    auto size = elias_gamma_inv(read).obj;
 
     uint64_t blob_id = read(0x40);
 
@@ -147,7 +156,7 @@ void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read
 void hz_archive::scan_journal_segment(const std::function<uint64_t(uint64_t)> &read) {
     // JOURNAL_ENTRY format: <block-size (elias-gamma)> | <jtask (1-bit)> <target_sof (64-bit)> <data (8-bit array)>
     // Read block-info
-    auto size = unaryinv_bin(read).obj;
+    auto size = elias_gamma_inv(read).obj;
 
     hza_journal_entry entry{};
     entry.task = (hza_jtask) read(0x1);
@@ -166,7 +175,7 @@ void
 hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek) {
     hza_fragment fragment{};
     fragment.sof = metadata.eof - 0x8;
-    fragment.length = unaryinv_bin(read).obj;
+    fragment.length = elias_gamma_inv(read).obj;
 
     metadata.fragments.push_back(fragment);
 
@@ -179,7 +188,7 @@ void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &re
     // MSTATE format: <block-length (elias-gamma)> <mstate-id (64-bit)> <mstate-data>
 
     auto sof = metadata.eof - 0x8;
-    auto size = unaryinv_bin(read).obj;
+    auto size = elias_gamma_inv(read).obj;
 
     uint64_t mstate_id = read(0x40);
 
@@ -189,10 +198,49 @@ void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &re
     metadata.mstate_map[mstate_id] = sof;
 }
 
-void hz_archive::create_metadata_file_entry(uint64_t conn_id, hza_metadata_file_entry entry) {
-    sem_wait(mutex);
+void hz_archive::create_metadata_file_entry(std::string file_path, hza_metadata_file_entry entry) {
+    // Evaluate length of entry to utilize fragmented-space.
+    uint64_t length = 0;
+
+    bin_t path_length = elias_gamma(file_path.length());
+    length += path_length.n;
+    length += (file_path.length() << 3);
+
+    bin_t blob_count = elias_gamma(entry.file.blob_count);
+    length += blob_count.n;
+    length += (entry.file.blob_count << 0x6);
+
+    uint64_t fragment_index = 0;
+    uint64_t fit_diff = 0xffffffffffffffff;
+    bin_t diff_bin{};
+    bool found_fragment = false;
+
+    // Best-fit for fragment utilization.
+    for (uint64_t i = 0; i < metadata.fragments.size(); i++) {
+        auto fragment = metadata.fragments[i];
+
+        if (fragment.length > length) {
+            uint64_t diff = fragment.length - length;
+            if (diff < 0x8) {
+                continue;
+            }
 
 
+            diff_bin = elias_gamma(diff - 0x8);
+
+
+            if (diff < fit_diff) {
+                fit_diff = diff;
+                found_fragment = true;
+                fragment_index = i;
+            }
+        }
+    }
+
+    if (found_fragment) {
+        metadata.fragments[fragment_index].length = fit_diff;
+        metadata.fragments[fragment_index].sof += length;
+    }
 
     sem_post(mutex);
 }

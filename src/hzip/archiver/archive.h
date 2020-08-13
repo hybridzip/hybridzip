@@ -5,8 +5,10 @@
 #include <functional>
 #include <unordered_map>
 #include <semaphore.h>
-#include <hzip/core/blob/hzblob.h>
 #include <bitio/bitio.h>
+#include <hzip/core/blob/hzblob.h>
+#include <hzip/utils/common.h>
+#include <hzip/memory/mem_interface.h>
 
 #define HZ_ARCHIVE_VERSION {0, 1, 0}
 
@@ -77,7 +79,7 @@ struct hza_journal {
     std::vector<hza_journal_entry> entries;
 };
 
-class hz_archive {
+class hz_archive: public hz_mem_iface {
 private:
     enum hza_context {
         READ = 0x0,
@@ -104,7 +106,9 @@ private:
 
     void scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
-    void create_metadata_file_entry(std::string file_path, hza_metadata_file_entry entry);
+    option_t<uint64_t> alloc_fragment(uint64_t length);
+
+    void create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry);
 
 public:
     hz_archive(const std::string& archive_path);

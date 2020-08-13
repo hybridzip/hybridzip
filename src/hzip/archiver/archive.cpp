@@ -118,7 +118,7 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &
             free(_path);
 
             uint64_t blob_count = elias_gamma_inv(read).obj;
-            auto *blob_ids = new uint64_t[blob_count];
+            auto *blob_ids = HZ_MALLOC(uint64_t, blob_count);
 
             for (uint64_t i = 0; i < blob_count; i++) {
                 blob_ids[i] = read(0x40);
@@ -162,7 +162,7 @@ void hz_archive::scan_journal_segment(const std::function<uint64_t(uint64_t)> &r
     entry.task = (hza_jtask) read(0x1);
     entry.target_sof = read(0x40);
     entry.length = ((size - 0x41) >> 3);
-    entry.data = new uint8_t[entry.length];
+    entry.data = HZ_MALLOC(uint8_t, entry.length);
 
     for (uint64_t i = 0; i < entry.length; i++) {
         entry.data[i] = read(0x8);
@@ -198,18 +198,7 @@ void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &re
     metadata.mstate_map[mstate_id] = sof;
 }
 
-void hz_archive::create_metadata_file_entry(std::string file_path, hza_metadata_file_entry entry) {
-    // Evaluate length of entry to utilize fragmented-space.
-    uint64_t length = 0;
-
-    bin_t path_length = elias_gamma(file_path.length());
-    length += path_length.n;
-    length += (file_path.length() << 3);
-
-    bin_t blob_count = elias_gamma(entry.file.blob_count);
-    length += blob_count.n;
-    length += (entry.file.blob_count << 0x6);
-
+option_t<uint64_t> hz_archive::alloc_fragment(uint64_t length) {
     uint64_t fragment_index = 0;
     uint64_t fit_diff = 0xffffffffffffffff;
     bin_t diff_bin{};
@@ -221,13 +210,11 @@ void hz_archive::create_metadata_file_entry(std::string file_path, hza_metadata_
 
         if (fragment.length > length) {
             uint64_t diff = fragment.length - length;
-            if (diff < 0x8) {
+            if (diff < 0x48) {
                 continue;
             }
 
-
             diff_bin = elias_gamma(diff - 0x8);
-
 
             if (diff < fit_diff) {
                 fit_diff = diff;
@@ -238,9 +225,70 @@ void hz_archive::create_metadata_file_entry(std::string file_path, hza_metadata_
     }
 
     if (found_fragment) {
-        metadata.fragments[fragment_index].length = fit_diff;
+        metadata.fragments[fragment_index].length = fit_diff - 0x48;
+        uint64_t psof =  metadata.fragments[fragment_index].sof;
         metadata.fragments[fragment_index].sof += length;
+
+        stream->seek_to(metadata.fragments[fragment_index].sof);
+        stream->write(hza_marker::RESIDUAL, 0x8);
+        stream->write(metadata.fragments[fragment_index].length, 0x40);
+
+        return option_t<uint64_t>(psof);
+    } else {
+        return option_t<uint64_t>(0, false);
+    }
+}
+
+void hz_archive::create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry) {
+    // Evaluate length of entry to utilize fragmented-space.
+    uint64_t length = 0;
+
+    bin_t path_length = elias_gamma(file_path.length());
+    length += path_length.n;
+    length += (file_path.length() << 3);
+
+    // Blob-count (n) (58-bit) + n 64-bit blob-ids
+    length += 0x3A;
+    length += (entry.file.blob_count << 0x6);
+
+    option_t<uint64_t> o_frag = alloc_fragment(length);
+
+    if (o_frag.is_valid) {
+        uint64_t frag_sof = o_frag.get();
+
+        // seek to allocated fragment.
+        stream->seek_to(frag_sof);
+    } else {
+        // seek to end-of-file
+        stream->seek_to(metadata.eof);
+    }
+
+    stream->write(hza_marker::BLOB, 0x8);
+    stream->write(path_length.obj, path_length.n);
+
+    // Write file_path
+    for (int i = 0; i < file_path.length(); i++) {
+        stream->write(file_path[i], 0x8);
+    }
+
+    // Write blob_count.
+    stream->write(entry.file.blob_count, 0x3A);
+
+    // Write 64-bit blob_ids
+    for (int i = 0; i < entry.file.blob_count; i++) {
+        stream->write(entry.file.blob_ids[i], 0x40);
     }
 
     sem_post(mutex);
+}
+
+void hz_archive::close() {
+    stream->flush();
+    stream->close();
+
+    free(stream);
+    free(mutex);
+
+    sem_post(archive_mutex);
+    free(archive_mutex);
 }

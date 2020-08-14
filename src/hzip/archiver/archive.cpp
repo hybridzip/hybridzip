@@ -203,7 +203,6 @@ void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &re
 option_t<uint64_t> hz_archive::alloc_fragment(uint64_t length) {
     uint64_t fragment_index = 0;
     uint64_t fit_diff = 0xffffffffffffffff;
-    bin_t diff_bin{};
     bool found_fragment = false;
 
     // Best-fit for fragment utilization.
@@ -212,11 +211,9 @@ option_t<uint64_t> hz_archive::alloc_fragment(uint64_t length) {
 
         if (fragment.length > length) {
             uint64_t diff = fragment.length - length;
-            if (diff < 0x48) {
+            if (diff < 0x48 && diff > 0) {
                 continue;
             }
-
-            diff_bin = elias_gamma(diff - 0x8);
 
             if (diff < fit_diff) {
                 fit_diff = diff;
@@ -227,13 +224,19 @@ option_t<uint64_t> hz_archive::alloc_fragment(uint64_t length) {
     }
 
     if (found_fragment) {
-        metadata.fragments[fragment_index].length = fit_diff - 0x48;
-        uint64_t psof =  metadata.fragments[fragment_index].sof;
-        metadata.fragments[fragment_index].sof += length;
+        uint64_t psof = metadata.fragments[fragment_index].sof;
 
-        stream->seek_to(metadata.fragments[fragment_index].sof);
-        stream->write(hza_marker::RESIDUAL, 0x8);
-        stream->write(metadata.fragments[fragment_index].length, 0x40);
+        if (fit_diff > 0) {
+            metadata.fragments[fragment_index].length = fit_diff - 0x48;
+            metadata.fragments[fragment_index].sof += length;
+
+            stream->seek_to(metadata.fragments[fragment_index].sof);
+            stream->write(hza_marker::EMPTY, 0x8);
+            stream->write(metadata.fragments[fragment_index].length, 0x40);
+        } else {
+            // If perfect fit then erase fragment.
+            metadata.fragments.erase(metadata.fragments.begin() + fragment_index);
+        }
 
         return option_t<uint64_t>(psof);
     } else {
@@ -265,12 +268,16 @@ void hz_archive::create_metadata_file_entry(const std::string& file_path, hza_me
     } else {
         // seek to end-of-file
         stream->seek_to(metadata.eof);
+        metadata.eof += 0x48 + length;
     }
 
-    stream->write(hza_marker::BLOB, 0x8);
-    stream->write(path_length.obj, path_length.n);
+    // Write block-info
+    stream->write(hza_marker::METADATA, 0x8);
+    stream->write(length, 0x40);
 
     // Write file_path
+    stream->write(path_length.obj, path_length.n);
+
     for (int i = 0; i < file_path.length(); i++) {
         stream->write(file_path[i], 0x8);
     }
@@ -281,6 +288,32 @@ void hz_archive::create_metadata_file_entry(const std::string& file_path, hza_me
     // Write 64-bit blob_ids
     for (int i = 0; i < entry.file.blob_count; i++) {
         stream->write(entry.file.blob_ids[i], 0x40);
+    }
+
+    sem_post(mutex);
+}
+
+void hz_archive::write_blob(hzblob_t *blob) {
+    sem_wait(mutex);
+    // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-data>
+
+    uint64_t length = blob->size << 0x5;
+    option_t<uint64_t> o_frag = alloc_fragment(length);
+
+    if (o_frag.is_valid) {
+        uint64_t frag_sof = o_frag.get();
+        stream->seek_to(frag_sof);
+    } else {
+        stream->seek_to(metadata.eof);
+        metadata.eof += 0x48 + length;
+    }
+
+    // Write block-info.
+    stream->write(hza_marker::BLOB, 0x8);
+    stream->write(length, 0x40);
+
+    for (int i = 0; i < blob->size; i++) {
+        stream->write(blob->data[i], 0x20);
     }
 
     sem_post(mutex);
@@ -297,11 +330,4 @@ void hz_archive::close() {
     free(archive_mutex);
 }
 
-void hz_archive::write_blob(hzblob_t *blob) {
-    sem_wait(mutex);
-    // blob writing format: <hzmarker (8bit)> <block length (64bit)>
 
-
-
-    sem_post(mutex);
-}

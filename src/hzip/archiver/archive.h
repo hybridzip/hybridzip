@@ -10,15 +10,12 @@
 #include <hzip/utils/common.h>
 #include <hzip/memory/mem_interface.h>
 
-#define HZ_ARCHIVE_VERSION {0, 1, 0}
-
 enum hza_marker {
     EMPTY = 0x0,
     METADATA = 0x1,
     JOURNAL = 0x2,
     BLOB = 0x3,
     MSTATE = 0x4,
-    RESIDUAL = 0xfe,
     END = 0xff
 };
 

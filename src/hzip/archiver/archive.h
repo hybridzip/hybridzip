@@ -110,6 +110,7 @@ private:
 
     void create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry);
 
+    void write_blob(hzblob_t *blob);
 public:
     hz_archive(const std::string& archive_path);
 

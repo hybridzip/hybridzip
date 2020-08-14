@@ -81,9 +81,11 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &
     // Read block-info
     hza_block_info info{};
 
+    // block-info format: <hza::marker (8bit)> <block length (64bit)>
+
     info.marker = hza_marker::METADATA;
     info.sof = metadata.eof - 0x8;
-    info.size = elias_gamma_inv(read).obj;
+    info.size = read(0x40);
 
     // Read metadata entry type
     auto entry_type = (hza_metadata_entry_type) read(0x1);
@@ -140,10 +142,10 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &
 
 void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read,
                                    const std::function<void(uint64_t)> &seek) {
-    // BLOB format: <block-length (elias-gamma)> <blob-id (64-bit)> <blob-data>
+    // BLOB format: <block-length (64bit)> <blob-id (64-bit)> <blob-data>
 
     auto sof = metadata.eof - 0x8;
-    auto size = elias_gamma_inv(read).obj;
+    auto size = read(0x40);
 
     uint64_t blob_id = read(0x40);
 
@@ -154,9 +156,9 @@ void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read
 }
 
 void hz_archive::scan_journal_segment(const std::function<uint64_t(uint64_t)> &read) {
-    // JOURNAL_ENTRY format: <block-size (elias-gamma)> | <jtask (1-bit)> <target_sof (64-bit)> <data (8-bit array)>
+    // JOURNAL_ENTRY format: <block-size (64bit)> | <jtask (1-bit)> <target_sof (64-bit)> <data (8-bit array)>
     // Read block-info
-    auto size = elias_gamma_inv(read).obj;
+    auto size = read(0x40);
 
     hza_journal_entry entry{};
     entry.task = (hza_jtask) read(0x1);
@@ -175,7 +177,7 @@ void
 hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek) {
     hza_fragment fragment{};
     fragment.sof = metadata.eof - 0x8;
-    fragment.length = elias_gamma_inv(read).obj;
+    fragment.length = read(0x40);
 
     metadata.fragments.push_back(fragment);
 
@@ -185,10 +187,10 @@ hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, const s
 
 void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read,
                                      const std::function<void(uint64_t)> &seek) {
-    // MSTATE format: <block-length (elias-gamma)> <mstate-id (64-bit)> <mstate-data>
+    // MSTATE format: <block-length (64bit)> <mstate-id (64-bit)> <mstate-data>
 
     auto sof = metadata.eof - 0x8;
-    auto size = elias_gamma_inv(read).obj;
+    auto size = read(0x40);
 
     uint64_t mstate_id = read(0x40);
 
@@ -241,6 +243,8 @@ option_t<uint64_t> hz_archive::alloc_fragment(uint64_t length) {
 
 void hz_archive::create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry) {
     // Evaluate length of entry to utilize fragmented-space.
+    sem_wait(mutex);
+
     uint64_t length = 0;
 
     bin_t path_length = elias_gamma(file_path.length());
@@ -291,4 +295,13 @@ void hz_archive::close() {
 
     sem_post(archive_mutex);
     free(archive_mutex);
+}
+
+void hz_archive::write_blob(hzblob_t *blob) {
+    sem_wait(mutex);
+    // blob writing format: <hzmarker (8bit)> <block length (64bit)>
+
+
+
+    sem_post(mutex);
 }

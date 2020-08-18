@@ -25,10 +25,10 @@ hz_archive::hz_archive(const std::string& archive_path) {
 
     // todo: Create archive if non-existent
 
-    scan();
+    hza_scan();
 }
 
-void hz_archive::scan() {
+void hz_archive::hza_scan() {
     sem_wait(mutex);
 
     auto readfn = [this](uint64_t n) {
@@ -52,19 +52,19 @@ void hz_archive::scan() {
 
         switch (marker) {
             case hza_marker::METADATA: {
-                scan_metadata_segment(readfn);
+                hza_scan_metadata_segment(readfn);
                 break;
             }
             case hza_marker::BLOB: {
-                scan_blob_segment(readfn, seekfn);
+                hza_scan_blob_segment(readfn, seekfn);
                 break;
             }
             case hza_marker::MSTATE: {
-                scan_mstate_segment(readfn, seekfn);
+                hza_scan_mstate_segment(readfn, seekfn);
                 break;
             }
             case hza_marker::EMPTY: {
-                scan_fragment(readfn, seekfn);
+                hza_scan_fragment(readfn, seekfn);
                 break;
             }
         }
@@ -73,7 +73,7 @@ void hz_archive::scan() {
     sem_post(mutex);
 }
 
-void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read) {
+void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read) {
     // Read block-info
     hza_block_info info{};
 
@@ -136,8 +136,8 @@ void hz_archive::scan_metadata_segment(const std::function<uint64_t(uint64_t)> &
     }
 }
 
-void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read,
-                                   const std::function<void(uint64_t)> &seek) {
+void hz_archive::hza_scan_blob_segment(const std::function<uint64_t(uint64_t)> &read,
+                                       const std::function<void(uint64_t)> &seek) {
     // BLOB format: <block-length (64bit)> <blob-id (64-bit)> <blob-data>
 
     auto sof = metadata.eof - 0x8;
@@ -152,7 +152,7 @@ void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read
 }
 
 void
-hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek) {
+hz_archive::hza_scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek) {
     hza_fragment fragment{};
     fragment.sof = metadata.eof - 0x8;
     fragment.length = read(0x40);
@@ -163,8 +163,8 @@ hz_archive::scan_fragment(const std::function<uint64_t(uint64_t)> &read, const s
     seek(fragment.length);
 }
 
-void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read,
-                                     const std::function<void(uint64_t)> &seek) {
+void hz_archive::hza_scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read,
+                                         const std::function<void(uint64_t)> &seek) {
     // MSTATE format: <block-length (64bit)> <mstate-id (64-bit)> <mstate-data>
 
     auto sof = metadata.eof - 0x8;
@@ -178,7 +178,7 @@ void hz_archive::scan_mstate_segment(const std::function<uint64_t(uint64_t)> &re
     metadata.mstate_map[mstate_id] = sof;
 }
 
-option_t<uint64_t> hz_archive::alloc_fragment(uint64_t length) {
+option_t<uint64_t> hz_archive::hza_alloc_fragment(uint64_t length) {
     uint64_t fragment_index = 0;
     uint64_t fit_diff = 0xffffffffffffffff;
     bool found_fragment = false;
@@ -222,7 +222,7 @@ option_t<uint64_t> hz_archive::alloc_fragment(uint64_t length) {
     }
 }
 
-void hz_archive::create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry) {
+void hz_archive::hza_create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry) {
     // Evaluate length of entry to utilize fragmented-space.
     sem_wait(mutex);
 
@@ -236,7 +236,7 @@ void hz_archive::create_metadata_file_entry(const std::string& file_path, hza_me
     length += 0x3A;
     length += (entry.file.blob_count << 0x6);
 
-    option_t<uint64_t> o_frag = alloc_fragment(length);
+    option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
     if (o_frag.is_valid) {
         uint64_t frag_sof = o_frag.get();
@@ -271,12 +271,12 @@ void hz_archive::create_metadata_file_entry(const std::string& file_path, hza_me
     sem_post(mutex);
 }
 
-void hz_archive::write_blob(hzblob_t *blob) {
+void hz_archive::hza_write_blob(hzblob_t *blob) {
     sem_wait(mutex);
     // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-data>
 
     uint64_t length = blob->size << 0x5;
-    option_t<uint64_t> o_frag = alloc_fragment(length);
+    option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
     if (o_frag.is_valid) {
         uint64_t frag_sof = o_frag.get();
@@ -292,6 +292,35 @@ void hz_archive::write_blob(hzblob_t *blob) {
 
     for (int i = 0; i < blob->size; i++) {
         stream->write(blob->data[i], 0x20);
+    }
+
+    sem_post(mutex);
+}
+
+void hz_archive::hza_write_mstate(hz_mstate *mstate) {
+    sem_wait(mutex);
+    // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
+    // <mstate-id (64-bit)> <bins (64-bit)>
+
+    uint64_t length = 0x40 + (mstate->length << 0x6);
+    option_t<uint64_t> o_frag = hza_alloc_fragment(length);
+
+    if (o_frag.is_valid) {
+        uint64_t frag_sof = o_frag.get();
+        stream->seek_to(frag_sof);
+    } else {
+        stream->seek_to(metadata.eof);
+        metadata.eof += 0x48 + length;
+    }
+
+    // Write block-info.
+    stream->write(hza_marker::MSTATE, 0x8);
+    stream->write(length, 0x40);
+
+    stream->write(mstate->id, 0x40);
+
+    for (int i = 0; i < mstate->length; i++) {
+        stream->write(mstate->data[i], 0x40);
     }
 
     sem_post(mutex);

@@ -63,7 +63,6 @@ private:
     enum hza_context {
         READ = 0x0,
         WRITE = 0x1,
-        DEFRAG = 0x2
     };
 
     std::string path;
@@ -71,23 +70,25 @@ private:
     bitio::stream *stream;
     sem_t *archive_mutex;
     sem_t *mutex;
-    bool is_journaling_enabled = true;
 
-    void scan();
+    void hza_scan();
 
-    void scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read);
+    void hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read);
 
-    void scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
+    void hza_scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
-    void scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
+    void hza_scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
-    void scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
+    void hza_scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
-    option_t<uint64_t> alloc_fragment(uint64_t length);
+    option_t<uint64_t> hza_alloc_fragment(uint64_t length);
 
-    void create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry);
+    void hza_create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry);
 
-    void write_blob(hzblob_t *blob);
+    void hza_write_blob(hzblob_t *blob);
+
+    void hza_write_mstate(hz_mstate *mstate);
+
 public:
     hz_archive(const std::string& archive_path);
 

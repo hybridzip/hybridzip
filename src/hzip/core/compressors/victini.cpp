@@ -104,7 +104,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
 
     // Parse mstate.
     uint64_t k = 0;
-    bool is_norm_dict = mstate->bins[k++];
+    bool is_norm_dict = mstate->data[k++];
 
     auto *dict = HZ_MALLOC(uint64_t*, 256);
     auto *cdict = HZ_MALLOC(uint64_t*, 256);
@@ -118,7 +118,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     // populate the dictionary.
     for (int i = 0; i < 0x100; i++) {
         for (int j = 0; j < 0x100; j++) {
-            dict[i][j] = mstate->bins[k++];
+            dict[i][j] = mstate->data[k++];
         }
     }
     // check if we need to normalize the dictionary.
@@ -281,7 +281,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
         // Generate mstate object.
         mstate->length = 65537;
-        mstate->bins = HZ_MALLOC(uint64_t, mstate->length);
+        mstate->data = HZ_MALLOC(uint64_t, mstate->length);
 
         bool store_norm_dict = false;
 
@@ -291,14 +291,14 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
 
         int b_index = 0;
-        mstate->bins[b_index++] = store_norm_dict;
+        mstate->data[b_index++] = store_norm_dict;
 
         for (int i = 0; i < 0x100; i++) {
             for (int k = 0; k < 0x100; k++) {
                 if (store_norm_dict) {
-                    mstate->bins[b_index++] = dict[i][k];
+                    mstate->data[b_index++] = dict[i][k];
                 } else {
-                    mstate->bins[b_index++] = dict_f[i][k];
+                    mstate->data[b_index++] = dict_f[i][k];
                 }
             }
         }
@@ -306,11 +306,11 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
     } else {
         uint64_t b_index = 0;
 
-        bool is_norm_dict = mstate->bins[b_index++];
+        bool is_norm_dict = mstate->data[b_index++];
 
         for (int i = 0; i < 0x100; i++) {
             for (int j = 0; j < 0x100; j++) {
-                dict[i][j] = mstate->bins[b_index++];
+                dict[i][j] = mstate->data[b_index++];
             }
         }
         // check if we need to normalize the dictionary.

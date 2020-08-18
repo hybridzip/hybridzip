@@ -10,17 +10,17 @@
 
 struct hz_mstate: public hz_mem_iface {
     uint64_t id;
-    uint64_t *bins;
+    uint64_t *data;
     uint64_t length;
 
     hz_mstate() {
         id = 0;
-        bins = nullptr;
+        data = nullptr;
         length = 0;
     }
 
     [[nodiscard]] bool is_empty() const {
-        return bins == nullptr;
+        return data == nullptr;
     }
 };
 

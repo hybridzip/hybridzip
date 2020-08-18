@@ -55,10 +55,6 @@ void hz_archive::scan() {
                 scan_metadata_segment(readfn);
                 break;
             }
-            case hza_marker::JOURNAL: {
-                scan_journal_segment(readfn);
-                break;
-            }
             case hza_marker::BLOB: {
                 scan_blob_segment(readfn, seekfn);
                 break;
@@ -153,24 +149,6 @@ void hz_archive::scan_blob_segment(const std::function<uint64_t(uint64_t)> &read
     seek(size - 0x40);
 
     metadata.blob_map[blob_id] = sof;
-}
-
-void hz_archive::scan_journal_segment(const std::function<uint64_t(uint64_t)> &read) {
-    // JOURNAL_ENTRY format: <block-size (64bit)> | <jtask (1-bit)> <target_sof (64-bit)> <data (8-bit array)>
-    // Read block-info
-    auto size = read(0x40);
-
-    hza_journal_entry entry{};
-    entry.task = (hza_jtask) read(0x1);
-    entry.target_sof = read(0x40);
-    entry.length = ((size - 0x41) >> 3);
-    entry.data = HZ_MALLOC(uint8_t, entry.length);
-
-    for (uint64_t i = 0; i < entry.length; i++) {
-        entry.data[i] = read(0x8);
-    }
-
-    journal.entries.push_back(entry);
 }
 
 void

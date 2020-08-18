@@ -13,9 +13,8 @@
 enum hza_marker {
     EMPTY = 0x0,
     METADATA = 0x1,
-    JOURNAL = 0x2,
-    BLOB = 0x3,
-    MSTATE = 0x4,
+    BLOB = 0x2,
+    MSTATE = 0x3,
     END = 0xff
 };
 
@@ -24,23 +23,10 @@ enum hza_metadata_entry_type {
     FILEINFO = 0x1,
 };
 
-enum hza_jtask {
-    WRITE = 0x0,
-    DEFRAG = 0x1
-};
-
-
 struct hza_file {
     uint64_t *blob_ids;
     uint64_t blob_count;
     //todo: Add file information.
-};
-
-struct hza_journal_entry {
-    hza_jtask task;
-    uint64_t target_sof;
-    uint64_t length;
-    uint8_t *data;
 };
 
 // Block-info
@@ -72,10 +58,6 @@ struct hza_metadata {
     std::vector<hza_fragment> fragments;
 };
 
-struct hza_journal {
-    std::vector<hza_journal_entry> entries;
-};
-
 class hz_archive: public hz_mem_iface {
 private:
     enum hza_context {
@@ -86,10 +68,10 @@ private:
 
     std::string path;
     hza_metadata metadata;
-    hza_journal journal;
     bitio::stream *stream;
     sem_t *archive_mutex;
     sem_t *mutex;
+    bool is_journaling_enabled = true;
 
     void scan();
 
@@ -98,8 +80,6 @@ private:
     void scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
     void scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
-
-    void scan_journal_segment(const std::function<uint64_t(uint64_t)> &read);
 
     void scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 

@@ -9,12 +9,10 @@
 #include <hzip/utils/common.h>
 
 struct hz_mstate: public hz_mem_iface {
-    uint64_t id;
     uint64_t *data;
     uint64_t length;
 
     hz_mstate() {
-        id = 0;
         data = nullptr;
         length = 0;
     }

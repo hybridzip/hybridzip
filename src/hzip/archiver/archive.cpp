@@ -316,11 +316,14 @@ void hz_archive::hza_write_mstate(hz_mstate *mstate) {
     uint64_t length = 0x40 + (mstate->length << 0x6);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
+    uint64_t sof;
+
     if (o_frag.is_valid) {
-        uint64_t frag_sof = o_frag.get();
-        stream->seek_to(frag_sof);
+        sof = o_frag.get();
+        stream->seek_to(sof);
     } else {
-        stream->seek_to(metadata.eof);
+        sof = metadata.eof;
+        stream->seek_to(sof);
         metadata.eof += 0x48 + length;
     }
 
@@ -328,8 +331,14 @@ void hz_archive::hza_write_mstate(hz_mstate *mstate) {
     stream->write(hza_marker::MSTATE, 0x8);
     stream->write(length, 0x40);
 
-    stream->write(mstate->id, 0x40);
+    // Create new mstate-id
+    uint64_t mstate_id = metadata.mstate_map.size();
+    stream->write(mstate_id, 0x40);
 
+    // Update mstate-map
+    metadata.mstate_map[mstate_id] = sof;
+
+    // Write mstate-data
     for (int i = 0; i < mstate->length; i++) {
         stream->write(mstate->data[i], 0x40);
     }

@@ -240,11 +240,13 @@ void hz_archive::hza_create_metadata_file_entry(const std::string& file_path, hz
 
     if (o_frag.is_valid) {
         uint64_t frag_sof = o_frag.get();
+        entry.info.sof = frag_sof;
 
         // seek to allocated fragment.
         stream->seek_to(frag_sof);
     } else {
         // seek to end-of-file
+        entry.info.sof = metadata.eof;
         stream->seek_to(metadata.eof);
         metadata.eof += 0x48 + length;
     }
@@ -271,7 +273,7 @@ void hz_archive::hza_create_metadata_file_entry(const std::string& file_path, hz
     sem_post(mutex);
 }
 
-void hz_archive::hza_write_blob(hzblob_t *blob) {
+uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
     sem_wait(mutex);
     // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)> <blob-data>
 
@@ -294,7 +296,11 @@ void hz_archive::hza_write_blob(hzblob_t *blob) {
     stream->write(length, 0x40);
 
     // Create a new unique blob-id and write it.
-    uint64_t blob_id = metadata.blob_map.size();
+    uint64_t blob_id = rand64();
+    while (metadata.blob_map.contains(blob_id)) {
+        blob_id = rand64();
+    }
+
     stream->write(blob_id, 0x40);
 
     // Update blob-map
@@ -306,9 +312,11 @@ void hz_archive::hza_write_blob(hzblob_t *blob) {
     }
 
     sem_post(mutex);
+
+    return blob_id;
 }
 
-void hz_archive::hza_write_mstate(hz_mstate *mstate) {
+uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     sem_wait(mutex);
     // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
     // <mstate-id (64-bit)> <bins (64-bit)>
@@ -332,7 +340,11 @@ void hz_archive::hza_write_mstate(hz_mstate *mstate) {
     stream->write(length, 0x40);
 
     // Create new mstate-id
-    uint64_t mstate_id = metadata.mstate_map.size();
+    uint64_t mstate_id = rand64();
+    while (metadata.mstate_map.contains(mstate_id)) {
+        mstate_id = rand64();
+    }
+
     stream->write(mstate_id, 0x40);
 
     // Update mstate-map
@@ -344,6 +356,8 @@ void hz_archive::hza_write_mstate(hz_mstate *mstate) {
     }
 
     sem_post(mutex);
+
+    return mstate_id;
 }
 
 void hz_archive::close() {
@@ -356,5 +370,3 @@ void hz_archive::close() {
     sem_post(archive_mutex);
     free(archive_mutex);
 }
-
-

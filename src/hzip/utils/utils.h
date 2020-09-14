@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <random>
 #include "common.h"
 
 HZ_INLINE uint64_t u64log2(uint64_t n) {
@@ -67,6 +68,12 @@ HZ_INLINE uint64_t unary_read(std::function<uint64_t(uint8_t)> readfunc) {
     uint64_t n = 0;
     while (readfunc(1)) n++;
     return n + 1;
+}
+
+HZ_INLINE uint64_t rand64() {
+    std::mt19937_64 generator(101);
+    std::uniform_int_distribution<uint64_t> distribution(0, 0xffffffffffffffff);
+    return distribution(generator);
 }
 
 #endif

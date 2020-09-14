@@ -82,7 +82,11 @@ private:
 
     uint64_t hza_write_blob(hzblob_t *blob);
 
+    void hza_rm_blob(uint64_t id);
+
     uint64_t hza_write_mstate(hz_mstate *mstate);
+
+    void hza_rm_mstate(uint64_t id);
 
 public:
     hz_archive(const std::string& archive_path);

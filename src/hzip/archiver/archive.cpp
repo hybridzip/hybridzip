@@ -316,6 +316,19 @@ uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
     return blob_id;
 }
 
+void hz_archive::hza_rm_blob(uint64_t id) {
+    if (metadata.blob_map.contains(id)) {
+        uint64_t sof = metadata.blob_map[id];
+
+        stream->seek_to(sof);
+        stream->write(hza_marker::EMPTY, 0x8);
+
+        metadata.blob_map.erase(id);
+    } else {
+        LOG_F(WARNING, "hzip.archive: blob(0x%lx) was not found", id);
+    }
+}
+
 uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     sem_wait(mutex);
     // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
@@ -360,6 +373,19 @@ uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     return mstate_id;
 }
 
+void hz_archive::hza_rm_mstate(uint64_t id) {
+    if (metadata.mstate_map.contains(id)) {
+        uint64_t sof = metadata.mstate_map[id];
+
+        stream->seek_to(sof);
+        stream->write(hza_marker::EMPTY, 0x8);
+
+        metadata.mstate_map.erase(id);
+    } else {
+        LOG_F(WARNING, "hzip.archive: mstate(0x%lx) was not found", id);
+    }
+}
+
 void hz_archive::close() {
     stream->flush();
     stream->close();
@@ -370,3 +396,7 @@ void hz_archive::close() {
     sem_post(archive_mutex);
     free(archive_mutex);
 }
+
+
+
+

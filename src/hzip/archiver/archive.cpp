@@ -189,7 +189,7 @@ option_t<uint64_t> hz_archive::hza_alloc_fragment(uint64_t length) {
 
         if (fragment.length > length) {
             uint64_t diff = fragment.length - length;
-            if (diff < 0x48 && diff > 0) {
+            if (diff < 0x48) {
                 continue;
             }
 
@@ -273,16 +273,19 @@ void hz_archive::hza_create_metadata_file_entry(const std::string& file_path, hz
 
 void hz_archive::hza_write_blob(hzblob_t *blob) {
     sem_wait(mutex);
-    // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-data>
+    // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)> <blob-data>
 
-    uint64_t length = blob->size << 0x5;
+    uint64_t length = (blob->size << 0x5) + 0x40;
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
+    uint64_t sof;
+
     if (o_frag.is_valid) {
-        uint64_t frag_sof = o_frag.get();
-        stream->seek_to(frag_sof);
+        sof = o_frag.get();
+        stream->seek_to(sof);
     } else {
-        stream->seek_to(metadata.eof);
+        sof = metadata.eof;
+        stream->seek_to(sof);
         metadata.eof += 0x48 + length;
     }
 
@@ -290,6 +293,14 @@ void hz_archive::hza_write_blob(hzblob_t *blob) {
     stream->write(hza_marker::BLOB, 0x8);
     stream->write(length, 0x40);
 
+    // Create a new unique blob-id and write it.
+    uint64_t blob_id = metadata.blob_map.size();
+    stream->write(blob_id, 0x40);
+
+    // Update blob-map
+    metadata.blob_map[blob_id] = sof;
+
+    // Write blob-data
     for (int i = 0; i < blob->size; i++) {
         stream->write(blob->data[i], 0x20);
     }

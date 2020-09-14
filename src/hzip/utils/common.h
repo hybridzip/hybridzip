@@ -8,7 +8,7 @@ typedef struct bin_t {
     HZ_UINT n;
 } bin_t;
 
-template <typename T>
+template<typename T>
 struct option_t {
     T x;
     bool is_valid;

@@ -60,11 +60,6 @@ struct hza_metadata {
 
 class hz_archive: public hz_mem_iface {
 private:
-    enum hza_context {
-        READ = 0x0,
-        WRITE = 0x1,
-    };
-
     std::string path;
     hza_metadata metadata;
     bitio::stream *stream;

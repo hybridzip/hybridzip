@@ -30,13 +30,13 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
 
     // Write blob-header.
     header.raw = HZ_MALLOC(uint8_t, 32);
-    auto h_stream = new bitio::bitio_stream(header.raw, 32);
+    auto h_stream = new bitio::stream(header.raw, 32);
 
-    bin_t bwt_index_bin = unarypx_bin(bwt_index);
+    bin_t bwt_index_bin = elias_gamma(bwt_index);
     h_stream->write(bwt_index_bin.obj, bwt_index_bin.n);
     h_stream->flush();
 
-    header.length = h_stream->get_byte_count();
+    header.length = h_stream->get_stream_size();
 
     delete h_stream;
 
@@ -94,9 +94,9 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     uint64_t length = blob->o_size;
 
     // Parse blob_header using bitio
-    auto h_stream = new bitio::bitio_stream(blob->header.raw, blob->header.length);
+    auto h_stream = new bitio::stream(blob->header.raw, blob->header.length);
 
-    uint64_t bwt_index = unaryinv_bin([h_stream](uint64_t n) {
+    uint64_t bwt_index = elias_gamma_inv([h_stream](uint64_t n) {
         return h_stream->read(n);
     }).obj;
 
@@ -104,7 +104,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
 
     // Parse mstate.
     uint64_t k = 0;
-    bool is_norm_dict = mstate->bins[k++];
+    bool is_norm_dict = mstate->data[k++];
 
     auto *dict = HZ_MALLOC(uint64_t*, 256);
     auto *cdict = HZ_MALLOC(uint64_t*, 256);
@@ -118,7 +118,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     // populate the dictionary.
     for (int i = 0; i < 0x100; i++) {
         for (int j = 0; j < 0x100; j++) {
-            dict[i][j] = mstate->bins[k++];
+            dict[i][j] = mstate->data[k++];
         }
     }
     // check if we need to normalize the dictionary.
@@ -135,7 +135,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
                 dsum += dict[i][k];
             }
             dsum = 16777216 - dsum;
-            for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+            for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
                 dict[i][k]++;
             }
         }
@@ -267,7 +267,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
                 dsum += dict[i][k];
             }
             dsum = 16777216 - dsum;
-            for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+            for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
                 dict[i][k]++;
             }
 
@@ -281,7 +281,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
         // Generate mstate object.
         mstate->length = 65537;
-        mstate->bins = HZ_MALLOC(uint64_t, mstate->length);
+        mstate->data = HZ_MALLOC(uint64_t, mstate->length);
 
         bool store_norm_dict = false;
 
@@ -291,14 +291,14 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
 
         int b_index = 0;
-        mstate->bins[b_index++] = store_norm_dict;
+        mstate->data[b_index++] = store_norm_dict;
 
         for (int i = 0; i < 0x100; i++) {
             for (int k = 0; k < 0x100; k++) {
                 if (store_norm_dict) {
-                    mstate->bins[b_index++] = dict[i][k];
+                    mstate->data[b_index++] = dict[i][k];
                 } else {
-                    mstate->bins[b_index++] = dict_f[i][k];
+                    mstate->data[b_index++] = dict_f[i][k];
                 }
             }
         }
@@ -306,11 +306,11 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
     } else {
         uint64_t b_index = 0;
 
-        bool is_norm_dict = mstate->bins[b_index++];
+        bool is_norm_dict = mstate->data[b_index++];
 
         for (int i = 0; i < 0x100; i++) {
             for (int j = 0; j < 0x100; j++) {
-                dict[i][j] = mstate->bins[b_index++];
+                dict[i][j] = mstate->data[b_index++];
             }
         }
         // check if we need to normalize the dictionary.
@@ -327,7 +327,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
                     dsum += dict[i][k];
                 }
                 dsum = 16777216 - dsum;
-                for (int k = 0; dsum > 0; k = (k + 1) % 0x100, dsum--) {
+                for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
                     dict[i][k]++;
                 }
 

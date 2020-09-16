@@ -30,7 +30,7 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
     ASSERT_EQ(dblob->o_size, blob->o_size);
     for (int i = 0; i < 20; i++) {
         ASSERT_EQ(dblob->o_data[i], blob->o_data[i]);
-//        ASSERT_EQ(ddblob->o_data[i], blob->o_data[i]);
+        ASSERT_EQ(ddblob->o_data[i], blob->o_data[i]);
     }
 
     cblob->destroy();

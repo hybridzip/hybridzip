@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <hzip/utils/utils.h>
 #include <loguru/loguru.hpp>
+#include <hzip/errors/archive.h>
 
 hz_archive::hz_archive(const std::string& archive_path) {
     path = std::filesystem::absolute(archive_path);
@@ -273,11 +274,50 @@ void hz_archive::hza_create_metadata_file_entry(const std::string& file_path, hz
     sem_post(mutex);
 }
 
+hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
+    auto blob = HZ_NEW(hzblob_t);
+    HZ_MEM_INIT_PTR(blob);
+
+    if (!metadata.blob_map.contains(id)) {
+        throw ArchiveErrors::BlobNotFoundException(id);
+    }
+
+    uint64_t sof = metadata.blob_map[id];
+
+    stream->seek_to(sof);
+
+    // Ignore block-marker, block-length and blob-id as we know the blob-format.
+    stream->seek(0x88);
+
+    blob->header = hz_blob_header();
+    blob->header.length = stream->read(0x40);
+
+    blob->header.raw = HZ_MALLOC(uint8_t, blob->header.length);
+
+    for (uint64_t i = 0; i < blob->header.length; i++) {
+        blob->header.raw[i] = stream->read(0x8);
+    }
+
+    blob->o_size = stream->read(0x40);
+    blob->alg = (hzcodec::algorithms::ALGORITHM) stream->read(0x8);
+
+    blob->size = stream->read(0x40);
+    blob->data = HZ_MALLOC(uint32_t, blob->size);
+
+    for (uint64_t i = 0; i < blob->size; i++) {
+        blob->data[i] = stream->read(0x20);
+    }
+
+    return blob;
+}
+
 uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
     sem_wait(mutex);
-    // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)> <blob-data>
+    // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)>
+    // <blob-header <size (64-bit)> <raw (8-bit-arr)>> <blob-o-size (64-bit)> <blob-algorithm (8-bit)>
+    // <blob-data <size (64-bit)> <data (32-bit arr)>>
 
-    uint64_t length = (blob->size << 0x5) + 0x40;
+    uint64_t length = 0x108 + (blob->header.length << 3) + (blob->size << 5);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
     uint64_t sof;
@@ -306,7 +346,17 @@ uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
     // Update blob-map
     metadata.blob_map[blob_id] = sof;
 
+    // Write blob metadata.
+    stream->write(blob->header.length, 0x40);
+    for (uint64_t i = 0; i < blob->header.length; i++) {
+        stream->write(blob->header.raw[i], 0x8);
+    }
+
+    stream->write(blob->o_size, 0x40);
+    stream->write(blob->alg, 0x8);
+
     // Write blob-data
+    stream->write(blob->size, 0x40);
     for (int i = 0; i < blob->size; i++) {
         stream->write(blob->data[i], 0x20);
     }
@@ -396,7 +446,3 @@ void hz_archive::close() {
     sem_post(archive_mutex);
     free(archive_mutex);
 }
-
-
-
-

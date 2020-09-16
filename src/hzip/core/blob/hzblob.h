@@ -57,6 +57,7 @@ struct hzblob_t: public hz_mem_iface {
     void destroy() {
         HZ_FREE(data);
         HZ_FREE(o_data);
+        HZ_FREE(header.raw);
     }
 };
 

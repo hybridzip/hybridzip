@@ -80,9 +80,13 @@ private:
 
     void hza_create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry);
 
+    hzblob_t *hza_read_blob(uint64_t id);
+
     uint64_t hza_write_blob(hzblob_t *blob);
 
     void hza_rm_blob(uint64_t id);
+
+    hz_mstate *hza_read_mstate(uint64_t id);
 
     uint64_t hza_write_mstate(hz_mstate *mstate);
 

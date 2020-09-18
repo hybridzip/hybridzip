@@ -102,9 +102,11 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
 
     delete h_stream;
 
+    auto m_stream = new bitio::stream(mstate->data, mstate->length);
+
     // Parse mstate.
     uint64_t k = 0;
-    bool is_norm_dict = mstate->data[k++];
+    bool is_norm_dict = m_stream->read(0x1);
 
     auto *dict = HZ_MALLOC(uint64_t*, 256);
     auto *cdict = HZ_MALLOC(uint64_t*, 256);
@@ -118,7 +120,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     // populate the dictionary.
     for (int i = 0; i < 0x100; i++) {
         for (int j = 0; j < 0x100; j++) {
-            dict[i][j] = mstate->data[k++];
+            dict[i][j] = m_stream->read(0x40);
         }
     }
     // check if we need to normalize the dictionary.
@@ -280,8 +282,10 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
 
         // Generate mstate object.
-        mstate->length = 65537;
-        mstate->data = HZ_MALLOC(uint64_t, mstate->length);
+        mstate->length = 65537 << 3;
+        mstate->data = HZ_MALLOC(uint8_t, mstate->length);
+
+        auto m_stream = new bitio::stream(mstate->data, mstate->length);
 
         bool store_norm_dict = false;
 
@@ -289,30 +293,32 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
             store_norm_dict = true;
         }
 
-
-        int b_index = 0;
-        mstate->data[b_index++] = store_norm_dict;
+        m_stream->write(store_norm_dict, 1);
 
         for (int i = 0; i < 0x100; i++) {
             for (int k = 0; k < 0x100; k++) {
                 if (store_norm_dict) {
-                    mstate->data[b_index++] = dict[i][k];
+                    m_stream->write(dict[i][k], 0x40);
                 } else {
-                    mstate->data[b_index++] = dict_f[i][k];
+                    m_stream->write(dict_f[i][k], 0x40);
                 }
             }
         }
 
-    } else {
-        uint64_t b_index = 0;
+        delete m_stream;
 
-        bool is_norm_dict = mstate->data[b_index++];
+    } else {
+        auto m_stream = new bitio::stream(mstate->data, mstate->length);
+        bool is_norm_dict = m_stream->read(0x1);
 
         for (int i = 0; i < 0x100; i++) {
             for (int j = 0; j < 0x100; j++) {
-                dict[i][j] = mstate->data[b_index++];
+                dict[i][j] = m_stream->read(0x40);
             }
         }
+
+        delete m_stream;
+
         // check if we need to normalize the dictionary.
         if (!is_norm_dict) {
             for (int i = 0; i < 0x100; i++) {

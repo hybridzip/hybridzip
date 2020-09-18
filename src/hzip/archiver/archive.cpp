@@ -68,6 +68,7 @@ void hz_archive::hza_scan() {
                 hza_scan_fragment(readfn, seekfn);
                 break;
             }
+            default: break;
         }
     }
 
@@ -275,10 +276,13 @@ void hz_archive::hza_create_metadata_file_entry(const std::string& file_path, hz
 }
 
 hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
+    sem_wait(mutex);
+
     auto blob = HZ_NEW(hzblob_t);
     HZ_MEM_INIT_PTR(blob);
 
     if (!metadata.blob_map.contains(id)) {
+        sem_post(mutex);
         throw ArchiveErrors::BlobNotFoundException(id);
     }
 
@@ -367,6 +371,8 @@ uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
 }
 
 void hz_archive::hza_rm_blob(uint64_t id) {
+    sem_wait(mutex);
+
     if (metadata.blob_map.contains(id)) {
         uint64_t sof = metadata.blob_map[id];
 
@@ -377,12 +383,43 @@ void hz_archive::hza_rm_blob(uint64_t id) {
     } else {
         LOG_F(WARNING, "hzip.archive: blob(0x%lx) was not found", id);
     }
+
+    sem_post(mutex);
+}
+
+hz_mstate *hz_archive::hza_read_mstate(uint64_t id) {
+    sem_wait(mutex);
+
+    if (!metadata.mstate_map.contains(id)) {
+        sem_post(mutex);
+        throw ArchiveErrors::MstateNotFoundException(id);
+    }
+
+    auto mstate = HZ_NEW(hz_mstate);
+    uint64_t sof = metadata.mstate_map[id];
+
+    stream->seek_to(sof);
+
+    // Ignore block-marker, block-length and mstate-id as we know the mstate-format.
+    stream->seek(0x88);
+
+    auto length = stream->read(0x40);
+    mstate->length = length;
+    mstate->data = HZ_MALLOC(uint8_t, length);
+
+    for (uint64_t i = 0; i < length; i++) {
+        mstate->data[i] = stream->read(0x8);
+    }
+
+    sem_post(mutex);
+
+    return mstate;
 }
 
 uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     sem_wait(mutex);
     // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
-    // <mstate-id (64-bit)> <bins (64-bit)>
+    // <mstate-id (64-bit)> <data-length (64-bit)> <data (64-bit-array)>
 
     uint64_t length = 0x40 + (mstate->length << 0x6);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
@@ -424,6 +461,8 @@ uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
 }
 
 void hz_archive::hza_rm_mstate(uint64_t id) {
+    sem_wait(mutex);
+
     if (metadata.mstate_map.contains(id)) {
         uint64_t sof = metadata.mstate_map[id];
 
@@ -434,6 +473,8 @@ void hz_archive::hza_rm_mstate(uint64_t id) {
     } else {
         LOG_F(WARNING, "hzip.archive: mstate(0x%lx) was not found", id);
     }
+
+    sem_post(mutex);
 }
 
 void hz_archive::close() {

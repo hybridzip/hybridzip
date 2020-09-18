@@ -2,11 +2,14 @@
 #include <filesystem>
 #include <fcntl.h>
 #include <hzip/utils/utils.h>
+#include <hzip/utils/fsutils.h>
 #include <loguru/loguru.hpp>
 #include <hzip/errors/archive.h>
 
-hz_archive::hz_archive(const std::string& archive_path) {
+hz_archive::hz_archive(const std::string &archive_path) {
     path = std::filesystem::absolute(archive_path);
+
+    bool init_flag = !fsutils::check_if_file_exists(path);
 
     FILE *fp = fopen(path.c_str(), "rb+");
     stream = new bitio::stream(fp);
@@ -14,17 +17,19 @@ hz_archive::hz_archive(const std::string& archive_path) {
     char *sname = str_to_hex(path);
 
     // Lock archive.
-    LOG_F(INFO, "hzip.archive: Requesting access to archive: %s", path.c_str());
+    LOG_F(INFO, "hzip.archive: Requesting access to archive(%s)", path.c_str());
 
     archive_mutex = sem_open(sname, O_CREAT, 0777, 1);
     sem_wait(archive_mutex);
 
-    LOG_F(INFO, "hzip.archive: Access granted to archive: %s", path.c_str());
+    LOG_F(INFO, "hzip.archive: Access granted to archive(%s)", path.c_str());
 
     mutex = new sem_t;
     sem_init(mutex, 0, 1);
 
-    // todo: Create archive if non-existent
+    if (init_flag) {
+        hza_init();
+    }
 
     hza_scan();
 }
@@ -68,7 +73,8 @@ void hz_archive::hza_scan() {
                 hza_scan_fragment(readfn, seekfn);
                 break;
             }
-            default: break;
+            default:
+                break;
         }
     }
 
@@ -154,7 +160,8 @@ void hz_archive::hza_scan_blob_segment(const std::function<uint64_t(uint64_t)> &
 }
 
 void
-hz_archive::hza_scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek) {
+hz_archive::hza_scan_fragment(const std::function<uint64_t(uint64_t)> &read,
+                              const std::function<void(uint64_t)> &seek) {
     hza_fragment fragment{};
     fragment.sof = metadata.eof - 0x8;
     fragment.length = read(0x40);
@@ -224,7 +231,18 @@ option_t<uint64_t> hz_archive::hza_alloc_fragment(uint64_t length) {
     }
 }
 
-void hz_archive::hza_create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry) {
+void hz_archive::hza_init() {
+    sem_wait(mutex);
+
+    stream->seek_to(0);
+    stream->write(hza_marker::END, 0x8);
+
+    LOG_F(INFO, "hzip.archive: Initialized archive(%s)", path.c_str());
+
+    sem_post(mutex);
+}
+
+void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hza_metadata_file_entry entry) {
     // Evaluate length of entry to utilize fragmented-space.
     sem_wait(mutex);
 
@@ -478,8 +496,14 @@ void hz_archive::hza_rm_mstate(uint64_t id) {
 }
 
 void hz_archive::close() {
+    sem_wait(mutex);
+
+    stream->seek_to(metadata.eof);
+    stream->write(hza_marker::END, 0x8);
     stream->flush();
     stream->close();
+
+    sem_post(mutex);
 
     free(stream);
     free(mutex);

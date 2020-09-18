@@ -78,6 +78,8 @@ private:
 
     option_t<uint64_t> hza_alloc_fragment(uint64_t length);
 
+    void hza_init();
+
     void hza_create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry);
 
     hzblob_t *hza_read_blob(uint64_t id);

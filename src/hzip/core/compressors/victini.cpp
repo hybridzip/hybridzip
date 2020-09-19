@@ -82,8 +82,8 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     cblob->data = blob_data.data;
     cblob->size = blob_data.n;
     cblob->o_size = length;
-    cblob->alg = hzcodec::algorithms::VICTINI;
     cblob->mstate = mstate;
+    cblob->mstate->alg = hzcodec::algorithms::VICTINI;
     cblob->header = header;
 
     return cblob;
@@ -228,7 +228,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     dblob->o_data = HZ_MALLOC(uint8_t, length);
     dblob->o_size = length;
     dblob->mstate = mstate;
-    dblob->alg = hzcodec::algorithms::VICTINI;
+    dblob->mstate->alg = hzcodec::algorithms::VICTINI;
 
     for (uint64_t i = 0; i < length; i++) {
         dblob->o_data[i] = sdata[i];

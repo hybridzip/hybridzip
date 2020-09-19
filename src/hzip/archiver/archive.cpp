@@ -58,7 +58,7 @@ void hz_archive::hza_scan() {
 
         switch (marker) {
             case hza_marker::METADATA: {
-                hza_scan_metadata_segment(readfn);
+                hza_scan_metadata_segment(readfn, seekfn);
                 break;
             }
             case hza_marker::BLOB: {
@@ -81,15 +81,11 @@ void hz_archive::hza_scan() {
     sem_post(mutex);
 }
 
-void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read) {
-    // Read block-info
-    hza_block_info info{};
+void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read,
+                                           const std::function<void(uint64_t)> &seek) {
 
-    // block-info format: <hza::marker (8bit)> <block length (64bit)>
-
-    info.marker = hza_marker::METADATA;
-    info.sof = metadata.eof - 0x8;
-    info.size = read(0x40);
+    // block-length is not necessary, so skip it.
+    seek(0x40);
 
     // Read metadata entry type
     auto entry_type = (hza_metadata_entry_type) read(0x1);
@@ -108,9 +104,6 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
             break;
         }
         case hza_metadata_entry_type::FILEINFO: {
-            // FILEINFO format: <path_length in elias-gamma> <file_path> <blob_count in elias-gamma>
-            // <blob_id1 (64-bit)> <blob_id2 (64-bit)> ...
-
             uint64_t path_length = elias_gamma_inv(read).obj;
             char *_path = new char[path_length];
 
@@ -118,27 +111,12 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
                 _path[i] = read(0x8);
             }
 
-            std::string file_path;
+            // metadata.eof is between {<file-path-len> <file-path>} and {<blob-count> <blob-ids>}
+            metadata.file_map[_path] = metadata.eof;
 
-            file_path.assign(_path, path_length);
-            free(_path);
+            uint64_t blob_count = read(0x3A);
+            seek(blob_count << 6);
 
-            uint64_t blob_count = elias_gamma_inv(read).obj;
-            auto *blob_ids = HZ_MALLOC(uint64_t, blob_count);
-
-            for (uint64_t i = 0; i < blob_count; i++) {
-                blob_ids[i] = read(0x40);
-            }
-
-            hza_file _hza_file{};
-            _hza_file.blob_ids = blob_ids;
-            _hza_file.blob_count = blob_count;
-
-            hza_metadata_file_entry mf_entry{};
-            mf_entry.file = _hza_file;
-            mf_entry.info = info;
-
-            metadata.file_map[file_path] = mf_entry;
             break;
         }
     }
@@ -235,6 +213,13 @@ void hz_archive::hza_init() {
     sem_wait(mutex);
 
     stream->seek_to(0);
+
+    // Write archive version.
+    stream->write(hza_marker::METADATA, 0x8);
+    stream->write(0x19, 0x40);
+    stream->write(hza_metadata_entry_type::VERSION, 0x1);
+    stream->write(HZ_ARCHIVE_VERSION, 0x18);
+
     stream->write(hza_marker::END, 0x8);
 
     LOG_F(INFO, "hzip.archive: Initialized archive(%s)", path.c_str());
@@ -284,6 +269,7 @@ void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hz
     // Write block-info
     stream->write(hza_marker::METADATA, 0x8);
     stream->write(length, 0x40);
+    stream->write(hza_metadata_entry_type::FILEINFO, 0x1);
 
     // Write file_path
     stream->write(path_length.obj, path_length.n);
@@ -301,6 +287,30 @@ void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hz
     }
 
     sem_post(mutex);
+}
+
+hza_file hz_archive::hza_read_metadata_file_entry(const std::string &file_path) {
+    sem_wait(mutex);
+
+    if (!metadata.file_map.contains(file_path)) {
+        sem_post(mutex);
+        throw ArchiveErrors::FileNotFoundException(file_path);
+    }
+
+    uint64_t sof = metadata.file_map[file_path];
+
+    stream->seek_to(sof);
+
+    hza_file file{};
+    file.blob_count = stream->read(0x3A);
+    file.blob_ids = HZ_MALLOC(uint64_t, file.blob_count);
+
+    for (uint64_t i = 0; i < file.blob_count; i++) {
+        file.blob_ids[i] = stream->read(0x40);
+    }
+
+    sem_post(mutex);
+    return file;
 }
 
 hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
@@ -522,6 +532,27 @@ void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint
     }
 
     hza_create_metadata_file_entry(file_path, file);
+}
+
+hzblob_t *hz_archive::read_file(const std::string &file_path) {
+    sem_wait(mutex);
+    if (!metadata.file_map.contains(file_path)) {
+        sem_post(mutex);
+        throw ArchiveErrors::FileNotFoundException(file_path);
+    }
+    sem_post(mutex);
+
+    hza_file file = hza_read_metadata_file_entry(file_path);
+
+    hzblob_t *blobs = HZ_MALLOC(hzblob_t, file.blob_count);
+
+    for (uint64_t i = 0; i < file.blob_count; i++) {
+        auto blob = hza_read_blob(file.blob_ids[i]);
+        blobs[i] = *blob;
+        blob->destroy();
+    }
+
+    return blobs;
 }
 
 void hz_archive::close() {

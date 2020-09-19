@@ -20,6 +20,18 @@ namespace ArchiveErrors {
         }
     };
 
+    class FileNotFoundException: public std::exception {
+    public:
+
+        FileNotFoundException(const std::string &path) {
+            LOG_F(ERROR, "hzip.archive: file(%s) was not found", path.c_str());
+        }
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return "hzip.archive: file not found";
+        }
+    };
+
     class MstateNotFoundException: public std::exception {
     public:
         uint64_t id{};

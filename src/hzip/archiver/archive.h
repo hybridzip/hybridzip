@@ -10,6 +10,8 @@
 #include <hzip/utils/common.h>
 #include <hzip/memory/mem_interface.h>
 
+#define HZ_ARCHIVE_VERSION 0x001000
+
 enum hza_marker {
     EMPTY = 0x0,
     METADATA = 0x1,
@@ -53,7 +55,8 @@ private:
 
     void hza_scan();
 
-    void hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read);
+    void hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read,
+                                   const std::function<void(uint64_t)> &seek);
 
     void hza_scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
@@ -66,6 +69,8 @@ private:
     void hza_init();
 
     void hza_create_metadata_file_entry(const std::string& file_path, hza_file file);
+
+    hza_file hza_read_metadata_file_entry(const std::string& file_path);
 
     hzblob_t *hza_read_blob(uint64_t id);
 
@@ -83,6 +88,8 @@ public:
     hz_archive(const std::string& archive_path);
 
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
+
+    hzblob_t *read_file(const std::string& file_path);
 
     void close();
 };

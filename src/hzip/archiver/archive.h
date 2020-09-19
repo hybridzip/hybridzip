@@ -23,6 +23,7 @@ enum hza_marker {
 enum hza_metadata_entry_type {
     VERSION = 0x0,
     FILEINFO = 0x1,
+    MSTATE_AUX = 0x2
 };
 
 struct hza_file {
@@ -40,6 +41,7 @@ struct hza_metadata {
     std::string version;
     uint64_t eof;
     std::unordered_map<std::string, uint64_t> file_map;
+    std::unordered_map<std::string, uint64_t> mstate_aux_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
     std::vector<hza_fragment> fragments;
@@ -90,6 +92,10 @@ public:
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 
     hzblob_t *read_file(const std::string& file_path);
+
+    void install_mstate(const std::string &_path, hz_mstate *mstate);
+
+    void inject_mstate(const std::string &_path, hzblob_t *blob);
 
     void close();
 };

@@ -43,6 +43,7 @@ struct hzblob_t: public hz_mem_iface {
     uint64_t size;
     uint8_t *o_data;
     uint64_t o_size;
+    uint64_t mstate_id{};
     hzcodec::algorithms::ALGORITHM alg;
 
     hzblob_t() {

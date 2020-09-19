@@ -29,30 +29,15 @@ struct hza_file {
     //todo: Add file information.
 };
 
-// Block-info
-// marker: 8-bit
-// sof: 64-bit
-// size: elias-gamma :- represents the block size in bits.
-struct hza_block_info {
-    hza_marker marker;
-    uint64_t sof;
-    uint64_t size;
-};
-
 struct hza_fragment {
     uint64_t sof;
     uint64_t length;
 };
 
-struct hza_metadata_file_entry {
-    hza_block_info info;
-    hza_file file;
-};
-
 struct hza_metadata {
     std::string version;
     uint64_t eof;
-    std::unordered_map<std::string, hza_metadata_file_entry> file_map;
+    std::unordered_map<std::string, uint64_t> file_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
     std::vector<hza_fragment> fragments;
@@ -80,7 +65,7 @@ private:
 
     void hza_init();
 
-    void hza_create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry);
+    void hza_create_metadata_file_entry(const std::string& file_path, hza_file file);
 
     hzblob_t *hza_read_blob(uint64_t id);
 
@@ -96,6 +81,8 @@ private:
 
 public:
     hz_archive(const std::string& archive_path);
+
+    void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 
     void close();
 };

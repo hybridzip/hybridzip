@@ -242,9 +242,14 @@ void hz_archive::hza_init() {
     sem_post(mutex);
 }
 
-void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hza_metadata_file_entry entry) {
+void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hza_file file) {
     // Evaluate length of entry to utilize fragmented-space.
     sem_wait(mutex);
+
+    if (metadata.file_map.contains(file_path)) {
+        sem_post(mutex);
+        throw ArchiveErrors::InvalidOperationException("file_entry_override");
+    }
 
     uint64_t length = 0;
 
@@ -254,22 +259,27 @@ void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hz
 
     // Blob-count (n) (58-bit) + n 64-bit blob-ids
     length += 0x3A;
-    length += (entry.file.blob_count << 0x6);
+    length += (file.blob_count << 0x6);
 
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
+    uint64_t sof;
 
     if (o_frag.is_valid) {
         uint64_t frag_sof = o_frag.get();
-        entry.info.sof = frag_sof;
+        sof = frag_sof;
 
         // seek to allocated fragment.
         stream->seek_to(frag_sof);
     } else {
         // seek to end-of-file
-        entry.info.sof = metadata.eof;
+        sof = metadata.eof;
+
         stream->seek_to(metadata.eof);
         metadata.eof += 0x48 + length;
     }
+
+    // Update metadata
+    metadata.file_map[file_path] = sof;
 
     // Write block-info
     stream->write(hza_marker::METADATA, 0x8);
@@ -283,11 +293,11 @@ void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hz
     }
 
     // Write blob_count.
-    stream->write(entry.file.blob_count, 0x3A);
+    stream->write(file.blob_count, 0x3A);
 
     // Write 64-bit blob_ids
-    for (int i = 0; i < entry.file.blob_count; i++) {
-        stream->write(entry.file.blob_ids[i], 0x40);
+    for (int i = 0; i < file.blob_count; i++) {
+        stream->write(file.blob_ids[i], 0x40);
     }
 
     sem_post(mutex);
@@ -493,6 +503,25 @@ void hz_archive::hza_rm_mstate(uint64_t id) {
     }
 
     sem_post(mutex);
+}
+
+void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint64_t blob_count) {
+    sem_wait(mutex);
+    if (metadata.file_map.contains(file_path)) {
+        sem_post(mutex);
+        throw ArchiveErrors::InvalidOperationException("file_already_exists");
+    }
+    sem_post(mutex);
+
+    hza_file file{};
+    file.blob_count = blob_count;
+    file.blob_ids = HZ_MALLOC(uint64_t, blob_count);
+
+    for (uint64_t i = 0; i < blob_count; i++) {
+        file.blob_ids[i] = hza_write_blob(&blobs[i]);
+    }
+
+    hza_create_metadata_file_entry(file_path, file);
 }
 
 void hz_archive::close() {

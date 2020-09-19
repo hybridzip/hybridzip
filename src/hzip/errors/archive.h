@@ -30,7 +30,21 @@ namespace ArchiveErrors {
         }
 
         [[nodiscard]] const char *what() const noexcept override {
-            return "hzip.mstate: blob not found";
+            return "hzip.archive: mstate not found";
+        }
+    };
+
+    class InvalidOperationException: public std::exception {
+    public:
+        std::string msg;
+
+        InvalidOperationException(const std::string &msg) {
+            LOG_F(ERROR, "hzip.archive: invalid operation(%s)", msg.c_str());
+            this->msg = msg;
+        }
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return "hzip.mstate: invalid operation";
         }
     };
 }

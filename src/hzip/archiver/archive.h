@@ -37,11 +37,22 @@ struct hza_fragment {
     uint64_t length;
 };
 
+template <typename T>
+struct hza_entry {
+    T data;
+    uint64_t sof{};
+
+    hza_entry(T data, uint64_t sof) {
+        this->data = data;
+        this->sof = sof;
+    }
+};
+
 struct hza_metadata {
     std::string version;
     uint64_t eof;
-    std::unordered_map<std::string, uint64_t> file_map;
-    std::unordered_map<std::string, uint64_t> mstate_aux_map;
+    std::unordered_map<std::string, hza_entry<hza_file>> file_map;
+    std::unordered_map<std::string, hza_entry<uint64_t>> mstate_aux_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
     std::vector<hza_fragment> fragments;
@@ -94,6 +105,8 @@ public:
     hzblob_t *read_file(const std::string& file_path);
 
     void install_mstate(const std::string &_path, hz_mstate *mstate);
+
+    void uninstall_mstate(const std::string &_path);
 
     void inject_mstate(const std::string &_path, hzblob_t *blob);
 

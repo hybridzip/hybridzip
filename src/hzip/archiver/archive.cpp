@@ -84,6 +84,7 @@ void hz_archive::hza_scan() {
 void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read,
                                            const std::function<void(uint64_t)> &seek) {
 
+    uint64_t sof = metadata.eof;
     // block-length is not necessary, so skip it.
     seek(0x40);
 
@@ -111,11 +112,15 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
                 _path[i] = read(0x8);
             }
 
-            // metadata.eof is between {<file-path-len> <file-path>} and {<blob-count> <blob-ids>}
-            metadata.file_map[_path] = metadata.eof;
-
             uint64_t blob_count = read(0x3A);
-            seek(blob_count << 6);
+            auto blob_ids = HZ_MALLOC(uint64_t, blob_count);
+
+            for (uint64_t i = 0; i < blob_count; i++) {
+                blob_ids[i] = read(0x40);
+            }
+
+            auto file = hza_file{.blob_ids=blob_ids, .blob_count=blob_count};
+            metadata.file_map[_path] = hza_entry(file, sof);
 
             break;
         }
@@ -131,7 +136,7 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
                 _path[i] = read(0x8);
             }
 
-            metadata.file_map[_path] = stream->read(0x40);
+            metadata.mstate_aux_map[_path] = hza_entry(stream->read(0x40), sof);
             break;
         }
     }
@@ -278,11 +283,12 @@ void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hz
     }
 
     // Update metadata
-    metadata.file_map[file_path] = sof;
+    metadata.file_map[file_path] = hza_entry(file, sof);
 
     // Write block-info
     stream->write(hza_marker::METADATA, 0x8);
     stream->write(length, 0x40);
+
     stream->write(hza_metadata_entry_type::FILEINFO, 0x8);
 
     // Write file_path
@@ -311,20 +317,9 @@ hza_file hz_archive::hza_read_metadata_file_entry(const std::string &file_path) 
         throw ArchiveErrors::FileNotFoundException(file_path);
     }
 
-    uint64_t sof = metadata.file_map[file_path];
-
-    stream->seek_to(sof);
-
-    hza_file file{};
-    file.blob_count = stream->read(0x3A);
-    file.blob_ids = HZ_MALLOC(uint64_t, file.blob_count);
-
-    for (uint64_t i = 0; i < file.blob_count; i++) {
-        file.blob_ids[i] = stream->read(0x40);
-    }
-
     sem_post(mutex);
-    return file;
+
+    return metadata.file_map[file_path].data;
 }
 
 hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
@@ -540,24 +535,23 @@ void hz_archive::install_mstate(const std::string &_path, hz_mstate *mstate) {
     length += (_path.length() << 3) + 0x48;
 
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
-    uint64_t sof;
 
+    uint64_t sof;
     if (o_frag.is_valid) {
-        uint64_t frag_sof = o_frag.get();
-        sof = frag_sof;
+        sof = o_frag.get();
 
         // seek to allocated fragment.
-        stream->seek_to(frag_sof);
+        stream->seek_to(sof);
     } else {
-        // seek to end-of-file
         sof = metadata.eof;
 
+        // seek to end-of-file
         stream->seek_to(metadata.eof);
         metadata.eof += 0x48 + length;
     }
 
     // Update metadata
-    metadata.mstate_aux_map[_path] = id;
+    metadata.mstate_aux_map[_path] = hza_entry(id, sof);
 
     // Write block-info
     stream->write(hza_marker::METADATA, 0x8);
@@ -634,6 +628,18 @@ hzblob_t *hz_archive::read_file(const std::string &file_path) {
     return blobs;
 }
 
+void hz_archive::uninstall_mstate(const std::string &_path) {
+    sem_wait(mutex);
+    if (!metadata.mstate_aux_map.contains(_path)) {
+        sem_post(mutex);
+        throw ArchiveErrors::MstateNotFoundException(0);
+    }
+
+    sem_post(mutex);
+
+
+}
+
 void hz_archive::inject_mstate(const std::string &_path, hzblob_t *blob) {
     sem_wait(mutex);
     if (!metadata.mstate_aux_map.contains(_path)) {
@@ -641,7 +647,7 @@ void hz_archive::inject_mstate(const std::string &_path, hzblob_t *blob) {
         throw ArchiveErrors::MstateNotFoundException(0);
     }
 
-    blob->mstate_id = metadata.mstate_aux_map[_path];
+    blob->mstate_id = metadata.mstate_aux_map[_path].data;
 
     sem_post(mutex);
 

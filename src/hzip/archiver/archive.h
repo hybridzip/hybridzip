@@ -104,6 +104,8 @@ public:
 
     hzblob_t *read_file(const std::string& file_path);
 
+    void remove_file(const std::string& file_path);
+
     void install_mstate(const std::string &_path, hz_mstate *mstate);
 
     void uninstall_mstate(const std::string &_path);

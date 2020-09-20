@@ -9,6 +9,7 @@
 #define HZ_MEM_INIT(child) child._hz_memmgr_attach_memmgr(this->_hz_memmgr_obj)
 #define HZ_MEM_INIT_PTR(child) child->_hz_memmgr_attach_memmgr(this->_hz_memmgr_obj)
 #define HZ_MEM_INIT_FROM(mgr, child) child._hz_memmgr_attach_memmgr(mgr)
+#define HZ_MEM_INIT_FROM_PTR(mgr, child) child->_hz_memmgr_attach_memmgr(mgr)
 #define HZ_MEM_MGR this->_hz_memmgr_obj
 #define HZ_MEM_MGR_FROM(obj) obj->_hz_memmgr_obj
 

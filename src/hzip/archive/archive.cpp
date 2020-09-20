@@ -57,6 +57,7 @@ void hz_archive::hza_scan() {
         auto marker = (hza_marker) readfn(0x8);
 
         if (marker == hza_marker::END) {
+            metadata.eof -= 0x8;
             break;
         }
 
@@ -346,7 +347,11 @@ hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
     stream->seek_to(sof);
 
     // Ignore block-marker, block-length and blob-id as we know the blob-format.
-    stream->seek(0x88);
+    //    stream->seek(0x88);
+    //debug--
+
+    auto marker = stream->read(0x8);
+    stream->seek(0x80);
 
     blob->header = hz_blob_header();
     blob->header.length = stream->read(0x40);

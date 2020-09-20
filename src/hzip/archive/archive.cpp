@@ -11,18 +11,22 @@ hz_archive::hz_archive(const std::string &archive_path) {
 
     bool init_flag = !fsutils::check_if_file_exists(path);
 
+    if (init_flag) {
+        fclose(fopen(path.c_str(), "wb"));
+    }
+
     FILE *fp = fopen(path.c_str(), "rb+");
     stream = new bitio::stream(fp);
 
     char *sname = str_to_hex(path);
 
     // Lock archive.
-    LOG_F(INFO, "hzip.archive: Requesting access to archive(%s)", path.c_str());
+    LOG_F(INFO, "hzip.archive: Requesting access to archive (%s)", path.c_str());
 
     archive_mutex = sem_open(sname, O_CREAT, 0777, 1);
     sem_wait(archive_mutex);
 
-    LOG_F(INFO, "hzip.archive: Access granted to archive(%s)", path.c_str());
+    LOG_F(INFO, "hzip.archive: Access granted to archive (%s)", path.c_str());
 
     mutex = new sem_t;
     sem_init(mutex, 0, 1);
@@ -242,8 +246,9 @@ void hz_archive::hza_init() {
     stream->write(HZ_ARCHIVE_VERSION, 0x18);
 
     stream->write(hza_marker::END, 0x8);
+    stream->flush();
 
-    LOG_F(INFO, "hzip.archive: Initialized archive(%s)", path.c_str());
+    LOG_F(INFO, "hzip.archive: Initialized archive (%s)", path.c_str());
 
     sem_post(mutex);
 }

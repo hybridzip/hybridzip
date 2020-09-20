@@ -24,7 +24,7 @@ namespace ArchiveErrors {
     public:
 
         FileNotFoundException(const std::string &path) {
-            LOG_F(ERROR, "hzip.archive: file(%s) was not found", path.c_str());
+            LOG_F(ERROR, "hzip.archive: file (%s) was not found", path.c_str());
         }
 
         [[nodiscard]] const char *what() const noexcept override {
@@ -51,7 +51,7 @@ namespace ArchiveErrors {
         std::string msg;
 
         InvalidOperationException(const std::string &msg) {
-            LOG_F(ERROR, "hzip.archive: invalid operation(%s)", msg.c_str());
+            LOG_F(ERROR, "hzip.archive: invalid operation (%s)", msg.c_str());
             this->msg = msg;
         }
 

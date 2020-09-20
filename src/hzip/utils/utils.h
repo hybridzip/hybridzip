@@ -50,7 +50,7 @@ HZ_INLINE char *str_to_hex(std::string str) {
     char *hex = new char[str.length() << 2];
 
     for (uint64_t i = 0; i < str.length(); i++) {
-        sprintf(hex + (i << 2), "%02x", str[i]);
+        sprintf(hex + (i << 1), "%02x", str[i]);
     }
 
     return hex;

@@ -42,6 +42,10 @@ struct hza_entry {
     T data;
     uint64_t sof{};
 
+    hza_entry() {
+        // empty-constructor
+    }
+
     hza_entry(T data, uint64_t sof) {
         this->data = data;
         this->sof = sof;

@@ -12,7 +12,7 @@ hz_archive::hz_archive(const std::string &archive_path) {
     bool init_flag = !fsutils::check_if_file_exists(path);
 
     if (init_flag) {
-        fclose(fopen(path.c_str(), "wb"));
+        fsutils::create_empty_file(path);
     }
 
     FILE *fp = fopen(path.c_str(), "rb+");

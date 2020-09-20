@@ -675,6 +675,11 @@ void hz_archive::uninstall_mstate(const std::string &_path) {
     hza_rm_mstate(id);
 }
 
+void hz_archive::inject_mstate(hz_mstate *mstate, hzblob_t *blob) {
+    blob->mstate_id = hza_write_mstate(mstate);
+    blob->mstate = mstate;
+}
+
 void hz_archive::inject_mstate(const std::string &_path, hzblob_t *blob) {
     sem_wait(mutex);
     if (!metadata.mstate_aux_map.contains(_path)) {

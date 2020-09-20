@@ -110,6 +110,10 @@ public:
 
     void uninstall_mstate(const std::string &_path);
 
+    // Inject mstate by directly. This mstate cannot be reused by other blobs.
+    void inject_mstate(hz_mstate *mstate, hzblob_t *blob);
+
+    // Inject mstate by tag-reference. This mstate can be reused by other blobs.
     void inject_mstate(const std::string &_path, hzblob_t *blob);
 
     void close();

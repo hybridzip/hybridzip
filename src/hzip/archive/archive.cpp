@@ -248,6 +248,8 @@ void hz_archive::hza_init() {
     stream->write(hza_marker::END, 0x8);
     stream->flush();
 
+    stream->seek_to(0);
+
     LOG_F(INFO, "hzip.archive: Initialized archive (%s)", path.c_str());
 
     sem_post(mutex);
@@ -709,9 +711,8 @@ void hz_archive::close() {
 
     sem_post(mutex);
 
-    free(stream);
-    free(mutex);
+    delete stream;
+    delete mutex;
 
     sem_post(archive_mutex);
-    free(archive_mutex);
 }

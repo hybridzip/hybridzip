@@ -618,8 +618,8 @@ void hz_archive::hza_rm_mstate(uint64_t id) {
 
     if (metadata.mstate_map.contains(id)) {
         if (hza_check_mstate_deps(id)) {
-            LOG_F(ERROR, "hzip.archive: dependency detected for mstate (0x%lx), removal ignored", id);
-            return;
+            sem_post(mutex);
+            throw ArchiveErrors::InvalidOperationException("mstate_dependency_detected");
         }
 
         uint64_t sof = metadata.mstate_map[id];
@@ -743,6 +743,12 @@ void hz_archive::uninstall_mstate(const std::string &_path) {
 
     uint64_t sof = entry.sof;
     uint64_t id = entry.data;
+
+    if (hza_check_mstate_deps(id)) {
+        sem_post(mutex);
+        LOG_F(ERROR, "hzip.archive: dependency detected for mstate (0x%lx), uninstall aborted", id);
+        throw ArchiveErrors::InvalidOperationException("mstate_dependency_detected");
+    }
 
     stream->seek_to(sof);
     stream->write(hza_marker::EMPTY, 0x8);

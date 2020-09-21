@@ -2,6 +2,7 @@
 #include <hzip/archive/archive.h>
 #include <hzip/utils/fsutils.h>
 #include <hzip/core/compressors/victini.h>
+#include <hzip/errors/archive.h>
 
 class ArchiveTest : public testing::Test {
 };
@@ -83,7 +84,58 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
 
         archive->close();
 
+    } catch (std::exception &e) {
+        EXPECT_TRUE(false) << e.what();
+    }
+}
 
+
+TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
+    try {
+        fsutils::delete_file_if_exists("test.hz");
+
+        auto *archive = new hz_archive("test.hz");
+        auto mgr = new hz_memmgr;
+        auto victini = hzcodec::victini();
+        HZ_MEM_INIT_FROM(mgr, victini);
+        HZ_MEM_INIT_FROM_PTR(mgr, archive);
+
+        auto blob = new hzblob_t;
+        blob->o_data = new uint8_t[20];
+        blob->o_size = 20;
+
+        for (int i = 0; i < blob->o_size; i++) {
+            blob->o_data[i] = 255;
+        }
+
+        // Upcast victini codec.
+        hzcodec::hz_abstract_codec *codec = &victini;
+
+        hz_mstate mstate;
+        blob->mstate = &mstate;
+
+        auto cblob = codec->compress(blob);
+
+        // Inject mstate into blob and add mstate to the archive.
+        archive->install_mstate("mstate.victini.dickens", cblob->mstate);
+
+        archive->inject_mstate("mstate.victini.dickens", cblob);
+
+        archive->create_file("/data.txt", cblob, 1);
+
+        archive->remove_file("/data.txt");
+
+        EXPECT_THROW(archive->read_file("/data.txt"), ArchiveErrors::FileNotFoundException);
+
+        archive->create_file("/data.txt", cblob, 1);
+
+        EXPECT_THROW(archive->uninstall_mstate("mstate.victini.dickens"),
+                     ArchiveErrors::InvalidOperationException);
+
+        archive->remove_file("/data.txt");
+        archive->uninstall_mstate("mstate.victini.dickens");
+
+        archive->close();
 
     } catch (std::exception &e) {
         EXPECT_TRUE(false) << e.what();

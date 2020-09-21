@@ -4,9 +4,10 @@
 #include <cstdint>
 #include <functional>
 #include <random>
-#include <openssl/sha.h>
 #include <string>
 #include <iomanip>
+#include <ctime>
+#include <openssl/sha.h>
 #include "common.h"
 
 HZ_INLINE uint64_t u64log2(uint64_t n) {
@@ -77,10 +78,13 @@ HZ_INLINE uint64_t unary_read(std::function<uint64_t(uint8_t)> readfunc) {
     return n + 1;
 }
 
+
 HZ_INLINE uint64_t rand64() {
-    std::mt19937_64 generator(101);
+    std::random_device rd;
+    static std::mt19937_64 _utils_mersenne_twister_engine_rand64 = std::mt19937_64(rd());
+
     std::uniform_int_distribution<uint64_t> distribution(0, 0xffffffffffffffff);
-    return distribution(generator);
+    return distribution(_utils_mersenne_twister_engine_rand64);
 }
 
 #endif

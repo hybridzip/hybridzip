@@ -388,6 +388,11 @@ uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
     // <blob-header <size (64-bit)> <raw (8-bit-arr)>> <blob-o-size (64-bit)>
     // <mstate-id (64-bit)> <blob-data <size (64-bit)> <data (32-bit arr)>>
 
+    if (!metadata.mstate_map.contains(blob->mstate_id)) {
+        sem_post(mutex);
+        throw ArchiveErrors::MstateNotFoundException(blob->mstate_id);
+    }
+
     uint64_t length = 0x148 + (blob->header.length << 3) + (blob->size << 5);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 

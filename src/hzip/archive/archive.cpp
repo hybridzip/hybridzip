@@ -206,9 +206,9 @@ option_t<uint64_t> hz_archive::hza_alloc_fragment(uint64_t length) {
     for (uint64_t i = 0; i < metadata.fragments.size(); i++) {
         auto fragment = metadata.fragments[i];
 
-        if (fragment.length > length) {
+        if (fragment.length >= length) {
             uint64_t diff = fragment.length - length;
-            if (diff < 0x48) {
+            if (diff < 0x48 && diff > 0) {
                 continue;
             }
 
@@ -225,7 +225,7 @@ option_t<uint64_t> hz_archive::hza_alloc_fragment(uint64_t length) {
 
         if (fit_diff > 0) {
             metadata.fragments[fragment_index].length = fit_diff - 0x48;
-            metadata.fragments[fragment_index].sof += length;
+            metadata.fragments[fragment_index].sof += 0x48 + length;
 
             stream->seek_to(metadata.fragments[fragment_index].sof);
             stream->write(hza_marker::EMPTY, 0x8);
@@ -426,6 +426,9 @@ uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
     stream->write(blob->o_size, 0x40);
     stream->write(blob->mstate_id, 0x40);
 
+    // add dependency
+    hza_increment_dep(blob->mstate_id);
+
     // Write blob-data
     stream->write(blob->size, 0x40);
     for (int i = 0; i < blob->size; i++) {
@@ -451,6 +454,17 @@ void hz_archive::hza_rm_blob(uint64_t id) {
                 .length=stream->read(0x40)
         });
 
+        // remove dependency
+        stream->seek(0x40);
+        auto header_length = stream->read(0x40);
+        stream->seek(header_length << 3);
+
+        stream->seek(0x40);
+
+        auto mstate_id = stream->read(0x40);
+        hza_decrement_dep(mstate_id);
+
+        // erase entry from blob map
         metadata.blob_map.erase(id);
     } else {
         LOG_F(WARNING, "hzip.archive: blob(0x%lx) was not found", id);
@@ -598,6 +612,11 @@ void hz_archive::hza_rm_mstate(uint64_t id) {
     sem_wait(mutex);
 
     if (metadata.mstate_map.contains(id)) {
+        if (hza_check_mstate_deps(id)) {
+            LOG_F(ERROR, "hzip.archive: dependency detected for mstate (0x%lx), removal ignored", id);
+            return;
+        }
+
         uint64_t sof = metadata.mstate_map[id];
 
         stream->seek_to(sof);
@@ -615,6 +634,29 @@ void hz_archive::hza_rm_mstate(uint64_t id) {
 
     sem_post(mutex);
 }
+
+bool hz_archive::hza_check_mstate_deps(uint64_t id) const {
+    return metadata.dep_counter.contains(id);
+}
+
+void hz_archive::hza_increment_dep(uint64_t id) {
+    if (!metadata.dep_counter.contains(id)) {
+        metadata.dep_counter[id] = 1;
+    } else {
+        metadata.dep_counter[id]++;
+    }
+}
+
+void hz_archive::hza_decrement_dep(uint64_t id) {
+    if (metadata.dep_counter.contains(id)) {
+        if (metadata.dep_counter[id] > 1) {
+            metadata.dep_counter[id]--;
+        } else {
+            metadata.dep_counter.erase(id);
+        }
+    }
+}
+
 
 void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint64_t blob_count) {
     sem_wait(mutex);

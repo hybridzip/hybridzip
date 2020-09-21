@@ -59,6 +59,7 @@ struct hza_metadata {
     std::unordered_map<std::string, hza_entry<uint64_t>> mstate_aux_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
+    std::unordered_map<uint64_t, uint64_t> dep_counter;
     std::vector<hza_fragment> fragments;
 };
 
@@ -100,6 +101,12 @@ private:
     uint64_t hza_write_mstate(hz_mstate *mstate);
 
     void hza_rm_mstate(uint64_t id);
+
+    bool hza_check_mstate_deps(uint64_t id) const;
+
+    void hza_increment_dep(uint64_t id);
+
+    void hza_decrement_dep(uint64_t id);
 
 public:
     hz_archive(const std::string& archive_path);

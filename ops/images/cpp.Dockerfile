@@ -1,7 +1,7 @@
 # Builder
 FROM ubuntu:latest AS build
 
-RUN apt-get update && apt-get install -y cmake gcc g++
+RUN apt-get update && apt-get install -y cmake gcc g++ libssl-dev
 
 RUN mkdir /app
 

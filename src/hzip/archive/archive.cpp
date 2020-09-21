@@ -18,7 +18,9 @@ hz_archive::hz_archive(const std::string &archive_path) {
     FILE *fp = fopen(path.c_str(), "rb+");
     stream = new bitio::stream(fp);
 
-    char *sname = str_to_hex(path);
+    auto sha2_path = sha512(path);
+
+    const char *sname = sha2_path.c_str();
 
     // Lock archive.
     LOG_F(INFO, "hzip.archive: Requesting access to archive (%s)", path.c_str());
@@ -347,11 +349,8 @@ hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
     stream->seek_to(sof);
 
     // Ignore block-marker, block-length and blob-id as we know the blob-format.
-    //    stream->seek(0x88);
-    //debug--
+    stream->seek(0x88);
 
-    auto marker = stream->read(0x8);
-    stream->seek(0x80);
 
     blob->header = hz_blob_header();
     blob->header.length = stream->read(0x40);
@@ -383,8 +382,7 @@ uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
     sem_wait(mutex);
     // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)>
     // <blob-header <size (64-bit)> <raw (8-bit-arr)>> <blob-o-size (64-bit)>
-    // <blob-algorithm (8-bit)> <mstate-id (64-bit)>
-    // <blob-data <size (64-bit)> <data (32-bit arr)>>
+    // <mstate-id (64-bit)> <blob-data <size (64-bit)> <data (32-bit arr)>>
 
     uint64_t length = 0x108 + (blob->header.length << 3) + (blob->size << 5);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
@@ -488,7 +486,7 @@ uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
     // <mstate-id (64-bit)> <algorithm (8-bit)> <data-length (64-bit)> <data (64-bit-array)>
 
-    uint64_t length = 0x80 + (mstate->length << 0x6);
+    uint64_t length = 0x80 + (mstate->length << 0x3);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
     uint64_t sof;
@@ -519,6 +517,8 @@ uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     metadata.mstate_map[mstate_id] = sof;
 
     // Write mstate-data
+    stream->write(mstate->length, 0x40);
+
     for (int i = 0; i < mstate->length; i++) {
         stream->write(mstate->data[i], 0x40);
     }

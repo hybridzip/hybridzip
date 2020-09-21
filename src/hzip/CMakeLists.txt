@@ -50,6 +50,8 @@ add_library(hzip STATIC
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru)
 
+target_link_libraries(hzip PUBLIC crypto)
+
 # Find Intel Math Kernel Libs
 find_package(MKL)
 

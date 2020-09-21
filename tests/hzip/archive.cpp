@@ -44,7 +44,11 @@ TEST(Archive, hzip_archive_rw_file) {
 
         auto cblob = codec->compress(blob);
 
+        // Inject mstate into blob and add mstate to the archive.
+        archive->inject_mstate(cblob->mstate, cblob);
         archive->create_file("/data.txt", cblob, 1);
+
+
         cblob = archive->read_file("/data.txt");
 
         auto dblob = codec->decompress(cblob);

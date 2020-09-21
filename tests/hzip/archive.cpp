@@ -49,9 +49,29 @@ TEST(Archive, hzip_archive_rw_file) {
         archive->create_file("/data.txt", cblob, 1);
 
 
-        cblob = archive->read_file("/data.txt");
+        auto ccblob = archive->read_file("/data.txt");
 
-        auto dblob = codec->decompress(cblob);
+        // compare cblob and ccblob
+
+        ASSERT_EQ(cblob->header.length, ccblob->header.length);
+        for (uint64_t i = 0; i < cblob->header.length; i++) {
+            ASSERT_EQ(cblob->header.raw[i], ccblob->header.raw[i]);
+        }
+
+        ASSERT_EQ(cblob->mstate->length, ccblob->mstate->length);
+        ASSERT_EQ(cblob->mstate->alg, ccblob->mstate->alg);
+        for (uint64_t i = 0; i < cblob->mstate->length; i++) {
+            ASSERT_EQ(cblob->mstate->data[i], ccblob->mstate->data[i]);
+        }
+
+        ASSERT_EQ(cblob->o_size, ccblob->o_size);
+        ASSERT_EQ(cblob->size, ccblob->size);
+        for (uint64_t i = 0; i < cblob->size; i++) {
+            ASSERT_EQ(cblob->data[i], ccblob->data[i]);
+        }
+
+
+        auto dblob = codec->decompress(ccblob);
 
         ASSERT_EQ(dblob->o_size, blob->o_size);
         for (int i = 0; i < 20; i++) {

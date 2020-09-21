@@ -3,10 +3,10 @@
 #include <hzip/utils/fsutils.h>
 #include <hzip/core/compressors/victini.h>
 
-class Archive : public testing::Test {
+class ArchiveTest : public testing::Test {
 };
 
-TEST(Archive, hzip_archive_init_test) {
+TEST(ArchiveTest, hzip_archive_init_test) {
     try {
         fsutils::delete_file_if_exists("test.hz");
 
@@ -18,7 +18,7 @@ TEST(Archive, hzip_archive_init_test) {
     }
 }
 
-TEST(Archive, hzip_archive_rw_file) {
+TEST(ArchiveTest, hzip_archive_rw_file) {
     try {
         fsutils::delete_file_if_exists("test.hz");
 
@@ -49,7 +49,7 @@ TEST(Archive, hzip_archive_rw_file) {
         archive->create_file("/data.txt", cblob, 1);
 
 
-        auto ccblob = archive->read_file("/data.txt");
+        auto ccblob = &archive->read_file("/data.txt").blobs[0];
 
         // compare cblob and ccblob
 

@@ -62,4 +62,15 @@ struct hzblob_t: public hz_mem_iface {
     }
 };
 
+struct hzblob_set {
+    hzblob_t *blobs = nullptr;
+    uint64_t blob_count{};
+
+    void destroy() const {
+        for (uint64_t i = 0; i < blob_count; i++) {
+            blobs[i].destroy();
+        }
+    }
+};
+
 #endif

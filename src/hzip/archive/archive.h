@@ -106,7 +106,7 @@ public:
 
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 
-    hzblob_t *read_file(const std::string& file_path);
+    hzblob_set read_file(const std::string& file_path);
 
     void remove_file(const std::string& file_path);
 

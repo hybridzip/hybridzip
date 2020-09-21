@@ -128,8 +128,8 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
             }
 
             auto file = hza_file{
-                .blob_ids=blob_ids,
-                .blob_count=blob_count
+                    .blob_ids=blob_ids,
+                    .blob_count=blob_count
             };
 
             metadata.file_map[_path] = hza_entry(file, sof);
@@ -264,7 +264,6 @@ void hz_archive::hza_init() {
 
 void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hza_file file) {
     // Evaluate length of entry to utilize fragmented-space.
-    sem_wait(mutex);
 
     if (metadata.file_map.contains(file_path)) {
         sem_post(mutex);
@@ -321,25 +320,18 @@ void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hz
         stream->write(file.blob_ids[i], 0x40);
     }
 
-    sem_post(mutex);
 }
 
 hza_file hz_archive::hza_read_metadata_file_entry(const std::string &file_path) {
-    sem_wait(mutex);
-
     if (!metadata.file_map.contains(file_path)) {
         sem_post(mutex);
         throw ArchiveErrors::FileNotFoundException(file_path);
     }
 
-    sem_post(mutex);
-
     return metadata.file_map[file_path].data;
 }
 
 hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
-    sem_wait(mutex);
-
     auto blob = HZ_NEW(hzblob_t);
     HZ_MEM_INIT_PTR(blob);
 
@@ -375,15 +367,12 @@ hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
         blob->data[i] = stream->read(0x20);
     }
 
-    sem_post(mutex);
-
     blob->mstate = hza_read_mstate(blob->mstate_id);
 
     return blob;
 }
 
 uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
-    sem_wait(mutex);
     // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)>
     // <blob-header <size (64-bit)> <raw (8-bit-arr)>> <blob-o-size (64-bit)>
     // <mstate-id (64-bit)> <blob-data <size (64-bit)> <data (32-bit arr)>>
@@ -440,14 +429,10 @@ uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
         stream->write(blob->data[i], 0x20);
     }
 
-    sem_post(mutex);
-
     return blob_id;
 }
 
 void hz_archive::hza_rm_blob(uint64_t id) {
-    sem_wait(mutex);
-
     if (metadata.blob_map.contains(id)) {
         uint64_t sof = metadata.blob_map[id];
 
@@ -475,12 +460,9 @@ void hz_archive::hza_rm_blob(uint64_t id) {
         LOG_F(WARNING, "hzip.archive: blob(0x%lx) was not found", id);
     }
 
-    sem_post(mutex);
 }
 
 hz_mstate *hz_archive::hza_read_mstate(uint64_t id) {
-    sem_wait(mutex);
-
     if (!metadata.mstate_map.contains(id)) {
         sem_post(mutex);
         throw ArchiveErrors::MstateNotFoundException(id);
@@ -504,13 +486,10 @@ hz_mstate *hz_archive::hza_read_mstate(uint64_t id) {
         mstate->data[i] = stream->read(0x8);
     }
 
-    sem_post(mutex);
-
     return mstate;
 }
 
 uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
-    sem_wait(mutex);
     // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
     // <mstate-id (64-bit)> <algorithm (8-bit)> <data-length (64-bit)> <data (8-bit-array)>
 
@@ -551,8 +530,6 @@ uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
         stream->write(mstate->data[i], 0x8);
     }
 
-    sem_post(mutex);
-
     return mstate_id;
 }
 
@@ -562,15 +539,12 @@ void hz_archive::install_mstate(const std::string &_path, hz_mstate *mstate) {
         sem_post(mutex);
         throw ArchiveErrors::InvalidOperationException("mstate_aux_entry_overwrite");
     }
-    sem_post(mutex);
-    
-    uint64_t id = hza_write_mstate(mstate);
-    
-    // Create auxillary mstate-entry.
-    sem_wait(mutex);
 
+    uint64_t id = hza_write_mstate(mstate);
+
+    // Create auxillary mstate-entry.
     uint64_t length = 0;
-    
+
     bin_t path_length = elias_gamma(_path.length());
     length += path_length.n;
     length += (_path.length() << 3) + 0x48;
@@ -609,13 +583,11 @@ void hz_archive::install_mstate(const std::string &_path, hz_mstate *mstate) {
 
     // Write mstate-id.
     stream->write(id, 0x40);
-    
+
     sem_post(mutex);
 }
 
 void hz_archive::hza_rm_mstate(uint64_t id) {
-    sem_wait(mutex);
-
     if (metadata.mstate_map.contains(id)) {
         if (hza_check_mstate_deps(id)) {
             sem_post(mutex);
@@ -628,8 +600,8 @@ void hz_archive::hza_rm_mstate(uint64_t id) {
         stream->write(hza_marker::EMPTY, 0x8);
 
         metadata.fragments.push_back(hza_fragment{
-            .sof=sof,
-            .length=stream->read(0x40)
+                .sof=sof,
+                .length=stream->read(0x40)
         });
 
         metadata.mstate_map.erase(id);
@@ -637,7 +609,6 @@ void hz_archive::hza_rm_mstate(uint64_t id) {
         LOG_F(WARNING, "hzip.archive: mstate(0x%lx) was not found", id);
     }
 
-    sem_post(mutex);
 }
 
 bool hz_archive::hza_check_mstate_deps(uint64_t id) const {
@@ -662,14 +633,12 @@ void hz_archive::hza_decrement_dep(uint64_t id) {
     }
 }
 
-
 void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint64_t blob_count) {
     sem_wait(mutex);
     if (metadata.file_map.contains(file_path)) {
         sem_post(mutex);
         throw ArchiveErrors::InvalidOperationException("file_already_exists");
     }
-    sem_post(mutex);
 
     hza_file file{};
     file.blob_count = blob_count;
@@ -680,6 +649,8 @@ void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint
     }
 
     hza_create_metadata_file_entry(file_path, file);
+
+    sem_post(mutex);
 }
 
 void hz_archive::remove_file(const std::string &file_path) {
@@ -704,11 +675,11 @@ void hz_archive::remove_file(const std::string &file_path) {
             .length=stream->read(0x40)
     });
 
-    sem_post(mutex);
-
     for (uint64_t i = 0; i < file.blob_count; i++) {
         hza_rm_blob(file.blob_ids[i]);
     }
+
+    sem_post(mutex);
 }
 
 hzblob_set hz_archive::read_file(const std::string &file_path) {
@@ -717,7 +688,6 @@ hzblob_set hz_archive::read_file(const std::string &file_path) {
         sem_post(mutex);
         throw ArchiveErrors::FileNotFoundException(file_path);
     }
-    sem_post(mutex);
 
     hza_file file = hza_read_metadata_file_entry(file_path);
 
@@ -728,6 +698,8 @@ hzblob_set hz_archive::read_file(const std::string &file_path) {
         blobs[i] = *blob;
         HZ_FREE(blob);
     }
+
+    sem_post(mutex);
 
     return hzblob_set{.blobs=blobs, .blob_count=file.blob_count};
 }
@@ -744,11 +716,7 @@ void hz_archive::uninstall_mstate(const std::string &_path) {
     uint64_t sof = entry.sof;
     uint64_t id = entry.data;
 
-    if (hza_check_mstate_deps(id)) {
-        sem_post(mutex);
-        LOG_F(ERROR, "hzip.archive: dependency detected for mstate (0x%lx), uninstall aborted", id);
-        throw ArchiveErrors::InvalidOperationException("mstate_dependency_detected");
-    }
+    hza_rm_mstate(id);
 
     stream->seek_to(sof);
     stream->write(hza_marker::EMPTY, 0x8);
@@ -761,17 +729,20 @@ void hz_archive::uninstall_mstate(const std::string &_path) {
     metadata.mstate_aux_map.erase(_path);
 
     sem_post(mutex);
-
-    hza_rm_mstate(id);
 }
 
 void hz_archive::inject_mstate(hz_mstate *mstate, hzblob_t *blob) {
+    sem_wait(mutex);
+
     blob->mstate_id = hza_write_mstate(mstate);
     blob->mstate = mstate;
+
+    sem_post(mutex);
 }
 
 void hz_archive::inject_mstate(const std::string &_path, hzblob_t *blob) {
     sem_wait(mutex);
+
     if (!metadata.mstate_aux_map.contains(_path)) {
         sem_post(mutex);
         throw ArchiveErrors::MstateNotFoundException(0);
@@ -779,9 +750,9 @@ void hz_archive::inject_mstate(const std::string &_path, hzblob_t *blob) {
 
     blob->mstate_id = metadata.mstate_aux_map[_path].data;
 
-    sem_post(mutex);
-
     blob->mstate = hza_read_mstate(blob->mstate_id);
+
+    sem_post(mutex);
 }
 
 void hz_archive::close() {

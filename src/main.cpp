@@ -26,6 +26,10 @@ void set_unhandled_exception_handler() {
     });
 }
 
+void init() {
+
+}
+
 int main(int argc, const char **argv) {
     setup_logger(argc, argv);
     set_unhandled_exception_handler();
@@ -41,6 +45,8 @@ int main(int argc, const char **argv) {
     if (parser.exists("p")) {
         mgr->set_peak(conv_to_bytes(parser.get<std::string>("p")));
     }
+
+    init();
 
     LOG_F(INFO, "hzip: started hybridzip server");
 

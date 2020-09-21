@@ -2,13 +2,10 @@
 #include <hzip/memory/memmgr.h>
 #include <vector>
 
-class Memory : public testing::Test {
-    void SetUp() override {
-
-    }
+class MemoryTest : public testing::Test {
 };
 
-TEST(Memory, hzip_memory_unittest_segv) {
+TEST(MemoryTest, hzip_memory_unittest_segv) {
     auto memmgr = new hz_memmgr;
     std::vector<int*> ptr_vec;
     int *x = memmgr->hz_malloc<int>(2000);

@@ -6,6 +6,10 @@
 #include <filesystem>
 
 namespace fsutils {
+    HZ_INLINE void create_empty_file(const std::string& path) {
+        fclose(fopen(path.c_str(), "wb"));
+    }
+
     HZ_INLINE bool check_if_file_exists(std::string filename) {
         return std::filesystem::exists(filename);
     }

@@ -9,12 +9,14 @@
 #include <hzip/utils/common.h>
 
 struct hz_mstate: public hz_mem_iface {
-    uint64_t *data;
+    uint8_t *data;
     uint64_t length;
+    hzcodec::algorithms::ALGORITHM alg;
 
     hz_mstate() {
         data = nullptr;
         length = 0;
+        alg = hzcodec::algorithms::ALGORITHM::UNDEFINED;
     }
 
     [[nodiscard]] bool is_empty() const {
@@ -43,7 +45,7 @@ struct hzblob_t: public hz_mem_iface {
     uint64_t size;
     uint8_t *o_data;
     uint64_t o_size;
-    hzcodec::algorithms::ALGORITHM alg;
+    uint64_t mstate_id{};
 
     hzblob_t() {
         mstate = nullptr;
@@ -51,13 +53,23 @@ struct hzblob_t: public hz_mem_iface {
         o_data = nullptr;
         size = 0;
         o_size = 0;
-        alg = hzcodec::algorithms::UNDEFINED;
     }
 
     void destroy() {
         HZ_FREE(data);
         HZ_FREE(o_data);
         HZ_FREE(header.raw);
+    }
+};
+
+struct hzblob_set {
+    hzblob_t *blobs = nullptr;
+    uint64_t blob_count{};
+
+    void destroy() const {
+        for (uint64_t i = 0; i < blob_count; i++) {
+            blobs[i].destroy();
+        }
     }
 };
 

@@ -4,6 +4,10 @@
 #include <cstdint>
 #include <functional>
 #include <random>
+#include <string>
+#include <iomanip>
+#include <ctime>
+#include <openssl/sha.h>
 #include "common.h"
 
 HZ_INLINE uint64_t u64log2(uint64_t n) {
@@ -46,14 +50,18 @@ HZ_INLINE bin_t elias_gamma_inv(std::function<uint64_t(uint64_t)> readfunc) {
 }
 
 
-HZ_INLINE char *str_to_hex(std::string str) {
-    char *hex = new char[str.length() << 2];
+HZ_INLINE std::string sha512(std::string str) {
+    unsigned char hash[SHA512_DIGEST_LENGTH];
+    SHA512_CTX sha512;
+    SHA512_Init(&sha512);
+    SHA512_Update(&sha512, str.c_str(), str.size());
+    SHA512_Final(hash, &sha512);
+    std::stringstream ss;
 
-    for (uint64_t i = 0; i < str.length(); i++) {
-        sprintf(hex + (i << 2), "%02x", str[i]);
+    for (int i = 0; i < SHA512_DIGEST_LENGTH; i++) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int) hash[i];
     }
-
-    return hex;
+    return ss.str();
 }
 
 HZ_INLINE void unary_write(uint64_t n, std::function<void(uint64_t, uint8_t)> writefunc) {
@@ -70,10 +78,13 @@ HZ_INLINE uint64_t unary_read(std::function<uint64_t(uint8_t)> readfunc) {
     return n + 1;
 }
 
+
 HZ_INLINE uint64_t rand64() {
-    std::mt19937_64 generator(101);
+    std::random_device rd;
+    static std::mt19937_64 _utils_mersenne_twister_engine_rand64 = std::mt19937_64(rd());
+
     std::uniform_int_distribution<uint64_t> distribution(0, 0xffffffffffffffff);
-    return distribution(generator);
+    return distribution(_utils_mersenne_twister_engine_rand64);
 }
 
 #endif

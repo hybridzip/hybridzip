@@ -11,12 +11,24 @@ namespace ArchiveErrors {
         uint64_t id{};
 
         BlobNotFoundException(uint64_t id) {
-            LOG_F(ERROR, "hzip.archive: blob(0x%lx) was not found", id);
+            LOG_F(ERROR, "hzip.archive: Blob(0x%lx) was not found", id);
             this->id = id;
         }
 
         [[nodiscard]] const char *what() const noexcept override {
-            return "hzip.archive: blob not found";
+            return "hzip.archive: Blob not found";
+        }
+    };
+
+    class FileNotFoundException: public std::exception {
+    public:
+
+        FileNotFoundException(const std::string &path) {
+            LOG_F(ERROR, "hzip.archive: File (%s) was not found", path.c_str());
+        }
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return "hzip.archive: File not found";
         }
     };
 
@@ -25,12 +37,26 @@ namespace ArchiveErrors {
         uint64_t id{};
 
         MstateNotFoundException(uint64_t id) {
-            LOG_F(ERROR, "hzip.archive: mstate(0x%lx) was not found", id);
+            LOG_F(ERROR, "hzip.archive: MState(0x%lx) was not found", id);
             this->id = id;
         }
 
         [[nodiscard]] const char *what() const noexcept override {
-            return "hzip.mstate: blob not found";
+            return "hzip.archive: MState not found";
+        }
+    };
+
+    class InvalidOperationException: public std::exception {
+    public:
+        std::string msg;
+
+        InvalidOperationException(const std::string &msg) {
+            LOG_F(ERROR, "hzip.archive: Invalid operation (%s)", msg.c_str());
+            this->msg = msg;
+        }
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return "hzip.mstate: Invalid operation";
         }
     };
 }

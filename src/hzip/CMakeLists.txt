@@ -38,16 +38,19 @@ add_library(hzip STATIC
         utils/stack.h
         processor/dispatcher.h
         processor/job.h
-        archiver/archive.h
+        archive/archive.h
         processor/dispatcher.cpp
         core/compressors/compressor_enums.h
         processor/processor.h
         processor/processor.cpp
         core/compressors/compressor_base.h
-        archiver/archive.cpp errors/archive.h)
+        archive/archive.cpp
+        errors/archive.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru)
+
+target_link_libraries(hzip PUBLIC crypto)
 
 # Find Intel Math Kernel Libs
 find_package(MKL)

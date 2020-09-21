@@ -10,6 +10,8 @@
 #include <hzip/utils/common.h>
 #include <hzip/memory/mem_interface.h>
 
+#define HZ_ARCHIVE_VERSION 0x001000
+
 enum hza_marker {
     EMPTY = 0x0,
     METADATA = 0x1,
@@ -21,6 +23,7 @@ enum hza_marker {
 enum hza_metadata_entry_type {
     VERSION = 0x0,
     FILEINFO = 0x1,
+    MSTATE_AUX = 0x2
 };
 
 struct hza_file {
@@ -29,32 +32,34 @@ struct hza_file {
     //todo: Add file information.
 };
 
-// Block-info
-// marker: 8-bit
-// sof: 64-bit
-// size: elias-gamma :- represents the block size in bits.
-struct hza_block_info {
-    hza_marker marker;
-    uint64_t sof;
-    uint64_t size;
-};
-
 struct hza_fragment {
     uint64_t sof;
     uint64_t length;
 };
 
-struct hza_metadata_file_entry {
-    hza_block_info info;
-    hza_file file;
+template <typename T>
+struct hza_entry {
+    T data;
+    uint64_t sof{};
+
+    hza_entry() {
+        // empty-constructor
+    }
+
+    hza_entry(T data, uint64_t sof) {
+        this->data = data;
+        this->sof = sof;
+    }
 };
 
 struct hza_metadata {
     std::string version;
     uint64_t eof;
-    std::unordered_map<std::string, hza_metadata_file_entry> file_map;
+    std::unordered_map<std::string, hza_entry<hza_file>> file_map;
+    std::unordered_map<std::string, hza_entry<uint64_t>> mstate_aux_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
+    std::unordered_map<uint64_t, uint64_t> dep_counter;
     std::vector<hza_fragment> fragments;
 };
 
@@ -68,7 +73,8 @@ private:
 
     void hza_scan();
 
-    void hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read);
+    void hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read,
+                                   const std::function<void(uint64_t)> &seek);
 
     void hza_scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
@@ -78,7 +84,11 @@ private:
 
     option_t<uint64_t> hza_alloc_fragment(uint64_t length);
 
-    void hza_create_metadata_file_entry(const std::string& file_path, hza_metadata_file_entry entry);
+    void hza_init();
+
+    void hza_create_metadata_file_entry(const std::string& file_path, hza_file file);
+
+    hza_file hza_read_metadata_file_entry(const std::string& file_path);
 
     hzblob_t *hza_read_blob(uint64_t id);
 
@@ -92,8 +102,30 @@ private:
 
     void hza_rm_mstate(uint64_t id);
 
+    bool hza_check_mstate_deps(uint64_t id) const;
+
+    void hza_increment_dep(uint64_t id);
+
+    void hza_decrement_dep(uint64_t id);
+
 public:
     hz_archive(const std::string& archive_path);
+
+    void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
+
+    hzblob_set read_file(const std::string& file_path);
+
+    void remove_file(const std::string& file_path);
+
+    void install_mstate(const std::string &_path, hz_mstate *mstate);
+
+    void uninstall_mstate(const std::string &_path);
+
+    // Inject mstate by directly. This mstate cannot be reused by other blobs.
+    void inject_mstate(hz_mstate *mstate, hzblob_t *blob);
+
+    // Inject mstate by tag-reference. This mstate can be reused by other blobs.
+    void inject_mstate(const std::string &_path, hzblob_t *blob);
 
     void close();
 };

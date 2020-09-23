@@ -755,6 +755,19 @@ void hz_archive::inject_mstate(const std::string &_path, hzblob_t *blob) {
     sem_post(mutex);
 }
 
+uint64_t hz_archive::install_mstate(hz_mstate *mstate) {
+    sem_wait(mutex);
+    uint64_t id = hza_write_mstate(mstate);
+    sem_post(mutex);
+    return id;
+}
+
+void hz_archive::uninstall_mstate(uint64_t id) {
+    sem_wait(mutex);
+    hza_rm_mstate(id);
+    sem_post(mutex);
+}
+
 void hz_archive::close() {
     sem_wait(mutex);
 

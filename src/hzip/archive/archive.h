@@ -119,7 +119,11 @@ public:
 
     void install_mstate(const std::string &_path, hz_mstate *mstate);
 
+    uint64_t install_mstate(hz_mstate *mstate);
+
     void uninstall_mstate(const std::string &_path);
+
+    void uninstall_mstate(uint64_t id);
 
     // Inject mstate by directly. This mstate cannot be reused by other blobs.
     void inject_mstate(hz_mstate *mstate, hzblob_t *blob);

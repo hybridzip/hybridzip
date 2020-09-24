@@ -75,7 +75,14 @@ public:
         sem_wait(&mutex);
 
         n_allocations -= 1;
-        allocation_size -= memmap->get((void *) ptr)->alloc_size;
+
+        auto *elem =  memmap->get((void *) ptr);
+        if (elem == nullptr) {
+            sem_post(&mutex);
+            return;
+        }
+
+        allocation_size -= elem->alloc_size;
         memmap->remove_by_type<Type>(ptr);
 
         sem_post(&mutex);

@@ -10,6 +10,7 @@ struct hz_job {
     char *dest;
     hzblob_t *blob;
     hz_archive *archive;
+    hzcodec::algorithms::ALGORITHM algorithm;
 };
 
 #endif

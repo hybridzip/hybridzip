@@ -7,15 +7,35 @@ hz_processor::hz_processor(uint64_t n_threads) {
     sem_init(this->mutex, 0, n_threads);
 }
 
-bool hz_processor::run(hz_job *job) {
-    sem_wait(mutex);
-
-
-    sem_post(mutex);
-    return true;
+hzcodec::hz_abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
+    switch (alg) {
+        case hzcodec::algorithms::UNDEFINED:
+            return nullptr;
+        case hzcodec::algorithms::VICTINI:
+            auto victini = new hzcodec::victini();
+            HZ_MEM_INIT_PTR(victini);
+            return victini;
+    }
 }
 
-hzblob_set hz_processor::hzp_split_blob(hzblob_t *blob, uint64_t size) {
+hzblob_set hz_processor::hzp_split(hz_codec_job *job) {
+    auto *blob = job->blob;
+
+    uint64_t size = 0;
+
+    switch (job->algorithm) {
+        case hzcodec::algorithms::UNDEFINED:
+            size = blob->o_size;
+            break;
+        case hzcodec::algorithms::VICTINI:
+            size = 0x400000;
+            break;
+    }
+
+    if (blob->o_size == 0) {
+        return hzblob_set{.blobs=nullptr, .blob_count=0};
+    }
+
     uint64_t n = blob->o_size / size;
     uint64_t r = blob->o_size % size;
 
@@ -50,9 +70,26 @@ hzblob_set hz_processor::hzp_split_blob(hzblob_t *blob, uint64_t size) {
     return hzblob_set{.blobs=blobs, .blob_count=n};
 }
 
-void hz_processor::hzp_encode(hz_job *job) {
-    // 4MB blobs for victini.
-    hzblob_set set = hzp_split_blob(job->blob, 0x400000);
+void hz_processor::run(hz_job *job) {
+    if (job == nullptr) {
+        return;
+    }
+
+    sem_wait(mutex);
+
+    if (job->codec != nullptr) {
+        auto thread = std::thread([this](hz_codec_job *job) {
+            this->hzp_run_codec_job(job);
+        }, job->codec);
+
+        thread.join();
+    }
+
+    sem_post(mutex);
+}
+
+void hz_processor::hzp_encode(hz_codec_job *job) {
+    hzblob_set set = hzp_split(job);
     auto *blob_array = HZ_MALLOC(hzblob_t, set.blob_count);
 
     for (uint64_t i = 0; i < set.blob_count; i++) {
@@ -78,14 +115,14 @@ void hz_processor::hzp_encode(hz_job *job) {
     HZ_FREE(set.blobs);
 }
 
-hzcodec::hz_abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
-    switch (alg) {
-        case hzcodec::algorithms::UNDEFINED:
-            return nullptr;
-        case hzcodec::algorithms::VICTINI:
-            auto victini = new hzcodec::victini();
-            HZ_MEM_INIT_PTR(victini);
-            return victini;
+void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
+    switch (job->job_type) {
+        case hz_codec_job::ENCODE:
+            hzp_encode(job);
+            break;
+        case hz_codec_job::DECODE:
+            //todo: implement hzp_decode()
+            break;
     }
 }
 

@@ -18,7 +18,7 @@ void hz_dispatcher::register_tag(char *tag, uint64_t mem_peak) {
     sem_post(&mutex);
 }
 
-void hz_dispatcher::add_job(hz_job *job) {
+void hz_dispatcher::add_job(hz_codec_job *job) {
     sem_wait(&mutex);
 
     auto str_tag = std::string(job->tag);

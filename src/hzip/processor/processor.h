@@ -16,16 +16,18 @@ private:
     uint64_t threads_in_use;
     sem_t *mutex;
 
-    hzblob_set hzp_split_blob(hzblob_t *blob, uint64_t size);
+    hzblob_set hzp_split(hz_codec_job *job);
 
     hzcodec::hz_abstract_codec *hzp_get_codec(hzcodec::algorithms::ALGORITHM alg);
 
-    void hzp_encode(hz_job *job);
+    void hzp_encode(hz_codec_job *job);
+
+    void hzp_run_codec_job(hz_codec_job *job);
 
 public:
     hz_processor(uint64_t n_threads);
 
-    bool run(hz_job *job);
+    void run(hz_job *job);
 };
 
 

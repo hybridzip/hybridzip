@@ -7,7 +7,7 @@ hz_processor::hz_processor(uint64_t n_threads) {
     sem_init(this->mutex, 0, n_threads);
 }
 
-hzcodec::hz_abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
+hzcodec::abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
     switch (alg) {
         case hzcodec::algorithms::UNDEFINED:
             return nullptr;
@@ -121,8 +121,27 @@ void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
             hzp_encode(job);
             break;
         case hz_codec_job::DECODE:
-            //todo: implement hzp_decode()
+            hzp_decode(job);
             break;
+    }
+}
+
+void hz_processor::hzp_decode(hz_codec_job *job) {
+    if (job == nullptr) {
+        return;
+    }
+
+    hzblob_set set = job->archive->read_file(job->dest);
+
+    for (uint64_t i = 0; i < set.blob_count; i++) {
+        auto codec = hzp_get_codec(job->algorithm);
+
+        auto dblob = codec->decompress(&set.blobs[i]);
+
+        set.blobs[i].destroy();
+        set.blobs[i] = *dblob;
+
+        HZ_FREE(dblob);
     }
 }
 

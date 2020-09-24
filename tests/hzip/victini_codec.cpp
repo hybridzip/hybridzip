@@ -17,7 +17,7 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
     }
 
     // Upcast victini codec.
-    hzcodec::hz_abstract_codec *codec = &victini;
+    hzcodec::abstract_codec *codec = &victini;
 
     hz_mstate mstate;
     blob->mstate = &mstate;
@@ -53,7 +53,7 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
     }
 
     // Upcast victini codec.
-    hzcodec::hz_abstract_codec *codec = &victini;
+    hzcodec::abstract_codec *codec = &victini;
 
     hz_mstate mstate;
     blob->mstate = &mstate;

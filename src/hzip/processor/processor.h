@@ -18,9 +18,11 @@ private:
 
     hzblob_set hzp_split(hz_codec_job *job);
 
-    hzcodec::hz_abstract_codec *hzp_get_codec(hzcodec::algorithms::ALGORITHM alg);
+    hzcodec::abstract_codec *hzp_get_codec(hzcodec::algorithms::ALGORITHM alg);
 
     void hzp_encode(hz_codec_job *job);
+
+    void hzp_decode(hz_codec_job *job);
 
     void hzp_run_codec_job(hz_codec_job *job);
 

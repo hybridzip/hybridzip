@@ -38,7 +38,7 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         }
 
         // Upcast victini codec.
-        hzcodec::hz_abstract_codec *codec = &victini;
+        hzcodec::abstract_codec *codec = &victini;
 
         hz_mstate mstate;
         blob->mstate = &mstate;
@@ -108,7 +108,7 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         }
 
         // Upcast victini codec.
-        hzcodec::hz_abstract_codec *codec = &victini;
+        hzcodec::abstract_codec *codec = &victini;
 
         hz_mstate mstate;
         blob->mstate = &mstate;
@@ -185,7 +185,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         }
 
         // Upcast victini codec.
-        hzcodec::hz_abstract_codec *codec = &victini;
+        hzcodec::abstract_codec *codec = &victini;
 
         hz_mstate mstate;
         blob->mstate = &mstate;

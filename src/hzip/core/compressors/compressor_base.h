@@ -4,7 +4,7 @@
 #include <hzip/core/blob/hzblob.h>
 
 namespace hzcodec {
-    class hz_abstract_codec {
+    class abstract_codec {
     public:
         virtual hzblob_t *compress(hzblob_t *blob) = 0;
         virtual hzblob_t *decompress(hzblob_t *blob) = 0;

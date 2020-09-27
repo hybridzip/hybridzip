@@ -19,7 +19,7 @@ struct hz_codec_job {
     JOBTYPE job_type;
 };
 
-union hz_job {
+struct hz_job {
     hz_codec_job *codec;
 };
 

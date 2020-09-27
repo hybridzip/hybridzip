@@ -75,17 +75,31 @@ void hz_processor::run(hz_job *job) {
         return;
     }
 
-    sem_wait(mutex);
-
     if (job->codec != nullptr) {
-        auto thread = std::thread([this](hz_codec_job *job) {
-            this->hzp_run_codec_job(job);
+        sem_wait(mutex);
+
+        std::exception thread_exception;
+        bool encountered_exception = false;
+
+        auto thread = std::thread([this, &thread_exception, &encountered_exception](hz_codec_job *job) {
+            try {
+                this->hzp_run_codec_job(job);
+            } catch (std::exception &e) {
+                thread_exception = e;
+                encountered_exception = true;
+            }
         }, job->codec);
 
         thread.join();
+
+        if (encountered_exception) {
+            sem_post(mutex);
+            throw thread_exception;
+        }
+
+        sem_post(mutex);
     }
 
-    sem_post(mutex);
 }
 
 void hz_processor::hzp_encode(hz_codec_job *job) {

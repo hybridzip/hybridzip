@@ -36,10 +36,8 @@ add_library(hzip STATIC
         memory/mem_interface.h
         errors/memory.h
         utils/stack.h
-        processor/dispatcher.h
         processor/job.h
         archive/archive.h
-        processor/dispatcher.cpp
         core/compressors/compressor_enums.h
         processor/processor.h
         processor/processor.cpp

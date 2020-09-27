@@ -11,7 +11,6 @@ struct hz_codec_job {
         DECODE = 0x1,
     };
 
-    char *tag;
     char *dest;
     hzblob_t *blob;
     hz_archive *archive;

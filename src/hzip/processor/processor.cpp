@@ -99,7 +99,6 @@ void hz_processor::run(hz_job *job) {
 
         sem_post(mutex);
     }
-
 }
 
 void hz_processor::hzp_encode(hz_codec_job *job) {
@@ -115,7 +114,11 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
         HZ_FREE(cblob);
         set.blobs[i].destroy();
 
-        job->archive->inject_mstate(blob_array[i].mstate, &blob_array[i]);
+        if (job->reuse_mstate) {
+            job->archive->inject_mstate(job->mstate_addr, blob_array + i);
+        } else {
+            job->archive->inject_mstate(blob_array[i].mstate, blob_array + i);
+        }
     }
 
     job->archive->create_file(job->dest, blob_array, set.blob_count);

@@ -16,6 +16,10 @@ private:
     hz_memmgr *parent;
     sem_t mutex;
 
+    void lock();
+
+    void unlock();
+
 public:
     hz_memmgr();
 
@@ -29,19 +33,19 @@ public:
 
     template<typename Type>
     Type *hz_malloc(int n_elems) {
-        sem_wait(&mutex);
+        lock();
 
         uint64_t curr_alloc_size = sizeof(Type) * n_elems;
 
         if (peak_size != 0 && allocation_size + curr_alloc_size > peak_size) {
-            sem_post(&mutex);
+            unlock();
             throw MemoryErrors::PeakLimitReachedException();
         }
 
         if (parent != nullptr &&
             parent->peak_size != 0 &&
             parent->get_alloc_size() + curr_alloc_size > parent->get_peak_size()) {
-            sem_post(&mutex);
+            unlock();
             throw MemoryErrors::PeakLimitReachedException();
         }
 
@@ -61,7 +65,7 @@ public:
                     parent->get_alloc_count() + 1);
         }
 
-        sem_post(&mutex);
+        unlock();
 
         return (Type *) elem->ptr;
     }
@@ -72,20 +76,20 @@ public:
             return;
         }
 
-        sem_wait(&mutex);
+        lock();
 
         n_allocations -= 1;
 
         auto *elem =  memmap->get((void *) ptr);
         if (elem == nullptr) {
-            sem_post(&mutex);
+            unlock();
             return;
         }
 
         allocation_size -= elem->alloc_size;
         memmap->remove_by_type<Type>(ptr);
 
-        sem_post(&mutex);
+        unlock();
     }
 
     void set_peak(uint64_t _peak_size);
@@ -99,6 +103,8 @@ public:
     uint64_t get_peak_size();
 
     void update(uint64_t alloc_size, uint64_t alloc_count);
+
+    void wipe();
 };
 
 #endif

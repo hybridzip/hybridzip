@@ -11,25 +11,25 @@ hz_memmgr::hz_memmgr() {
 }
 
 void hz_memmgr::set_peak(uint64_t _peak_size) {
-    sem_wait(&mutex);
+    lock();
     peak_size = _peak_size;
-    sem_post(&mutex);
+    unlock();
 
     LOG_F(WARNING, "hzip.memory: set peak size: %lu bytes", _peak_size);
 }
 
 uint64_t hz_memmgr::get_alloc_count() {
-    sem_wait(&mutex);
+    lock();
     int n = n_allocations;
-    sem_post(&mutex);
+    unlock();
 
     return n;
 }
 
 uint64_t hz_memmgr::get_alloc_size() {
-    sem_wait(&mutex);
+    lock();
     int size = allocation_size;
-    sem_post(&mutex);
+    unlock();
 
     return size;
 }
@@ -39,18 +39,30 @@ void hz_memmgr::set_parent(hz_memmgr *p) {
 }
 
 uint64_t hz_memmgr::get_peak_size() {
-    sem_wait(&mutex);
+    lock();
     int size = peak_size;
-    sem_post(&mutex);
+    unlock();
 
     return size;
 }
 
 void hz_memmgr::update(uint64_t alloc_size, uint64_t alloc_count) {
-    sem_wait(&mutex);
+    lock();
 
     allocation_size = alloc_size;
     n_allocations = alloc_count;
 
+    unlock();
+}
+
+void hz_memmgr::lock() {
+    sem_wait(&mutex);
+}
+
+void hz_memmgr::unlock() {
     sem_post(&mutex);
+}
+
+void hz_memmgr::wipe() {
+
 }

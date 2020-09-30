@@ -7,12 +7,26 @@ hz_memmap::hz_memmap(uint64_t size) {
         mapptr[i] = nullptr;
     }
     max_size = size;
+
+    iterptr = nullptr;
 }
 
 void hz_memmap::add(hz_map_elem *elem) {
     uint64_t ptr_hash = hash(elem->ptr);
     elem->next = mapptr[ptr_hash];
     mapptr[ptr_hash] = elem;
+
+    if (iterptr == nullptr) {
+        iterptr = elem;
+        head = elem;
+        iterptr->next_iter = nullptr;
+        iterptr->prev_iter = nullptr;
+    } else {
+        iterptr->next_iter = elem;
+        elem->prev_iter = iterptr;
+        iterptr = iterptr->next_iter;
+        iterptr->next_iter = nullptr;
+    }
 }
 
 hz_map_elem *hz_memmap::get(void *ptr) {

@@ -11,11 +11,13 @@ struct hz_codec_job {
         DECODE = 0x1,
     };
 
-    char *dest;
+    std::string dest;
     hzblob_t *blob;
     hz_archive *archive;
     hzcodec::algorithms::ALGORITHM algorithm;
     JOBTYPE job_type;
+    bool reuse_mstate;
+    std::string mstate_addr;
 };
 
 struct hz_job {

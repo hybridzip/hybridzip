@@ -6,30 +6,30 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     auto header = blob->header;
     auto length = blob->o_size;
 
-    auto *data = HZ_MALLOC(int16_t, length);
+    auto *data = rmalloc(int16_t, length);
 
     for (uint64_t i = 0; i < length; i++) {
         data[i] = blob->o_data[i];
     }
 
     auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, length, 0x100);
-    HZ_MEM_INIT(bwt);
+    rinit(bwt);
 
     auto bwt_index = bwt.transform();
 
     auto mtf = hztrans::mtf_transformer(data, 0x100, length);
     mtf.transform();
 
-    auto *dict = HZ_MALLOC(uint64_t*, 256);
-    auto *cdict = HZ_MALLOC(uint64_t*, 256);
+    auto *dict = rmalloc(uint64_t*, 256);
+    auto *cdict = rmalloc(uint64_t*, 256);
 
     for (int i = 0; i < 256; i++) {
-        dict[i] = HZ_MALLOC(uint64_t, 256);
-        cdict[i] = HZ_MALLOC(uint64_t, 256);
+        dict[i] = rmalloc(uint64_t, 256);
+        cdict[i] = rmalloc(uint64_t, 256);
     }
 
     // Write blob-header.
-    header.raw = HZ_MALLOC(uint8_t, 32);
+    header.raw = rmalloc(uint8_t, 32);
     auto h_stream = new bitio::stream(header.raw, 32);
 
     bin_t bwt_index_bin = elias_gamma(bwt_index);
@@ -58,26 +58,26 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     };
 
     auto encoder = hzu_encoder();
-    HZ_MEM_INIT(encoder);
+    rinit(encoder);
 
     encoder.set_header(0x100, 24, length);
-    encoder.set_distribution(hzip_get_init_dist(HZ_MEM_MGR, 0x100));
+    encoder.set_distribution(hzip_get_init_dist(rmemmgr, 0x100));
     encoder.set_cross_encoder(cross_encoder);
     encoder.set_size(length);
 
     u32ptr blob_data = encoder.encode();
 
     for (int i = 0; i < 256; i++) {
-        HZ_FREE(dict[i]);
-        HZ_FREE(cdict[i]);
+        rfree(dict[i]);
+        rfree(cdict[i]);
     }
 
-    HZ_FREE(dict);
-    HZ_FREE(cdict);
-    HZ_FREE(data);
+    rfree(dict);
+    rfree(cdict);
+    rfree(data);
 
-    auto cblob = HZ_NEW(hzblob_t);
-    HZ_MEM_INIT_PTR(cblob);
+    auto cblob = rnew(hzblob_t);
+    rinitptr(cblob);
 
     cblob->data = blob_data.data;
     cblob->size = blob_data.n;
@@ -108,12 +108,12 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     uint64_t k = 0;
     bool is_norm_dict = m_stream->read(0x1);
 
-    auto *dict = HZ_MALLOC(uint64_t*, 256);
-    auto *cdict = HZ_MALLOC(uint64_t*, 256);
+    auto *dict = rmalloc(uint64_t*, 256);
+    auto *cdict = rmalloc(uint64_t*, 256);
 
     for (int i = 0; i < 256; i++) {
-        dict[i] = HZ_MALLOC(uint64_t, 256);
-        cdict[i] = HZ_MALLOC(uint64_t, 256);
+        dict[i] = rmalloc(uint64_t, 256);
+        cdict[i] = rmalloc(uint64_t, 256);
     }
 
 
@@ -155,7 +155,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     // create a cross-decoder.
     // a cross-decoder usually handles add_to_seq for the core entropy codec.
     int prev_symbol = -1;
-    auto sym_optr = HZ_NEW(uint64_t);
+    auto sym_optr = rnew(uint64_t);
 
     auto cross_decoder = [dict, cdict, &prev_symbol, sym_optr](hzrans64_t *state, hz_stack<uint32_t> *data) {
         uint64_t x = state->x;
@@ -187,25 +187,25 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     };
 
     auto decoder = hzu_decoder();
-    HZ_MEM_INIT(decoder);
+    rinit(decoder);
 
     decoder.set_header(0x100, 24, length);
     decoder.set_cross_decoder(cross_decoder);
-    decoder.set_distribution(hzip_get_init_dist(HZ_MEM_MGR, 0x100));
+    decoder.set_distribution(hzip_get_init_dist(rmemmgr, 0x100));
     decoder.override_symbol_ptr(sym_optr);
 
     auto dataptr = decoder.decode(blob->data);
 
     for (int i = 0; i < 256; i++) {
-        HZ_FREE(dict[i]);
-        HZ_FREE(cdict[i]);
+        rfree(dict[i]);
+        rfree(cdict[i]);
     }
 
-    HZ_FREE(dict);
-    HZ_FREE(cdict);
-    HZ_FREE(sym_optr);
+    rfree(dict);
+    rfree(cdict);
+    rfree(sym_optr);
 
-    auto *sdata = HZ_MALLOC(int16_t, length);
+    auto *sdata = rmalloc(int16_t, length);
 
     for (uint64_t i = 0; i < length; i++) {
         sdata[i] = dataptr.data[i];
@@ -217,15 +217,15 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     mtf.invert();
 
     auto bwt = hztrans::bw_transformer<int16_t, int32_t>(sdata, length, 0x100);
-    HZ_MEM_INIT(bwt);
+    rinit(bwt);
 
     bwt.invert(bwt_index);
 
-    auto dblob = HZ_NEW(hzblob_t);
-    HZ_MEM_INIT_PTR(dblob);
+    auto dblob = rnew(hzblob_t);
+    rinitptr(dblob);
 
 
-    dblob->o_data = HZ_MALLOC(uint8_t, length);
+    dblob->o_data = rmalloc(uint8_t, length);
     dblob->o_size = length;
     dblob->mstate = mstate;
     dblob->mstate->alg = hzcodec::algorithms::VICTINI;
@@ -235,7 +235,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     }
 
 
-    HZ_FREE(sdata);
+    rfree(sdata);
 
     return dblob;
 }
@@ -244,7 +244,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
                                              uint64_t length) {
     if (mstate->is_empty()) {
         auto focm = hzmodels::first_order_context_model();
-        HZ_MEM_INIT(focm);
+        rinit(focm);
 
         focm.set_alphabet_size(0x100);
         // Now we contruct a First-Order-Context-Dictionary.
@@ -283,7 +283,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
         // Generate mstate object.
         mstate->length = 65537 << 3;
-        mstate->data = HZ_MALLOC(uint8_t, mstate->length);
+        mstate->data = rmalloc(uint8_t, mstate->length);
 
         auto m_stream = new bitio::stream(mstate->data, mstate->length);
 

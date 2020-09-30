@@ -3,7 +3,7 @@
 
 hz_processor::hz_processor(uint64_t n_threads) {
     this->n_threads = n_threads;
-    this->mutex = HZ_NEW(sem_t);
+    this->mutex = rnew(sem_t);
     sem_init(this->mutex, 0, n_threads);
 }
 
@@ -13,7 +13,7 @@ hzcodec::abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORI
             return nullptr;
         case hzcodec::algorithms::VICTINI:
             auto victini = new hzcodec::victini();
-            HZ_MEM_INIT_PTR(victini);
+            rinitptr(victini);
             return victini;
     }
 }
@@ -44,12 +44,12 @@ hzblob_set hz_processor::hzp_split(hz_codec_job *job) {
         size = 0;
     }
 
-    auto *blobs = HZ_MALLOC(hzblob_t, n);
+    auto *blobs = rmalloc(hzblob_t, n);
 
     for (uint64_t i = 0; i < n - 1; i++) {
         blobs[i] = hzblob_t();
         blobs[i].o_size = size;
-        blobs[i].o_data = HZ_MALLOC(uint8_t, size);
+        blobs[i].o_data = rmalloc(uint8_t, size);
 
         for (uint64_t j = 0; j < size; j++) {
             blobs[i].o_data[j] = blob->o_data[size * i + j];
@@ -58,14 +58,14 @@ hzblob_set hz_processor::hzp_split(hz_codec_job *job) {
 
     blobs[n - 1] = hzblob_t();
     blobs[n - 1].o_size = size + r;
-    blobs[n - 1].o_data = HZ_MALLOC(uint8_t, size + r);
+    blobs[n - 1].o_data = rmalloc(uint8_t, size + r);
 
     for (uint64_t j = 0; j < size + r; j++) {
         blobs[n - 1].o_data[j] = blob->o_data[size * (n - 1) + j];
     }
 
     blob->destroy();
-    HZ_FREE(blob);
+    rfree(blob);
 
     return hzblob_set{.blobs=blobs, .blob_count=n};
 }
@@ -103,7 +103,7 @@ void hz_processor::run(hz_job *job) {
 
 void hz_processor::hzp_encode(hz_codec_job *job) {
     hzblob_set set = hzp_split(job);
-    auto *blob_array = HZ_MALLOC(hzblob_t, set.blob_count);
+    auto *blob_array = rmalloc(hzblob_t, set.blob_count);
 
     for (uint64_t i = 0; i < set.blob_count; i++) {
         auto codec = hzp_get_codec(job->algorithm);
@@ -111,7 +111,7 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
         auto cblob = codec->compress(&set.blobs[i]);
         blob_array[i] = *cblob;
 
-        HZ_FREE(cblob);
+        rfree(cblob);
         set.blobs[i].destroy();
 
         if (job->reuse_mstate) {
@@ -128,8 +128,8 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
         blob_array[i].destroy();
     }
 
-    HZ_FREE(blob_array);
-    HZ_FREE(set.blobs);
+    rfree(blob_array);
+    rfree(set.blobs);
 }
 
 void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
@@ -158,7 +158,7 @@ void hz_processor::hzp_decode(hz_codec_job *job) {
         set.blobs[i].destroy();
         set.blobs[i] = *dblob;
 
-        HZ_FREE(dblob);
+        rfree(dblob);
     }
 }
 

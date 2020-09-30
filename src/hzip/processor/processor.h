@@ -3,14 +3,14 @@
 
 #include <thread>
 #include <semaphore.h>
-#include <hzip/memory/mem_interface.h>
+#include <rainman/rainman.h>
 #include <hzip/core/compressors/compressor_base.h>
 #include "job.h"
 
 // This is an abstract processor for hybridzip.
 // todo: Add CUDA co-processor
 
-class hz_processor: public hz_mem_iface {
+class hz_processor: public rainman::context {
 private:
     uint64_t n_threads;
     uint64_t threads_in_use;

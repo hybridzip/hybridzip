@@ -121,7 +121,7 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
             }
 
             uint64_t blob_count = read(0x3A);
-            auto blob_ids = HZ_MALLOC(uint64_t, blob_count);
+            auto blob_ids = rmalloc(uint64_t, blob_count);
 
             for (uint64_t i = 0; i < blob_count; i++) {
                 blob_ids[i] = read(0x40);
@@ -332,8 +332,8 @@ hza_file hz_archive::hza_read_metadata_file_entry(const std::string &file_path) 
 }
 
 hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
-    auto blob = HZ_NEW(hzblob_t);
-    HZ_MEM_INIT_PTR(blob);
+    auto blob = rnew(hzblob_t);
+    rinitptr(blob);
 
     if (!metadata.blob_map.contains(id)) {
         sem_post(mutex);
@@ -351,7 +351,7 @@ hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
     blob->header = hz_blob_header();
     blob->header.length = stream->read(0x40);
 
-    blob->header.raw = HZ_MALLOC(uint8_t, blob->header.length);
+    blob->header.raw = rmalloc(uint8_t, blob->header.length);
 
     for (uint64_t i = 0; i < blob->header.length; i++) {
         blob->header.raw[i] = stream->read(0x8);
@@ -361,7 +361,7 @@ hzblob_t *hz_archive::hza_read_blob(uint64_t id) {
     blob->mstate_id = stream->read(0x40);
 
     blob->size = stream->read(0x40);
-    blob->data = HZ_MALLOC(uint32_t, blob->size);
+    blob->data = rmalloc(uint32_t, blob->size);
 
     for (uint64_t i = 0; i < blob->size; i++) {
         blob->data[i] = stream->read(0x20);
@@ -468,7 +468,7 @@ hz_mstate *hz_archive::hza_read_mstate(uint64_t id) {
         throw ArchiveErrors::MstateNotFoundException(id);
     }
 
-    auto mstate = HZ_NEW(hz_mstate);
+    auto mstate = rnew(hz_mstate);
     uint64_t sof = metadata.mstate_map[id];
 
     stream->seek_to(sof);
@@ -480,7 +480,7 @@ hz_mstate *hz_archive::hza_read_mstate(uint64_t id) {
 
     auto length = stream->read(0x40);
     mstate->length = length;
-    mstate->data = HZ_MALLOC(uint8_t, length);
+    mstate->data = rmalloc(uint8_t, length);
 
     for (uint64_t i = 0; i < length; i++) {
         mstate->data[i] = stream->read(0x8);
@@ -642,7 +642,7 @@ void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint
 
     hza_file file{};
     file.blob_count = blob_count;
-    file.blob_ids = HZ_MALLOC(uint64_t, blob_count);
+    file.blob_ids = rmalloc(uint64_t, blob_count);
 
     for (uint64_t i = 0; i < blob_count; i++) {
         file.blob_ids[i] = hza_write_blob(&blobs[i]);
@@ -691,12 +691,12 @@ hzblob_set hz_archive::read_file(const std::string &file_path) {
 
     hza_file file = hza_read_metadata_file_entry(file_path);
 
-    auto *blobs = HZ_MALLOC(hzblob_t, file.blob_count);
+    auto *blobs = rmalloc(hzblob_t, file.blob_count);
 
     for (uint64_t i = 0; i < file.blob_count; i++) {
         auto blob = hza_read_blob(file.blob_ids[i]);
         blobs[i] = *blob;
-        HZ_FREE(blob);
+        rfree(blob);
     }
 
     sem_post(mutex);

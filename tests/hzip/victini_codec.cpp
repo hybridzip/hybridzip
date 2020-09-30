@@ -1,12 +1,13 @@
 #include <gtest/gtest.h>
+#include <rainman/rainman.h>
 #include <hzip/core/compressors/victini.h>
 
 class VictiniCodecTest: public testing::Test {};
 
 TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
-    auto mgr = new hz_memmgr;
+    auto mgr = new rainman::memmgr;
     auto victini = hzcodec::victini();
-    HZ_MEM_INIT_FROM(mgr, victini);
+    rinitfrom(mgr, victini);
 
     auto blob = new hzblob_t;
     blob->o_data = new uint8_t[20];
@@ -40,9 +41,9 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
 }
 
 TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
-    auto mgr = new hz_memmgr;
+    auto mgr = new rainman::memmgr;
     auto victini = hzcodec::victini();
-    HZ_MEM_INIT_FROM(mgr, victini);
+    rinitfrom(mgr, victini);
 
     auto blob = new hzblob_t;
     blob->o_data = new uint8_t[1048576];

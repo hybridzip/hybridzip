@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <rainman/rainman.h>
 #include <hzip/archive/archive.h>
 #include <hzip/utils/fsutils.h>
 #include <hzip/core/compressors/victini.h>
@@ -24,10 +25,10 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         fsutils::delete_file_if_exists("test.hz");
 
         auto *archive = new hz_archive("test.hz");
-        auto mgr = new hz_memmgr;
+        auto mgr = new rainman::memmgr;
         auto victini = hzcodec::victini();
-        HZ_MEM_INIT_FROM(mgr, victini);
-        HZ_MEM_INIT_FROM_PTR(mgr, archive);
+        rinitfrom(mgr, victini);
+        rinitptrfrom(mgr, archive);
 
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];
@@ -94,10 +95,10 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         fsutils::delete_file_if_exists("test.hz");
 
         auto *archive = new hz_archive("test.hz");
-        auto mgr = new hz_memmgr;
+        auto mgr = new rainman::memmgr;
         auto victini = hzcodec::victini();
-        HZ_MEM_INIT_FROM(mgr, victini);
-        HZ_MEM_INIT_FROM_PTR(mgr, archive);
+        rinitfrom(mgr, victini);
+        rinitptrfrom(mgr, archive);
 
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];
@@ -171,10 +172,10 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         fsutils::delete_file_if_exists("test.hz");
 
         auto *archive = new hz_archive("test.hz");
-        auto mgr = new hz_memmgr;
+        auto mgr = new rainman::memmgr;
         auto victini = hzcodec::victini();
-        HZ_MEM_INIT_FROM(mgr, victini);
-        HZ_MEM_INIT_FROM_PTR(mgr, archive);
+        rinitfrom(mgr, victini);
+        rinitptrfrom(mgr, archive);
 
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];

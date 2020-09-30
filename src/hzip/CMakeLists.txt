@@ -29,12 +29,6 @@ add_library(hzip STATIC
         compute/vector_utils.h
         compute/dct.h
         compute/dct.cpp
-        memory/memmgr.h
-        memory/memmap.h
-        memory/memmgr.cpp
-        memory/memmap.cpp
-        memory/mem_interface.h
-        errors/memory.h
         utils/stack.h
         processor/job.h
         archive/archive.h
@@ -46,7 +40,7 @@ add_library(hzip STATIC
         errors/archive.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
-target_link_libraries(hzip PUBLIC bitio loguru)
+target_link_libraries(hzip PUBLIC bitio loguru rainman)
 
 target_link_libraries(hzip PUBLIC crypto)
 

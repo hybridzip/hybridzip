@@ -3,11 +3,11 @@
 
 #include <functional>
 #include <utility>
-#include <hzip/memory/mem_interface.h>
+#include <rainman/rainman.h>
 #include "hzrans.h"
 
 
-class hzu_encoder: public hz_mem_iface {
+class hzu_encoder: public rainman::context {
 private:
     hz_cross_codec cross_encoder;
     uint64_t *distptr{};
@@ -32,14 +32,14 @@ public:
 
 };
 
-class hzu_decoder: public hz_mem_iface {
+class hzu_decoder: public rainman::context {
 private:
     hz_codec_callback callback;
     hz_cross_codec cross_decoder;
-    uint64_t *sym_override_ptr;
-    uint64_t *distptr;
-    uint64_t size;
-    hzrans64_t *state;
+    uint64_t *sym_override_ptr = nullptr;
+    uint64_t *distptr = nullptr;
+    uint64_t size = 0;
+    hzrans64_t *state = nullptr;
 
 public:
     hzu_decoder() = default;

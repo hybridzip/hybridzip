@@ -36,8 +36,6 @@ hz_archive::hz_archive(const std::string &archive_path) {
     if (init_flag) {
         hza_init();
     }
-
-    hza_scan();
 }
 
 void hz_archive::hza_scan() {
@@ -114,10 +112,10 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
         }
         case hza_metadata_entry_type::FILEINFO: {
             uint64_t path_length = elias_gamma_inv(read).obj;
-            char *_path = new char[path_length];
+            std::string _path;
 
             for (uint64_t i = 0; i < path_length; i++) {
-                _path[i] = read(0x8);
+                _path += (char) read(0x8);
             }
 
             uint64_t blob_count = read(0x3A);
@@ -132,7 +130,7 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
                     .blob_count=blob_count
             };
 
-            metadata.file_map[_path] = hza_entry(file, sof);
+            metadata.file_map[_path] = hza_entry(file, sof - 0x8);
 
             break;
         }
@@ -142,13 +140,13 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
             // format: <path-length (elias-gamma)> <path (8-bit-array)> <mstate-id (64-bit)>
 
             uint64_t path_length = elias_gamma_inv(read).obj;
-            char *_path = new char[path_length];
+            std::string _path;
 
             for (uint64_t i = 0; i < path_length; i++) {
-                _path[i] = read(0x8);
+                _path += (char) read(0x8);
             }
 
-            metadata.mstate_aux_map[_path] = hza_entry(stream->read(0x40), sof);
+            metadata.mstate_aux_map[_path] = hza_entry(read(0x40), sof - 0x8);
             break;
         }
     }
@@ -782,4 +780,8 @@ void hz_archive::close() {
     delete mutex;
 
     sem_post(archive_mutex);
+}
+
+void hz_archive::load() {
+    hza_scan();
 }

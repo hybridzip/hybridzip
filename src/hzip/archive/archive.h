@@ -112,6 +112,8 @@ private:
 public:
     hz_archive(const std::string& archive_path);
 
+    void load();
+
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 
     hzblob_set read_file(const std::string& file_path);

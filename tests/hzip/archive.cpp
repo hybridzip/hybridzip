@@ -30,6 +30,8 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         rinitfrom(mgr, victini);
         rinitptrfrom(mgr, archive);
 
+        archive->load();
+
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];
         blob->o_size = 20;
@@ -100,6 +102,8 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         rinitfrom(mgr, victini);
         rinitptrfrom(mgr, archive);
 
+        archive->load();
+
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];
         blob->o_size = 20;
@@ -124,6 +128,13 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         archive->create_file("/data.txt", cblob, 1);
 
         archive->remove_file("/data.txt");
+
+        archive->close();
+        delete archive;
+        archive = new hz_archive("test.hz");
+        rinitptrfrom(mgr, archive);
+
+        archive->load();
 
         EXPECT_THROW(archive->read_file("/data.txt"), ArchiveErrors::FileNotFoundException);
 
@@ -177,6 +188,8 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         rinitfrom(mgr, victini);
         rinitptrfrom(mgr, archive);
 
+        archive->load();
+
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];
         blob->o_size = 20;
@@ -204,6 +217,12 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         blobs[1] = *cblob;
         archive->create_file("/data.txt", blobs, 2);
 
+        archive->close();
+        delete archive;
+        archive = new hz_archive("test.hz");
+        rinitptrfrom(mgr, archive);
+
+        archive->load();
 
         auto ccblob = &archive->read_file("/data.txt").blobs[0];
 

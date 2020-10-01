@@ -27,6 +27,8 @@ private:
     void hzp_run_codec_job(hz_codec_job *job);
 
 public:
+    hz_processor() = default;
+
     hz_processor(uint64_t n_threads);
 
     void run(hz_job *job);

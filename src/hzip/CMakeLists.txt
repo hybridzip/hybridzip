@@ -37,7 +37,7 @@ add_library(hzip STATIC
         processor/processor.cpp
         core/compressors/compressor_base.h
         archive/archive.cpp
-        errors/archive.h)
+        errors/archive.h utils/validation.h errors/utils.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru rainman)

@@ -121,9 +121,9 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         auto cblob = codec->compress(blob);
 
         // Inject mstate into blob and add mstate to the archive.
-        archive->install_mstate("mstate.victini.dickens", cblob->mstate);
+        archive->install_mstate("/victini/dickens", cblob->mstate);
 
-        archive->inject_mstate("mstate.victini.dickens", cblob);
+        archive->inject_mstate("/victini/dickens", cblob);
 
         archive->create_file("/data.txt", cblob, 1);
 
@@ -140,7 +140,7 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
 
         archive->create_file("/data.txt", cblob, 1);
 
-        EXPECT_THROW(archive->uninstall_mstate("mstate.victini.dickens"),
+        EXPECT_THROW(archive->uninstall_mstate("/victini/dickens"),
                      ArchiveErrors::InvalidOperationException);
 
         EXPECT_THROW(archive->uninstall_mstate(cblob->mstate_id),
@@ -169,7 +169,7 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         }
 
         archive->remove_file("/data.txt");
-        archive->uninstall_mstate("mstate.victini.dickens");
+        archive->uninstall_mstate("/victini/dickens");
 
         archive->close();
 
@@ -207,9 +207,9 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         auto cblob = codec->compress(blob);
 
         // Inject mstate into blob and add mstate to the archive.
-        archive->install_mstate("mstate.victini.dickens", cblob->mstate);
+        archive->install_mstate("/victini/dickens", cblob->mstate);
 
-        archive->inject_mstate("mstate.victini.dickens", cblob);
+        archive->inject_mstate("/victini/dickens", cblob);
 
         auto blobs = new hzblob_t[2];
 
@@ -274,7 +274,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         }
 
         archive->remove_file("/data.txt");
-        archive->uninstall_mstate("mstate.victini.dickens");
+        archive->uninstall_mstate("/victini/dickens");
 
         cblob->destroy();
         dblob->destroy();

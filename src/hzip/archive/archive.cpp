@@ -5,6 +5,7 @@
 #include <hzip/utils/fsutils.h>
 #include <loguru/loguru.hpp>
 #include <hzip/errors/archive.h>
+#include <hzip/utils/validation.h>
 
 hz_archive::hz_archive(const std::string &archive_path) {
     path = std::filesystem::absolute(archive_path);
@@ -532,6 +533,8 @@ uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
 }
 
 void hz_archive::install_mstate(const std::string &_path, hz_mstate *mstate) {
+    hz_validate_path(_path);
+
     sem_wait(mutex);
     if (metadata.mstate_aux_map.contains(_path)) {
         sem_post(mutex);
@@ -632,6 +635,8 @@ void hz_archive::hza_decrement_dep(uint64_t id) {
 }
 
 void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint64_t blob_count) {
+    hz_validate_path(file_path);
+
     sem_wait(mutex);
     if (metadata.file_map.contains(file_path)) {
         sem_post(mutex);
@@ -652,6 +657,8 @@ void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint
 }
 
 void hz_archive::remove_file(const std::string &file_path) {
+    hz_validate_path(file_path);
+
     sem_wait(mutex);
     if (!metadata.file_map.contains(file_path)) {
         sem_post(mutex);
@@ -681,6 +688,8 @@ void hz_archive::remove_file(const std::string &file_path) {
 }
 
 hzblob_set hz_archive::read_file(const std::string &file_path) {
+    hz_validate_path(file_path);
+
     sem_wait(mutex);
     if (!metadata.file_map.contains(file_path)) {
         sem_post(mutex);
@@ -703,6 +712,8 @@ hzblob_set hz_archive::read_file(const std::string &file_path) {
 }
 
 void hz_archive::uninstall_mstate(const std::string &_path) {
+    hz_validate_path(_path);
+
     sem_wait(mutex);
     if (!metadata.mstate_aux_map.contains(_path)) {
         sem_post(mutex);
@@ -739,6 +750,8 @@ void hz_archive::inject_mstate(hz_mstate *mstate, hzblob_t *blob) {
 }
 
 void hz_archive::inject_mstate(const std::string &_path, hzblob_t *blob) {
+    hz_validate_path(_path);
+
     sem_wait(mutex);
 
     if (!metadata.mstate_aux_map.contains(_path)) {

@@ -7,12 +7,11 @@
 #include <cstdint>
 #include <cassert>
 #include <stack>
-#include <malloc.h>
+#include <rainman/rainman.h>
 #include <hzip/utils/platform.h>
 #include <hzip/utils/stack.h>
-#include <hzip/memory/mem_interface.h>
 
-struct hzrans64_t : public hz_mem_iface {
+struct hzrans64_t : public rainman::context {
     uint64_t x{};
     uint64_t size{};
     uint64_t *ftable{};

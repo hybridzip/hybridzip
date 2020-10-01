@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <rainman/rainman.h>
 #include <hzip/core/preprocessor/transforms.h>
 
 class BurrowsWheelerTransformTest: public testing::Test {};
@@ -12,7 +13,7 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_large) {
     }
 
     auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, N, 0x100);
-    bwt._hz_memmgr_attach_memmgr(new hz_memmgr);
+    rinitfrom(new rainman::memmgr, bwt);
 
     auto index = bwt.transform();
 
@@ -37,7 +38,7 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_small) {
 
 
     auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, N, 0x100);
-    bwt._hz_memmgr_attach_memmgr(new hz_memmgr);
+    rinitfrom(new rainman::memmgr, bwt);
 
     auto index = bwt.transform();
 
@@ -63,7 +64,7 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_const) {
 
 
     auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, N, 0x100);
-    bwt._hz_memmgr_attach_memmgr(new hz_memmgr);
+    rinitfrom(new rainman::memmgr, bwt);
 
     auto index = bwt.transform();
 

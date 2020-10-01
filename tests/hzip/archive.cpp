@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <rainman/rainman.h>
 #include <hzip/archive/archive.h>
 #include <hzip/utils/fsutils.h>
 #include <hzip/core/compressors/victini.h>
@@ -24,10 +25,12 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         fsutils::delete_file_if_exists("test.hz");
 
         auto *archive = new hz_archive("test.hz");
-        auto mgr = new hz_memmgr;
+        auto mgr = new rainman::memmgr;
         auto victini = hzcodec::victini();
-        HZ_MEM_INIT_FROM(mgr, victini);
-        HZ_MEM_INIT_FROM_PTR(mgr, archive);
+        rinitfrom(mgr, victini);
+        rinitptrfrom(mgr, archive);
+
+        archive->load();
 
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];
@@ -38,7 +41,7 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         }
 
         // Upcast victini codec.
-        hzcodec::hz_abstract_codec *codec = &victini;
+        hzcodec::abstract_codec *codec = &victini;
 
         hz_mstate mstate;
         blob->mstate = &mstate;
@@ -94,10 +97,12 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         fsutils::delete_file_if_exists("test.hz");
 
         auto *archive = new hz_archive("test.hz");
-        auto mgr = new hz_memmgr;
+        auto mgr = new rainman::memmgr;
         auto victini = hzcodec::victini();
-        HZ_MEM_INIT_FROM(mgr, victini);
-        HZ_MEM_INIT_FROM_PTR(mgr, archive);
+        rinitfrom(mgr, victini);
+        rinitptrfrom(mgr, archive);
+
+        archive->load();
 
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];
@@ -108,7 +113,7 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         }
 
         // Upcast victini codec.
-        hzcodec::hz_abstract_codec *codec = &victini;
+        hzcodec::abstract_codec *codec = &victini;
 
         hz_mstate mstate;
         blob->mstate = &mstate;
@@ -116,19 +121,26 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         auto cblob = codec->compress(blob);
 
         // Inject mstate into blob and add mstate to the archive.
-        archive->install_mstate("mstate.victini.dickens", cblob->mstate);
+        archive->install_mstate("/victini/dickens", cblob->mstate);
 
-        archive->inject_mstate("mstate.victini.dickens", cblob);
+        archive->inject_mstate("/victini/dickens", cblob);
 
         archive->create_file("/data.txt", cblob, 1);
 
         archive->remove_file("/data.txt");
 
+        archive->close();
+        delete archive;
+        archive = new hz_archive("test.hz");
+        rinitptrfrom(mgr, archive);
+
+        archive->load();
+
         EXPECT_THROW(archive->read_file("/data.txt"), ArchiveErrors::FileNotFoundException);
 
         archive->create_file("/data.txt", cblob, 1);
 
-        EXPECT_THROW(archive->uninstall_mstate("mstate.victini.dickens"),
+        EXPECT_THROW(archive->uninstall_mstate("/victini/dickens"),
                      ArchiveErrors::InvalidOperationException);
 
         EXPECT_THROW(archive->uninstall_mstate(cblob->mstate_id),
@@ -157,7 +169,7 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         }
 
         archive->remove_file("/data.txt");
-        archive->uninstall_mstate("mstate.victini.dickens");
+        archive->uninstall_mstate("/victini/dickens");
 
         archive->close();
 
@@ -171,10 +183,12 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         fsutils::delete_file_if_exists("test.hz");
 
         auto *archive = new hz_archive("test.hz");
-        auto mgr = new hz_memmgr;
+        auto mgr = new rainman::memmgr;
         auto victini = hzcodec::victini();
-        HZ_MEM_INIT_FROM(mgr, victini);
-        HZ_MEM_INIT_FROM_PTR(mgr, archive);
+        rinitfrom(mgr, victini);
+        rinitptrfrom(mgr, archive);
+
+        archive->load();
 
         auto blob = new hzblob_t;
         blob->o_data = new uint8_t[20];
@@ -185,7 +199,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         }
 
         // Upcast victini codec.
-        hzcodec::hz_abstract_codec *codec = &victini;
+        hzcodec::abstract_codec *codec = &victini;
 
         hz_mstate mstate;
         blob->mstate = &mstate;
@@ -193,9 +207,9 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         auto cblob = codec->compress(blob);
 
         // Inject mstate into blob and add mstate to the archive.
-        archive->install_mstate("mstate.victini.dickens", cblob->mstate);
+        archive->install_mstate("/victini/dickens", cblob->mstate);
 
-        archive->inject_mstate("mstate.victini.dickens", cblob);
+        archive->inject_mstate("/victini/dickens", cblob);
 
         auto blobs = new hzblob_t[2];
 
@@ -203,6 +217,12 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         blobs[1] = *cblob;
         archive->create_file("/data.txt", blobs, 2);
 
+        archive->close();
+        delete archive;
+        archive = new hz_archive("test.hz");
+        rinitptrfrom(mgr, archive);
+
+        archive->load();
 
         auto ccblob = &archive->read_file("/data.txt").blobs[0];
 
@@ -254,7 +274,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         }
 
         archive->remove_file("/data.txt");
-        archive->uninstall_mstate("mstate.victini.dickens");
+        archive->uninstall_mstate("/victini/dickens");
 
         cblob->destroy();
         dblob->destroy();

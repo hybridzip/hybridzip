@@ -13,7 +13,7 @@ uint64_t hzrans64_inv_bs(hzrans64_t *state, uint64_t bs) {
 void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale) {
     state->x = state->lower_bound;
     state->size = size;
-    state->ftable = HZ_MEM_MGR_FROM(state)->hz_malloc<uint64_t>(size);
+    state->ftable = rmemmgrfrom(state)->r_malloc<uint64_t>(size);
     state->scale = scale;
     state->up_prefix = (state->lower_bound >> scale) << 32;
     state->mask = (1ull << scale) - 1;
@@ -75,7 +75,7 @@ void hzrans64_enc_flush(hzrans64_t *state, hz_stack<uint32_t> *data) {
     data->push(state->x >> 0);
     state->count += 2;
 
-    HZ_MEM_MGR_FROM(state)->hz_free(state->ftable);
+    rmemmgrfrom(state)->r_free(state->ftable);
 }
 
 void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {

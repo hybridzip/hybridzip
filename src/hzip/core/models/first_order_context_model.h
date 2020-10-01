@@ -3,11 +3,11 @@
 
 #include <cstdint>
 #include <cmath>
-#include <hzip/memory/mem_interface.h>
+#include <rainman/rainman.h>
 #include <hzip/core/blob/hzblob.h>
 
 namespace hzmodels {
-    class first_order_context_model: public hz_mem_iface {
+    class first_order_context_model: public rainman::context {
     private:
         uint64_t **context_map;
         uint64_t prev_symbol;

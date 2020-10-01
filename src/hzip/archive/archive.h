@@ -6,9 +6,10 @@
 #include <unordered_map>
 #include <semaphore.h>
 #include <bitio/bitio.h>
+#include <rainman/rainman.h>
 #include <hzip/core/blob/hzblob.h>
 #include <hzip/utils/common.h>
-#include <hzip/memory/mem_interface.h>
+
 
 #define HZ_ARCHIVE_VERSION 0x001000
 
@@ -63,7 +64,7 @@ struct hza_metadata {
     std::vector<hza_fragment> fragments;
 };
 
-class hz_archive: public hz_mem_iface {
+class hz_archive: public rainman::context {
 private:
     std::string path;
     hza_metadata metadata;
@@ -110,6 +111,12 @@ private:
 
 public:
     hz_archive(const std::string& archive_path);
+
+    void load();
+
+    std::vector<std::string> list_files();
+
+    std::vector<std::string> list_mstates();
 
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 

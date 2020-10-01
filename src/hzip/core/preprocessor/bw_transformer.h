@@ -3,11 +3,11 @@
 
 #include <vector>
 #include <cstdint>
-#include <hzip/memory/mem_interface.h>
+#include <rainman/rainman.h>
 
 namespace hztrans {
     template <typename itype, typename mtype>
-    class bw_transformer: public hz_mem_iface {
+class bw_transformer: public rainman::context {
 
     private:
         static inline bool leq(mtype a1, mtype a2, mtype b1, mtype b2) {
@@ -19,7 +19,7 @@ namespace hztrans {
         }
 
         void radix_pass(mtype *a, mtype *b, mtype *r, uint64_t n, uint64_t K) { // count occurrences
-            auto c = HZ_MALLOC(mtype, K + 1); // counter array
+            auto c = rmalloc(mtype, K + 1); // counter array
             for (int i = 0; i <= K; i++) c[i] = 0; // reset counters
             for (int i = 0; i < n; i++) {
                 c[r[a[i]]]++; // count occurrences
@@ -31,17 +31,17 @@ namespace hztrans {
             }
             for (int i = 0; i < n; i++) b[c[r[a[i]]]++] = a[i]; // sort
 
-            HZ_FREE(c);
+            rfree(c);
         }
 
         void suffix_array(mtype *T, mtype *SA, uint64_t n, uint64_t K) {
             int n0 = (n + 2) / 3, n1 = (n + 1) / 3, n2 = n / 3, n02 = n0 + n2;
-            auto R = HZ_MALLOC(mtype, n02 + 3);
+            auto R = rmalloc(mtype, n02 + 3);
             R[n02] = R[n02 + 1] = R[n02 + 2] = 0;
-            auto SA12 = HZ_MALLOC(mtype, n02 + 3);
+            auto SA12 = rmalloc(mtype, n02 + 3);
             SA12[n02] = SA12[n02 + 1] = SA12[n02 + 2] = 0;
-            auto R0 = HZ_MALLOC(mtype, n0);
-            auto SA0 = HZ_MALLOC(mtype, n0);
+            auto R0 = rmalloc(mtype, n0);
+            auto SA0 = rmalloc(mtype, n0);
 
             for (int i = 0, j = 0; i < n + (n0 - n1); i++) if (i % 3 != 0) R[j++] = i;
 
@@ -90,10 +90,10 @@ namespace hztrans {
                         for (k++; t < n02; t++, k++) SA[k] = GetI();
                 }
             }
-            HZ_FREE(R);
-            HZ_FREE(SA12);
-            HZ_FREE(SA0);
-            HZ_FREE(R0);
+            rfree(R);
+            rfree(SA12);
+            rfree(SA0);
+            rfree(R0);
         }
 
         itype *data;
@@ -108,15 +108,15 @@ namespace hztrans {
         uint64_t transform() {
             uint64_t data_len = len + 1;
             uint64_t bw_index = 0;
-            auto zdata = HZ_MALLOC(itype, data_len);
+            auto zdata = rmalloc(itype, data_len);
             zdata[0] = 0;
 
             for (int i = 0; i < len; i++) {
                 zdata[i + 1] = data[i] + 1;
             }
 
-            auto *T = HZ_MALLOC(mtype, data_len + 3);
-            auto *SA = HZ_MALLOC(mtype, data_len + 3);
+            auto *T = rmalloc(mtype, data_len + 3);
+            auto *SA = rmalloc(mtype, data_len + 3);
 
             for (uint64_t i = 0; i < data_len + 3; i++) {
                 T[i] = 0;
@@ -130,7 +130,7 @@ namespace hztrans {
 
             suffix_array(T, SA, data_len, alphabet_size + 1);
 
-            HZ_FREE(T);
+            rfree(T);
 
             for (uint64_t i = 0, j = 0; i < data_len; i++) {
                 int val = zdata[(SA[i] + data_len - 1) % data_len];
@@ -141,16 +141,16 @@ namespace hztrans {
                 }
             }
 
-            HZ_FREE(zdata);
-            HZ_FREE(SA);
+            rfree(zdata);
+            rfree(SA);
 
             return bw_index;
         }
 
         void invert(uint64_t bw_index) {
             int data_len = len;
-            auto zdata = HZ_MALLOC(itype, data_len);
-            auto zzdata = HZ_MALLOC(itype, data_len + 1);
+            auto zdata = rmalloc(itype, data_len);
+            auto zzdata = rmalloc(itype, data_len + 1);
 
             for (int i = 0; i < len; i++) {
                 zdata[i] = data[i] + 1;
@@ -166,11 +166,11 @@ namespace hztrans {
                 }
             }
 
-            HZ_FREE(zdata);
+            rfree(zdata);
             zdata = zzdata;
 
             std::vector<int> jumpers;
-            auto *base_list = HZ_MALLOC(std::vector<uint64_t>, alphabet_size + 1);
+            auto *base_list = rmalloc(std::vector<uint64_t>, alphabet_size + 1);
 
             for (int i = 0; i <= alphabet_size; i++) {
                 base_list[i] = std::vector<uint64_t>();
@@ -187,7 +187,7 @@ namespace hztrans {
                 }
             }
 
-            HZ_FREE(base_list);
+            rfree(base_list);
 
             uint64_t index = bw_index;
             for (uint64_t count = 0, j = 0; count <= data_len; count++) {
@@ -197,7 +197,7 @@ namespace hztrans {
                 }
             }
 
-            HZ_FREE(zdata);
+            rfree(zdata);
         }
     };
 }

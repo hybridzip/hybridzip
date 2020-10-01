@@ -1,6 +1,6 @@
 #include <iostream>
-#include <hzip/memory/memmgr.h>
 #include <loguru/loguru.hpp>
+#include <rainman/rainman.h>
 #include <terminal.h>
 
 void setup_logger(int argc, const char **argv) {
@@ -40,7 +40,7 @@ int main(int argc, const char **argv) {
         LOG_F(WARNING, "args: %s", err.what().c_str());
     }
 
-    auto mgr = new hz_memmgr;
+    auto mgr = new rainman::memmgr;
 
     if (parser.exists("p")) {
         mgr->set_peak(conv_to_bytes(parser.get<std::string>("p")));

@@ -12,7 +12,7 @@ hzcodec::abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORI
         case hzcodec::algorithms::UNDEFINED:
             return nullptr;
         case hzcodec::algorithms::VICTINI:
-            auto victini = new hzcodec::victini();
+            auto victini = rnew(hzcodec::victini);
             rinitptr(victini);
             return victini;
     }

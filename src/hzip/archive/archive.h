@@ -114,6 +114,10 @@ public:
 
     void load();
 
+    std::vector<std::string> list_files();
+
+    std::vector<std::string> list_mstates();
+
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 
     hzblob_set read_file(const std::string& file_path);

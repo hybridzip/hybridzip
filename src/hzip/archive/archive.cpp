@@ -798,3 +798,23 @@ void hz_archive::close() {
 void hz_archive::load() {
     hza_scan();
 }
+
+std::vector<std::string> hz_archive::list_files() {
+    std::vector<std::string> files;
+
+    for (const auto& entry : metadata.file_map) {
+        files.push_back(entry.first);
+    }
+
+    return files;
+}
+
+std::vector<std::string> hz_archive::list_mstates() {
+    std::vector<std::string> mstates;
+
+    for (const auto& entry : metadata.mstate_aux_map) {
+        mstates.push_back(entry.first);
+    }
+
+    return mstates;
+}

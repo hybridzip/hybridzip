@@ -2,22 +2,18 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <hzip/errors/api.h>
 #include <hzip/utils/utils.h>
 
-hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std::string &_passwd, sem_t *mutex) {
+hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std::string &_passwd, sem_t *_mutex,
+                                 char *_ip_addr, uint16_t _port) {
     processor = _processor;
     sock = _sock;
     passwd = _passwd;
-    thread = std::thread([this, mutex]() {
-        sem_wait(mutex);
-        if (!handshake()) {
-            sem_post(mutex);
-        }
-
-
-        sem_post(mutex);
-    });
+    mutex = _mutex;
+    port = _port;
+    ip_addr = _ip_addr;
 }
 
 bool hz_api_instance::handshake() {
@@ -36,7 +32,7 @@ bool hz_api_instance::handshake() {
     }
 }
 
-void hz_api_instance::error(const std::string &msg) {
+void hz_api_instance::error(const std::string &msg) const {
     // Error format: <CTLWORD (1B)> <msg len (8B)> <msg (?B)>
 
     uint8_t word = CTL_ERROR;
@@ -48,7 +44,7 @@ void hz_api_instance::error(const std::string &msg) {
     send(sock, msg.c_str(), len, 0);
 }
 
-void hz_api_instance::success(const std::string &msg) {
+void hz_api_instance::success(const std::string &msg) const {
     // Success format: <CTLWORD (1B)> <msg len (8B)> <msg (?B)>
 
     uint8_t word = CTL_SUCCESS;
@@ -58,6 +54,28 @@ void hz_api_instance::success(const std::string &msg) {
     send(sock, &len, sizeof(len), 0);
 
     send(sock, msg.c_str(), len, 0);
+}
+
+void hz_api_instance::end() const {
+    sem_post(mutex);
+    close(sock);
+
+    LOG_F(INFO, "hzip.api: Closed connection from %s:%d", ip_addr, port);
+
+    rfree(ip_addr);
+}
+
+void hz_api_instance::start() {
+    std::thread([this]() {
+        sem_wait(mutex);
+        if (!handshake()) {
+            end();
+            return;
+        }
+
+
+        end();
+    }).detach();
 }
 
 hz_api *hz_api::limit(uint64_t _max_instances) {
@@ -93,24 +111,31 @@ hz_api *hz_api::process(uint64_t _n_threads) {
         throw ApiErrors::InitializationError("Failed to listen to socket");
     }
 
+    LOG_F(INFO, "hzip.api: Started listening at port: %d", port);
+
     while (true) {
         sock_addr_size = sizeof(client_addr);
         int client_sock = accept(server_sock, (sockaddr *) &client_addr, &sock_addr_size);
 
-        char ip_addr[INET_ADDRSTRLEN];
+        char *ip_addr = rmalloc(char, INET_ADDRSTRLEN + 1);
+        ip_addr[INET_ADDRSTRLEN] = '\0';
+
         inet_ntop(AF_INET, &client_addr.sin_addr, ip_addr, INET_ADDRSTRLEN);
 
         LOG_F(INFO, "hzip.api: Accepted connection from %s:%d", ip_addr,
               (int) ntohs(client_addr.sin_port));
 
-        hz_api_instance instance(client_sock, processor, passwd, mutex);
+        hz_api_instance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port));
+        rinit(instance);
+
+        instance.start();
 
         sem_wait(mutex);
         sem_post(mutex);
     }
 }
 
-hz_api *hz_api::protect(const std::string& _passwd) {
+hz_api *hz_api::protect(const std::string &_passwd) {
     passwd = _passwd;
     return this;
 }

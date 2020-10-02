@@ -14,7 +14,7 @@ class hz_processor: public rainman::context {
 private:
     uint64_t n_threads;
     uint64_t threads_in_use;
-    sem_t *mutex;
+    sem_t mutex{};
 
     hzblob_set hzp_split(hz_codec_job *job);
 

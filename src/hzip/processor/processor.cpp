@@ -3,8 +3,7 @@
 
 hz_processor::hz_processor(uint64_t n_threads) {
     this->n_threads = n_threads;
-    this->mutex = rnew(sem_t);
-    sem_init(this->mutex, 0, n_threads);
+    sem_init(&mutex, 0, n_threads);
 }
 
 hzcodec::abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
@@ -76,7 +75,7 @@ void hz_processor::run(hz_job *job) {
     }
 
     if (job->codec != nullptr) {
-        sem_wait(mutex);
+        sem_wait(&mutex);
 
         std::exception thread_exception;
         bool encountered_exception = false;
@@ -93,11 +92,11 @@ void hz_processor::run(hz_job *job) {
         thread.join();
 
         if (encountered_exception) {
-            sem_post(mutex);
+            sem_post(&mutex);
             throw thread_exception;
         }
 
-        sem_post(mutex);
+        sem_post(&mutex);
     }
 }
 

@@ -20,40 +20,49 @@ bool hz_api_instance::handshake() {
     uint64_t token = hz_rand64();
     uint64_t xtoken = hz_enc_token(passwd, token);
 
-    send(sock, &xtoken, sizeof(token), 0);
-    recv(sock, &xtoken, sizeof(xtoken), 0);
+    if (t_send(&xtoken, sizeof(token))) {
+        return true;
+    }
+
+    if (t_recv(&xtoken, sizeof(xtoken))) {
+        return true;
+    };
 
     if (token == xtoken) {
-        success("Handshake was successful.");
-        return true;
-    } else {
-        error("Handshake was not successful.");
+        LOG_F(INFO, "hzip.api: Handshake successful with %s:%d", ip_addr, port);
+        success("Handshake successful.");
         return false;
+    } else {
+        LOG_F(INFO, "hzip.api: Handshake failed with %s:%d", ip_addr, port);
+        error("Handshake failed.");
+        return true;
     }
 }
 
-void hz_api_instance::error(const std::string &msg) const {
+void hz_api_instance::error(const std::string &msg) {
     // Error format: <CTLWORD (1B)> <msg len (8B)> <msg (?B)>
 
     uint8_t word = CTL_ERROR;
-    send(sock, &word, sizeof(word), 0);
+    HZ_SEND(&word, sizeof(word));
 
     uint64_t len = msg.length();
-    send(sock, &len, sizeof(len), 0);
 
-    send(sock, msg.c_str(), len, 0);
+    HZ_SEND(&len, sizeof(len));
+
+    HZ_SEND(msg.c_str(), len);
 }
 
-void hz_api_instance::success(const std::string &msg) const {
+void hz_api_instance::success(const std::string &msg) {
     // Success format: <CTLWORD (1B)> <msg len (8B)> <msg (?B)>
 
     uint8_t word = CTL_SUCCESS;
-    send(sock, &word, sizeof(word), 0);
+
+    HZ_SEND(&word, sizeof(word));
 
     uint64_t len = msg.length();
-    send(sock, &len, sizeof(len), 0);
+    HZ_SEND(&len, sizeof(len));
 
-    send(sock, msg.c_str(), len, 0);
+    HZ_SEND(msg.c_str(), len);
 }
 
 void hz_api_instance::end() const {
@@ -68,7 +77,7 @@ void hz_api_instance::end() const {
 void hz_api_instance::start() {
     std::thread([this]() {
         sem_wait(mutex);
-        if (!handshake()) {
+        if (handshake()) {
             end();
             return;
         }
@@ -76,6 +85,32 @@ void hz_api_instance::start() {
 
         end();
     }).detach();
+}
+
+bool hz_api_instance::t_send(const void *buf, size_t n) {
+    if (send(sock, buf, n, 0) < n) {
+        return true;
+    }
+
+    if (errno != 0) {
+        LOG_F(ERROR, "hzip.api: send() failed for %s:%d with errno=%d", ip_addr, port, errno);
+        return true;
+    }
+
+    return false;
+}
+
+bool hz_api_instance::t_recv(void *buf, size_t n) {
+    if (recv(sock, buf, n, 0) < n) {
+        return true;
+    }
+
+    if (errno != 0) {
+        LOG_F(ERROR, "hzip.api: recv() failed for %s:%d with errno=%d", ip_addr, port, errno);
+        return true;
+    }
+
+    return false;
 }
 
 hz_api *hz_api::limit(uint64_t _max_instances) {
@@ -95,6 +130,8 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     sockaddr_in server_addr{};
     sockaddr_in client_addr{};
     socklen_t sock_addr_size{};
+
+    timeval timeout{.tv_sec=120, .tv_usec=0};
 
     int server_sock = socket(PF_INET, SOCK_STREAM, 0);
     server_addr.sin_family = AF_INET;
@@ -116,6 +153,11 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     while (true) {
         sock_addr_size = sizeof(client_addr);
         int client_sock = accept(server_sock, (sockaddr *) &client_addr, &sock_addr_size);
+
+        if (setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (uint8_t *) &timeout, sizeof(timeout)) < 0) {
+            LOG_F(ERROR, "hzip.api: setsockopt() failed");
+            continue;
+        }
 
         char *ip_addr = rmalloc(char, INET_ADDRSTRLEN + 1);
         ip_addr[INET_ADDRSTRLEN] = '\0';

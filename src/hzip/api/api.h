@@ -8,6 +8,9 @@
 #include <hzip/processor/processor.h>
 #include <netinet/in.h>
 
+#define HZ_SEND(buf, n) if (t_send(buf, n)) return
+#define HZ_RECV(buf, n) if (t_recv(buf, n)) return
+
 enum CTL_WORD {
     CTL_SUCCESS = 0x0,
     CTL_ERROR = 0xff,
@@ -34,9 +37,13 @@ public:
     // The client has to decrypt the token and send it back to the hzip api.
     bool handshake();
 
-    void error(const std::string &msg) const;
+    void error(const std::string &msg);
 
-    void success(const std::string &msg) const;
+    void success(const std::string &msg);
+
+    bool t_send(const void *buf, size_t n);
+
+    bool t_recv(void *buf, size_t n);
 
     void end() const;
 };

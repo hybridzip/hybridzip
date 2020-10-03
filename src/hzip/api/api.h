@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <rainman/rainman.h>
 #include <hzip/processor/processor.h>
-#include "socket_class.h"
+#include "hzip/api/handlers/socket_class.h"
 
 enum CTL_WORD {
     CTL_SUCCESS = 0x0,

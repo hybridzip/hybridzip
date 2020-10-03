@@ -87,32 +87,6 @@ void hz_api_instance::start() {
     }).detach();
 }
 
-bool hz_api_instance::t_send(const void *buf, size_t n) {
-    if (send(sock, buf, n, 0) < n) {
-        return true;
-    }
-
-    if (errno != 0) {
-        LOG_F(ERROR, "hzip.api: send() failed for %s:%d with errno=%d", ip_addr, port, errno);
-        return true;
-    }
-
-    return false;
-}
-
-bool hz_api_instance::t_recv(void *buf, size_t n) {
-    if (recv(sock, buf, n, 0) < n) {
-        return true;
-    }
-
-    if (errno != 0) {
-        LOG_F(ERROR, "hzip.api: recv() failed for %s:%d with errno=%d", ip_addr, port, errno);
-        return true;
-    }
-
-    return false;
-}
-
 hz_api *hz_api::limit(uint64_t _max_instances) {
     max_instances = _max_instances;
     return this;
@@ -130,8 +104,6 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     sockaddr_in server_addr{};
     sockaddr_in client_addr{};
     socklen_t sock_addr_size{};
-
-    timeval timeout{.tv_sec=120, .tv_usec=0};
 
     int server_sock = socket(PF_INET, SOCK_STREAM, 0);
     server_addr.sin_family = AF_INET;
@@ -154,7 +126,7 @@ hz_api *hz_api::process(uint64_t _n_threads) {
         sock_addr_size = sizeof(client_addr);
         int client_sock = accept(server_sock, (sockaddr *) &client_addr, &sock_addr_size);
 
-        if (setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (uint8_t *) &timeout, sizeof(timeout)) < 0) {
+        if (setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (uint8_t *) &time_out, sizeof(time_out)) < 0) {
             LOG_F(ERROR, "hzip.api: setsockopt() failed");
             continue;
         }
@@ -179,5 +151,10 @@ hz_api *hz_api::process(uint64_t _n_threads) {
 
 hz_api *hz_api::protect(const std::string &_passwd) {
     passwd = _passwd;
+    return this;
+}
+
+hz_api *hz_api::timeout(timeval _time_out) {
+    time_out = _time_out;
     return this;
 }

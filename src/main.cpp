@@ -33,5 +33,6 @@ int main(int argc, const char **argv) {
     api.limit(std::stoi(dotenv["HZIP_API_THREADS"]))
     ->process(std::stoi(dotenv["HZIP_PROCESSOR_THREADS"]))
     ->protect(dotenv["HZIP_API_KEY"])
+    ->timeout(timeval{.tv_sec=std::stoi(dotenv["HZIP_API_TIMEOUT"])})
     ->start("127.0.0.1", std::stoi(dotenv["HZIP_API_PORT"]));
 }

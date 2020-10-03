@@ -32,6 +32,8 @@ public:
     hz_processor(uint64_t n_threads);
 
     void run(hz_job *job);
+
+    void cycle();
 };
 
 

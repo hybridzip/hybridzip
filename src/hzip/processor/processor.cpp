@@ -161,3 +161,10 @@ void hz_processor::hzp_decode(hz_codec_job *job) {
     }
 }
 
+
+// To avoid processor overload.
+void hz_processor::cycle() {
+    sem_wait(&mutex);
+    sem_post(&mutex);
+}
+

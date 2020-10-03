@@ -4,19 +4,17 @@
 #include <vector>
 #include <thread>
 #include <semaphore.h>
+#include <netinet/in.h>
 #include <rainman/rainman.h>
 #include <hzip/processor/processor.h>
-#include <netinet/in.h>
-
-#define HZ_SEND(buf, n) if (t_send(buf, n)) return
-#define HZ_RECV(buf, n) if (t_recv(buf, n)) return
+#include "socket_class.h"
 
 enum CTL_WORD {
     CTL_SUCCESS = 0x0,
     CTL_ERROR = 0xff,
 };
 
-class hz_api_instance : public rainman::context {
+class hz_api_instance : public rainman::context, public hz_socket_class {
 private:
     hz_processor *processor{};
     int sock{};
@@ -41,10 +39,6 @@ public:
 
     void success(const std::string &msg);
 
-    bool t_send(const void *buf, size_t n);
-
-    bool t_recv(void *buf, size_t n);
-
     void end() const;
 };
 
@@ -55,11 +49,14 @@ private:
     uint64_t max_instances = 1;
     sem_t *mutex{};
     std::string passwd = "hybridzip";
+    timeval time_out{};
 
 public:
     hz_api *limit(uint64_t _max_instances);
 
     hz_api *process(uint64_t _n_threads);
+
+    hz_api *timeout(timeval _time_out);
 
     hz_api *protect(const std::string &_passwd);
 

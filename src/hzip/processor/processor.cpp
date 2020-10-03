@@ -2,6 +2,8 @@
 #include <hzip/errors/processor.h>
 #include <hzip/core/compressors/victini.h>
 
+#define HZP_STUB_CALL(f, ...) if (f != nullptr) f(__VA_ARGS__)
+
 hz_processor::hz_processor(uint64_t n_threads) {
     this->n_threads = n_threads;
     sem_init(&mutex, 0, n_threads);
@@ -77,14 +79,18 @@ void hz_processor::run(hz_job *job) {
 
     if (job->codec != nullptr) {
         std::thread([this](hz_job *job) {
+            sem_wait(&mutex);
+
             try {
-                sem_wait(&mutex);
                 this->hzp_run_codec_job(job->codec);
-                sem_post(&mutex);
             } catch (std::exception &e) {
-                sem_post(&mutex);
-                //todo: Send back error in callback.
+                HZP_STUB_CALL(job->stub->on_error, e.what());
             }
+
+            HZP_STUB_CALL(job->stub->on_completed);
+
+            sem_post(&mutex);
+
         }, job).detach();
     }
 }
@@ -103,9 +109,8 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
     auto *blob = codec->compress(job->blob);
     auto id = job->archive->write_blob(blob);
 
-    if (job->blob_id_callback != nullptr) {
-        job->blob_id_callback(id);
-    }
+    HZP_STUB_CALL(job->blob_id_callback, id);
+    HZP_STUB_CALL(job->blob_callback, blob);
 }
 
 void hz_processor::hzp_run_codec_job(hz_codec_job *job) {

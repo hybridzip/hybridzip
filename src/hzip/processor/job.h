@@ -19,10 +19,17 @@ struct hz_codec_job {
     bool reuse_mstate;
     std::string mstate_addr;
     std::function<void(uint64_t)> blob_id_callback{};
+    std::function<void(hzblob_t*)> blob_callback{};
+};
+
+struct hz_job_stub {
+    std::function<void()> on_completed{};
+    std::function<void(const std::string&)> on_error{};
 };
 
 struct hz_job {
     hz_codec_job *codec;
+    hz_job_stub *stub;
 };
 
 #endif

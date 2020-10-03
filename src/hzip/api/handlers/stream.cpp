@@ -1,6 +1,11 @@
 #include "stream.h"
+#include <hzip/api/providers/archive_provider.h>
+#include <hzip/utils/validation.h>
+#include <hzip/errors/api.h>
 
-uint64_t hz_encode_stream::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
+#define HZ_MIN(a, b) (a) < (b) ? (a) : (b)
+
+uint64_t hz_streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
     switch (alg) {
         case hzcodec::algorithms::UNDEFINED:
             return 0xffffffffffffffff;
@@ -9,59 +14,113 @@ uint64_t hz_encode_stream::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
     }
 }
 
-hz_encode_stream::hz_encode_stream(int _sock, char *_ip_addr, uint16_t _port, hz_processor *_proc) {
+hz_streamer::hz_streamer(int _sock, char *_ip_addr, uint16_t _port, hz_processor *_proc) {
     sock = _sock;
     ip_addr = _ip_addr;
     port = _port;
-    proc = _proc;
+    processor = _proc;
     sem_init(&mutex, 0, 1);
 }
 
-/*
- * Protocol:
- * 1. recv blob-algorithm, dest-len, dest
- * 2. infer max blob size from algorithm
- * 3. recv data size
- * 4. recv blob-j
- * 5. encode blob-j
- * 6. cycle hz_processor to avoid overload
- * 7. repeat 4-6 till entire data is received
- * 8. end
- */
+void hz_streamer::encode() {
+    uint16_t archive_path_len{};
+    uint16_t mstate_addr_len{};
+    uint16_t dest_len{};
+    uint64_t data_len{};
+    uint8_t word{};
+    uint8_t algorithm{};
 
-void hz_encode_stream::start() {
-    uint8_t alg_byte;
-    HZ_RECV(&alg_byte, sizeof(alg_byte));
+    char *archive_path{};
+    char *mstate_addr{};
+    char *dest{};
 
-    auto alg = (hzcodec::algorithms::ALGORITHM) alg_byte;
+    hz_archive *archive{};
 
-    uint16_t dest_len;
-    HZ_RECV(&dest_len, sizeof(dest_len));
+    while (true) {
+        HZ_RECV(&word, sizeof(word));
 
-    char *dest = rmalloc(char, dest_len);
-    HZ_RECV(dest, dest_len);
+        switch ((ENCODE_CTL) word) {
+            case ENCODE_CTL_STREAM: {
+                if (!algorithm) {
+                    throw ApiErrors::InvalidOperationError("No algorithm was provided");
+                }
 
-    uint64_t max_blob_size = hzes_b_size(alg);
+                uint64_t max_blob_size = hzes_b_size((hzcodec::algorithms::ALGORITHM) algorithm);
 
-    uint64_t data_size;
-    HZ_RECV(&data_size, sizeof(data_size));
+                HZ_RECV(&data_len, sizeof(data_len));
 
-    std::vector<uint64_t> blob_ids;
+                std::vector<uint64_t> blob_ids;
 
-    auto blob_id_callback = [this, &blob_ids](uint64_t id) {
-        sem_wait(&mutex);
-        blob_ids.push_back(id);
-        sem_post(&mutex);
-    };
+                while (data_len > 0) {
+                    sem_wait(&mutex);
 
-    while (data_size >= max_blob_size) {
-        hzblob_t *blob = rxnew(hzblob_t);
-        blob->o_size = max_blob_size;
-        blob->o_data = rmalloc(uint8_t, max_blob_size);
+                    auto *blob = rxnew(hzblob_t);
 
-        //todo: Inject archive, do a LOT OF STUFF
+                    max_blob_size = HZ_MIN(max_blob_size, data_len);
 
+                    blob->o_size = max_blob_size;
+                    blob->o_data = rmalloc(uint8_t, max_blob_size);
 
-        data_size -= max_blob_size;
+                    HZ_RECV(blob->o_data, max_blob_size);
+
+                    // Construct hz_job struct for processing.
+                    auto *job = rnew(hz_job);
+                    job->codec = rnew(hz_codec_job);
+
+                    job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
+                    job->codec->archive = archive;
+                    job->codec->mstate_addr = mstate_addr;
+                    job->codec->reuse_mstate = mstate_addr != nullptr;
+                    job->codec->blob = blob;
+
+                    if (archive != nullptr) {
+                        job->codec->blob_id_callback = [&blob_ids](uint64_t id) {
+                            blob_ids.push_back(id);
+                        };
+                    }
+
+                    job->codec->job_type = hz_codec_job::JOBTYPE::ENCODE;
+
+                    job->stub = rnew(hz_job_stub);
+                    job->stub->on_completed = [this]() {
+                        sem_post(&mutex);
+                    };
+
+                    // Dispatch hz_job to hz_processor.
+                    processor->run(job);
+                    data_len -= max_blob_size;
+                }
+
+                break;
+            }
+            case ENCODE_CTL_MSTATE_ADDR: {
+                HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
+
+                mstate_addr = rmalloc(char, mstate_addr_len);
+                HZ_RECV(mstate_addr, mstate_addr_len);
+                break;
+            }
+            case ENCODE_CTL_ARCHIVE: {
+                HZ_RECV(&archive_path_len, sizeof(archive_path_len));
+                archive_path = rmalloc(char, archive_path_len);
+                HZ_RECV(archive_path, archive_path_len);
+
+                archive = hzprovider::archive::provide(archive_path);
+                break;
+            }
+            case ENCODE_CTL_DEST: {
+                HZ_RECV(&dest_len, sizeof(dest_len));
+
+                dest = rmalloc(char, dest_len);
+                HZ_RECV(dest, dest_len);
+
+                hz_validate_path(dest);
+                break;
+            }
+            case ENCODE_CTL_ALGORITHM: {
+                HZ_RECV(&algorithm, sizeof(algorithm));
+                break;
+            }
+        }
     }
 }

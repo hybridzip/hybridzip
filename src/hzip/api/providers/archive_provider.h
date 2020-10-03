@@ -6,14 +6,18 @@
 #include <semaphore.h>
 #include <hzip/archive/archive.h>
 
-class hza_provider {
-private:
-    static std::unordered_map<std::string, hz_archive*> arch_map;
-    static sem_t mutex;
-    static rainman::memmgr *mgr;
-public:
-    static void init(rainman::memmgr *_mgr);
-    static hz_archive *provide(const std::string &path);
-};
+namespace hzprovider {
+    class archive {
+    private:
+        static std::unordered_map<std::string, hz_archive*> arch_map;
+        static sem_t mutex;
+        static rainman::memmgr *mgr;
+    public:
+        static void init(rainman::memmgr *_mgr);
+        static hz_archive *provide(const std::string &path);
+        static void close();
+    };
+}
+
 
 #endif

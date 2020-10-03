@@ -34,6 +34,8 @@ void hz_streamer::encode() {
     char *mstate_addr{};
     char *dest{};
 
+    bool piggy_back{};
+
     hz_archive *archive{};
 
     while (true) {
@@ -79,6 +81,16 @@ void hz_streamer::encode() {
                         };
                     }
 
+                    if (piggy_back) {
+                        job->codec->blob_callback = [this](hzblob_t *cblob) {
+                            HZ_SEND(&cblob->mstate->alg, sizeof(cblob->mstate->alg));
+                            HZ_SEND(&cblob->size, sizeof(cblob->size));
+                            HZ_SEND(cblob->data, sizeof(uint32_t) * cblob->size);
+                            HZ_SEND(&cblob->mstate->length, sizeof(cblob->mstate->length));
+                            HZ_SEND(cblob->mstate->data, cblob->mstate->length);
+                        };
+                    }
+
                     job->codec->job_type = hz_codec_job::JOBTYPE::ENCODE;
 
                     job->stub = rnew(hz_job_stub);
@@ -91,7 +103,25 @@ void hz_streamer::encode() {
                     data_len -= max_blob_size;
                 }
 
-                break;
+
+                sem_wait(&mutex);
+
+                if (archive != nullptr && dest != nullptr) {
+                    auto *blob_id_arr = rmalloc(uint64_t, blob_ids.size());
+                    for (int i = 0; i < blob_ids.size(); i++) {
+                        blob_id_arr[i] = blob_ids[i];
+                    }
+
+                    hza_file file{};
+                    file.blob_ids = blob_id_arr;
+                    file.blob_count = blob_ids.size();
+
+                    archive->create_file_entry(dest, file);
+                }
+
+                sem_post(&mutex);
+
+                return;
             }
             case ENCODE_CTL_MSTATE_ADDR: {
                 HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
@@ -119,6 +149,10 @@ void hz_streamer::encode() {
             }
             case ENCODE_CTL_ALGORITHM: {
                 HZ_RECV(&algorithm, sizeof(algorithm));
+                break;
+            }
+            case ENCODE_CTL_PIGGYBACK: {
+                piggy_back = true;
                 break;
             }
         }

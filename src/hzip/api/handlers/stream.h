@@ -18,6 +18,7 @@ private:
         ENCODE_CTL_ARCHIVE = 0x2,
         ENCODE_CTL_DEST = 0x3,
         ENCODE_CTL_ALGORITHM = 0x4,
+        ENCODE_CTL_PIGGYBACK = 0x5,
     };
 public:
     hz_streamer(int _sock, char *_ip_addr, uint16_t port, hz_processor *_proc);

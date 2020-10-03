@@ -802,9 +802,11 @@ void hz_archive::load() {
 std::vector<std::string> hz_archive::list_files() {
     std::vector<std::string> files;
 
+    sem_wait(mutex);
     for (const auto& entry : metadata.file_map) {
         files.push_back(entry.first);
     }
+    sem_post(mutex);
 
     return files;
 }
@@ -812,9 +814,25 @@ std::vector<std::string> hz_archive::list_files() {
 std::vector<std::string> hz_archive::list_mstates() {
     std::vector<std::string> mstates;
 
+    sem_wait(mutex);
     for (const auto& entry : metadata.mstate_aux_map) {
         mstates.push_back(entry.first);
     }
+    sem_post(mutex);
 
     return mstates;
+}
+
+void hz_archive::create_file_entry(const std::string &file_path, hza_file file) {
+    sem_wait(mutex);
+    hza_create_metadata_file_entry(file_path, file);
+    sem_post(mutex);
+}
+
+uint64_t hz_archive::write_blob(hzblob_t *blob) {
+    sem_wait(mutex);
+    uint64_t id = hza_write_blob(blob);
+    sem_post(mutex);
+
+    return id;
 }

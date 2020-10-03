@@ -43,4 +43,13 @@ void hz_encode_stream::start() {
     uint64_t max_blob_size = hzes_b_size(alg);
 
     uint64_t data_size;
+    HZ_RECV(&data_size, sizeof(data_size));
+
+    while (data_size >= max_blob_size) {
+        hzblob_t *blob = rxnew(hzblob_t);
+        blob->o_size = max_blob_size;
+
+
+        data_size -= max_blob_size;
+    }
 }

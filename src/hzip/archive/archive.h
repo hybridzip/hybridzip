@@ -120,6 +120,10 @@ public:
 
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 
+    void create_file_entry(const std::string& file_path, hza_file file);
+
+    uint64_t write_blob(hzblob_t *blob);
+
     hzblob_set read_file(const std::string& file_path);
 
     void remove_file(const std::string& file_path);

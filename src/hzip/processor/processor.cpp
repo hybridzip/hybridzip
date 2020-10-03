@@ -1,4 +1,5 @@
 #include "processor.h"
+#include <hzip/errors/processor.h>
 #include <hzip/core/compressors/victini.h>
 
 hz_processor::hz_processor(uint64_t n_threads) {
@@ -75,60 +76,36 @@ void hz_processor::run(hz_job *job) {
     }
 
     if (job->codec != nullptr) {
-        sem_wait(&mutex);
-
-        std::exception thread_exception;
-        bool encountered_exception = false;
-
-        auto thread = std::thread([this, &thread_exception, &encountered_exception](hz_codec_job *job) {
+        std::thread([this](hz_job *job) {
             try {
-                this->hzp_run_codec_job(job);
+                sem_wait(&mutex);
+                this->hzp_run_codec_job(job->codec);
+                sem_post(&mutex);
             } catch (std::exception &e) {
-                thread_exception = e;
-                encountered_exception = true;
+                sem_post(&mutex);
+                //todo: Send back error in callback.
             }
-        }, job->codec);
-
-        thread.join();
-
-        if (encountered_exception) {
-            sem_post(&mutex);
-            throw thread_exception;
-        }
-
-        sem_post(&mutex);
+        }, job).detach();
     }
 }
 
 void hz_processor::hzp_encode(hz_codec_job *job) {
-    hzblob_set set = hzp_split(job);
-    auto *blob_array = rmalloc(hzblob_t, set.blob_count);
+    auto codec = hzp_get_codec(job->algorithm);
 
-    for (uint64_t i = 0; i < set.blob_count; i++) {
-        auto codec = hzp_get_codec(job->algorithm);
-
-        auto cblob = codec->compress(&set.blobs[i]);
-        blob_array[i] = *cblob;
-
-        rfree(cblob);
-        set.blobs[i].destroy();
-
-        if (job->reuse_mstate) {
-            job->archive->inject_mstate(job->mstate_addr, blob_array + i);
-        } else {
-            job->archive->inject_mstate(blob_array[i].mstate, blob_array + i);
-        }
+    if (codec == nullptr) {
+        throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    job->archive->create_file(job->dest, blob_array, set.blob_count);
-
-    // cleanup
-    for (uint64_t i = 0; i < set.blob_count; i++) {
-        blob_array[i].destroy();
+    if (job->archive == nullptr) {
+        throw ProcessorErrors::InvalidOperationError("Archive not found");
     }
 
-    rfree(blob_array);
-    rfree(set.blobs);
+    auto *blob = codec->compress(job->blob);
+    auto id = job->archive->write_blob(blob);
+
+    if (job->blob_id_callback != nullptr) {
+        job->blob_id_callback(id);
+    }
 }
 
 void hz_processor::hzp_run_codec_job(hz_codec_job *job) {

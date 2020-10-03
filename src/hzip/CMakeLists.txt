@@ -41,7 +41,7 @@ add_library(hzip STATIC
         utils/validation.h
         errors/utils.h
         api/api.h
-        api/api.cpp errors/api.h api/stream.h api/stream.cpp api/socket_class.h api/socket_class.cpp)
+        api/api.cpp errors/api.h api/stream.h api/stream.cpp api/socket_class.h api/socket_class.cpp errors/processor.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv)

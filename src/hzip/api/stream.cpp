@@ -14,6 +14,7 @@ hz_encode_stream::hz_encode_stream(int _sock, char *_ip_addr, uint16_t _port, hz
     ip_addr = _ip_addr;
     port = _port;
     proc = _proc;
+    sem_init(&mutex, 0, 1);
 }
 
 /*
@@ -45,9 +46,20 @@ void hz_encode_stream::start() {
     uint64_t data_size;
     HZ_RECV(&data_size, sizeof(data_size));
 
+    std::vector<uint64_t> blob_ids;
+
+    auto blob_id_callback = [this, &blob_ids](uint64_t id) {
+        sem_wait(&mutex);
+        blob_ids.push_back(id);
+        sem_post(&mutex);
+    };
+
     while (data_size >= max_blob_size) {
         hzblob_t *blob = rxnew(hzblob_t);
         blob->o_size = max_blob_size;
+        blob->o_data = rmalloc(uint8_t, max_blob_size);
+
+        //todo: Inject archive, do a LOT OF STUFF
 
 
         data_size -= max_blob_size;

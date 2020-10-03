@@ -836,3 +836,11 @@ uint64_t hz_archive::write_blob(hzblob_t *blob) {
 
     return id;
 }
+
+bool hz_archive::check_file_exists(const std::string &file_path) {
+    sem_wait(mutex);
+    bool v = metadata.file_map.contains(file_path);
+    sem_post(mutex);
+
+    return v;
+}

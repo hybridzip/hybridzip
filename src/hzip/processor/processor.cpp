@@ -14,8 +14,7 @@ hzcodec::abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORI
         case hzcodec::algorithms::UNDEFINED:
             return nullptr;
         case hzcodec::algorithms::VICTINI:
-            auto victini = rxnew(hzcodec::victini);
-            return victini;
+            return rxnew(hzcodec::victini);
     }
 }
 
@@ -57,7 +56,7 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
     auto *blob = codec->compress(job->blob);
 
     if (!job->reuse_mstate) {
-        job->archive->inject_mstate(job->blob->mstate, job->blob);
+        job->archive->inject_mstate(blob->mstate, blob);
     }
 
     if (job->archive != nullptr) {
@@ -66,6 +65,10 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
     }
 
     HZP_STUB_CALL(job->blob_callback, blob);
+
+    blob->destroy();
+    rfree(blob);
+    rfree(codec);
 }
 
 void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
@@ -102,6 +105,7 @@ void hz_processor::hzp_decode(hz_codec_job *job) {
     }
 
     HZP_STUB_CALL(job->blob_callback, blob);
+    blob->destroy();
 }
 
 

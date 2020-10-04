@@ -86,13 +86,19 @@ void hz_streamer::encode() {
 
                     if (piggy_back) {
                         job->codec->blob_callback = [this](hzblob_t *cblob) {
-                            uint8_t ctl = API_CTL_PIGGYBACK;
+                            uint8_t ctl = COMMON_CTL_PIGGYBACK;
+
                             HZ_SEND(&ctl, sizeof(ctl));
+
                             HZ_SEND(&cblob->mstate->alg, sizeof(cblob->mstate->alg));
-                            HZ_SEND(&cblob->size, sizeof(cblob->size));
-                            HZ_SEND(cblob->data, sizeof(uint32_t) * cblob->size);
                             HZ_SEND(&cblob->mstate->length, sizeof(cblob->mstate->length));
                             HZ_SEND(cblob->mstate->data, cblob->mstate->length);
+
+                            HZ_SEND(&cblob->header.length, sizeof(cblob->header.length));
+                            HZ_SEND(cblob->header.raw, cblob->header.length);
+
+                            HZ_SEND(&cblob->size, sizeof(cblob->size));
+                            HZ_SEND(cblob->data, sizeof(uint32_t) * cblob->size);
                         };
                     }
 
@@ -133,6 +139,10 @@ void hz_streamer::encode() {
                 return;
             }
             case ENCODE_CTL_MSTATE_ADDR: {
+                if (mstate_addr != nullptr) {
+                    rfree(mstate_addr);
+                }
+
                 HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
 
                 mstate_addr = rmalloc(char, mstate_addr_len);
@@ -140,6 +150,10 @@ void hz_streamer::encode() {
                 break;
             }
             case ENCODE_CTL_ARCHIVE: {
+                if (archive_path != nullptr) {
+                    rfree(archive_path);
+                }
+
                 HZ_RECV(&archive_path_len, sizeof(archive_path_len));
                 archive_path = rmalloc(char, archive_path_len);
                 HZ_RECV(archive_path, archive_path_len);
@@ -148,6 +162,10 @@ void hz_streamer::encode() {
                 break;
             }
             case ENCODE_CTL_DEST: {
+                if (dest != nullptr) {
+                    rfree(dest);
+                }
+
                 HZ_RECV(&dest_len, sizeof(dest_len));
 
                 dest = rmalloc(char, dest_len);
@@ -162,6 +180,95 @@ void hz_streamer::encode() {
             }
             case ENCODE_CTL_PIGGYBACK: {
                 piggy_back = true;
+                break;
+            }
+        }
+    }
+}
+
+void hz_streamer::decode() {
+    uint16_t archive_path_len{};
+    uint16_t mstate_addr_len{};
+    uint16_t src_len{};
+    uint64_t data_len{};
+    uint8_t word{};
+    uint8_t algorithm{};
+
+    hz_mstate *mstate{};
+
+    char *archive_path{};
+    char *mstate_addr{};
+    char *src{};
+
+    bool piggy_back{};
+
+    hz_archive *archive{};
+
+    while (true) {
+        HZ_RECV(&word, sizeof(word));
+
+        switch ((DECODE_CTL) word) {
+            case DECODE_CTL_STREAM: {
+
+
+                return;
+            }
+            case DECODE_CTL_MSTATE_ADDR: {
+                if (mstate_addr != nullptr) {
+                    rfree(mstate_addr);
+                }
+
+                HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
+
+                mstate_addr = rmalloc(char, mstate_addr_len);
+                HZ_RECV(mstate_addr, mstate_addr_len);
+                break;
+            }
+            case DECODE_CTL_ARCHIVE: {
+                if (archive_path != nullptr) {
+                    rfree(archive_path);
+                }
+
+                HZ_RECV(&archive_path_len, sizeof(archive_path_len));
+                archive_path = rmalloc(char, archive_path_len);
+                HZ_RECV(archive_path, archive_path_len);
+
+                archive = hzprovider::archive::provide(archive_path);
+                break;
+            }
+            case DECODE_CTL_SRC: {
+                if (src != nullptr) {
+                    rfree(src);
+                }
+
+                HZ_RECV(&src_len, sizeof(src_len));
+                src = rmalloc(char, src_len);
+                HZ_RECV(src, src_len);
+
+                hz_validate_path(src);
+                break;
+            }
+            case DECODE_CTL_ALGORITHM: {
+                HZ_RECV(&algorithm, sizeof(algorithm));
+                break;
+            }
+            case DECODE_CTL_PIGGYBACK: {
+                piggy_back = true;
+                break;
+            }
+            case DECODE_CTL_MSTATE_STREAM: {
+                if (mstate != nullptr) {
+                    mstate->destroy();
+                    rfree(mstate);
+                }
+
+                mstate = rxnew(hz_mstate);
+
+                HZ_RECV(&mstate->length, sizeof(mstate->length));
+
+                mstate->data = rmalloc(uint8_t, mstate->length);
+
+                HZ_RECV(mstate->data, mstate->length);
                 break;
             }
         }

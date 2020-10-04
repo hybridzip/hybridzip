@@ -21,6 +21,10 @@ struct hz_mstate: public rainman::context {
     [[nodiscard]] bool is_empty() const {
         return data == nullptr;
     }
+
+    void destroy() {
+        rfree(data);
+    }
 };
 
 struct hz_blob_header: public rainman::context {
@@ -58,6 +62,7 @@ struct hzblob_t: public rainman::context {
         rfree(data);
         rfree(o_data);
         rfree(header.raw);
+        rfree(mstate->data);
     }
 };
 

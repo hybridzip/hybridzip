@@ -6,10 +6,10 @@
 #include <loguru/loguru.hpp>
 
 namespace ApiErrors {
-    class InitializationError: public std::exception {
+    class InitializationError : public std::exception {
     public:
 
-        InitializationError(const std::string& msg) {
+        InitializationError(const std::string &msg) {
             LOG_F(ERROR, "hzip.api: %s", msg.c_str());
         }
 
@@ -18,11 +18,25 @@ namespace ApiErrors {
         }
     };
 
-    class InvalidOperationError: public std::exception {
+    class InvalidOperationError : public std::exception {
     private:
         std::string _msg;
     public:
-        InvalidOperationError(const std::string& msg) {
+        InvalidOperationError(const std::string &msg) {
+            LOG_F(ERROR, "hzip.api: %s", msg.c_str());
+            _msg = "hzip.api: " + msg;
+        }
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return _msg.c_str();
+        }
+    };
+
+    class ConnectionError : public std::exception {
+    private:
+        std::string _msg;
+    public:
+        ConnectionError(const std::string &msg) {
             LOG_F(ERROR, "hzip.api: %s", msg.c_str());
             _msg = "hzip.api: " + msg;
         }

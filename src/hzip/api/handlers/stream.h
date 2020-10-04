@@ -20,6 +20,15 @@ private:
         ENCODE_CTL_ALGORITHM = 0x4,
         ENCODE_CTL_PIGGYBACK = 0x5,
     };
+
+    enum DECODE_CTL {
+        DECODE_CTL_STREAM = 0x0,
+        DECODE_CTL_MSTATE_ADDR = 0x1,
+        DECODE_CTL_ARCHIVE = 0x2,
+        DECODE_CTL_DEST = 0x3,
+        DECODE_CTL_ALGORITHM = 0x4,
+        DECODE_CTL_PIGGYBACK = 0x5,
+    };
 public:
     hz_streamer(int _sock, char *_ip_addr, uint16_t port, hz_processor *_proc);
 

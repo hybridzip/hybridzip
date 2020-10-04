@@ -9,11 +9,6 @@
 #include <hzip/processor/processor.h>
 #include "hzip/api/handlers/socket_class.h"
 
-enum CTL_WORD {
-    CTL_SUCCESS = 0x0,
-    CTL_ERROR = 0xff,
-};
-
 class hz_api_instance : public rainman::context, public hz_socket_class {
 private:
     hz_processor *processor{};
@@ -34,10 +29,6 @@ public:
     // The hzip api sends an encrypted random token to the client.
     // The client has to decrypt the token and send it back to the hzip api.
     bool handshake();
-
-    void error(const std::string &msg);
-
-    void success(const std::string &msg);
 
     void end() const;
 };

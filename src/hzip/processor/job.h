@@ -25,6 +25,7 @@ struct hz_codec_job {
 struct hz_job_stub {
     std::function<void()> on_completed{};
     std::function<void(const std::string&)> on_error{};
+    std::function<void(const std::string&)> on_success{};
 };
 
 struct hz_job {

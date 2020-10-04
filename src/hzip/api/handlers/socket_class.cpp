@@ -28,3 +28,29 @@ bool hz_socket_class::t_recv(void *buf, size_t n) {
 
     return false;
 }
+
+void hz_socket_class::error(const std::string &msg) {
+    // Error format: <CTLWORD (1B)> <msg len (8B)> <msg (?B)>
+
+    uint8_t word = API_CTL_ERROR;
+    HZ_SEND(&word, sizeof(word));
+
+    uint64_t len = msg.length();
+
+    HZ_SEND(&len, sizeof(len));
+
+    HZ_SEND(msg.c_str(), len);
+}
+
+void hz_socket_class::success(const std::string &msg) {
+    // Success format: <CTLWORD (1B)> <msg len (8B)> <msg (?B)>
+
+    uint8_t word = API_CTL_SUCCESS;
+
+    HZ_SEND(&word, sizeof(word));
+
+    uint64_t len = msg.length();
+    HZ_SEND(&len, sizeof(len));
+
+    HZ_SEND(msg.c_str(), len);
+}

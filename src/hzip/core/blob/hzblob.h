@@ -8,9 +8,9 @@
 #include <hzip/utils/common.h>
 
 struct hz_mstate: public rainman::context {
-    uint8_t *data;
-    uint64_t length;
-    hzcodec::algorithms::ALGORITHM alg;
+    uint8_t *data{};
+    uint64_t length{};
+    hzcodec::algorithms::ALGORITHM alg{};
 
     hz_mstate() {
         data = nullptr;

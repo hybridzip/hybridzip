@@ -56,6 +56,9 @@ void hz_streamer::encode() {
                 while (data_len > 0) {
                     sem_wait(&mutex);
 
+                    // Avoid processor overload.
+                    processor->cycle();
+
                     auto *blob = rxnew(hzblob_t);
 
                     max_blob_size = HZ_MIN(max_blob_size, data_len);
@@ -83,6 +86,8 @@ void hz_streamer::encode() {
 
                     if (piggy_back) {
                         job->codec->blob_callback = [this](hzblob_t *cblob) {
+                            uint8_t ctl = API_CTL_PIGGYBACK;
+                            HZ_SEND(&ctl, sizeof(ctl));
                             HZ_SEND(&cblob->mstate->alg, sizeof(cblob->mstate->alg));
                             HZ_SEND(&cblob->size, sizeof(cblob->size));
                             HZ_SEND(cblob->data, sizeof(uint32_t) * cblob->size);
@@ -96,6 +101,10 @@ void hz_streamer::encode() {
                     job->stub = rnew(hz_job_stub);
                     job->stub->on_completed = [this]() {
                         sem_post(&mutex);
+                    };
+
+                    job->stub->on_error = [this](const std::string &msg) {
+                        error(msg);
                     };
 
                     // Dispatch hz_job to hz_processor.

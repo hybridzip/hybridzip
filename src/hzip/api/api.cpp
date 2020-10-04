@@ -39,32 +39,6 @@ bool hz_api_instance::handshake() {
     }
 }
 
-void hz_api_instance::error(const std::string &msg) {
-    // Error format: <CTLWORD (1B)> <msg len (8B)> <msg (?B)>
-
-    uint8_t word = CTL_ERROR;
-    HZ_SEND(&word, sizeof(word));
-
-    uint64_t len = msg.length();
-
-    HZ_SEND(&len, sizeof(len));
-
-    HZ_SEND(msg.c_str(), len);
-}
-
-void hz_api_instance::success(const std::string &msg) {
-    // Success format: <CTLWORD (1B)> <msg len (8B)> <msg (?B)>
-
-    uint8_t word = CTL_SUCCESS;
-
-    HZ_SEND(&word, sizeof(word));
-
-    uint64_t len = msg.length();
-    HZ_SEND(&len, sizeof(len));
-
-    HZ_SEND(msg.c_str(), len);
-}
-
 void hz_api_instance::end() const {
     sem_post(mutex);
     close(sock);

@@ -14,62 +14,9 @@ hzcodec::abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORI
         case hzcodec::algorithms::UNDEFINED:
             return nullptr;
         case hzcodec::algorithms::VICTINI:
-            auto victini = rnew(hzcodec::victini);
-            rinitptr(victini);
+            auto victini = rxnew(hzcodec::victini);
             return victini;
     }
-}
-
-hzblob_set hz_processor::hzp_split(hz_codec_job *job) {
-    auto *blob = job->blob;
-
-    uint64_t size = 0;
-
-    switch (job->algorithm) {
-        case hzcodec::algorithms::UNDEFINED:
-            size = blob->o_size;
-            break;
-        case hzcodec::algorithms::VICTINI:
-            size = 0x400000;
-            break;
-    }
-
-    if (blob->o_size == 0) {
-        return hzblob_set{.blobs=nullptr, .blob_count=0};
-    }
-
-    uint64_t n = blob->o_size / size;
-    uint64_t r = blob->o_size % size;
-
-    if (n == 0) {
-        n = 1;
-        size = 0;
-    }
-
-    auto *blobs = rmalloc(hzblob_t, n);
-
-    for (uint64_t i = 0; i < n - 1; i++) {
-        blobs[i] = hzblob_t();
-        blobs[i].o_size = size;
-        blobs[i].o_data = rmalloc(uint8_t, size);
-
-        for (uint64_t j = 0; j < size; j++) {
-            blobs[i].o_data[j] = blob->o_data[size * i + j];
-        }
-    }
-
-    blobs[n - 1] = hzblob_t();
-    blobs[n - 1].o_size = size + r;
-    blobs[n - 1].o_data = rmalloc(uint8_t, size + r);
-
-    for (uint64_t j = 0; j < size + r; j++) {
-        blobs[n - 1].o_data[j] = blob->o_data[size * (n - 1) + j];
-    }
-
-    blob->destroy();
-    rfree(blob);
-
-    return hzblob_set{.blobs=blobs, .blob_count=n};
 }
 
 void hz_processor::run(hz_job *job) {
@@ -83,6 +30,7 @@ void hz_processor::run(hz_job *job) {
 
             try {
                 this->hzp_run_codec_job(job->codec);
+                HZP_STUB_CALL(job->stub->on_success, "Operation completed successfully");
             } catch (std::exception &e) {
                 HZP_STUB_CALL(job->stub->on_error, e.what());
             }
@@ -102,14 +50,21 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    if (job->archive == nullptr) {
-        throw ProcessorErrors::InvalidOperationError("Archive not found");
+    if (job->reuse_mstate) {
+        job->archive->inject_mstate(job->mstate_addr, job->blob);
     }
 
     auto *blob = codec->compress(job->blob);
-    auto id = job->archive->write_blob(blob);
 
-    HZP_STUB_CALL(job->blob_id_callback, id);
+    if (!job->reuse_mstate) {
+        job->archive->inject_mstate(job->blob->mstate, job->blob);
+    }
+
+    if (job->archive != nullptr) {
+        auto id = job->archive->write_blob(blob);
+        HZP_STUB_CALL(job->blob_id_callback, id);
+    }
+
     HZP_STUB_CALL(job->blob_callback, blob);
 }
 
@@ -125,22 +80,28 @@ void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
 }
 
 void hz_processor::hzp_decode(hz_codec_job *job) {
-    if (job == nullptr) {
-        return;
+    auto codec = hzp_get_codec(job->algorithm);
+
+    if (codec == nullptr) {
+        throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    hzblob_set set = job->archive->read_file(job->dest);
-
-    for (uint64_t i = 0; i < set.blob_count; i++) {
-        auto codec = hzp_get_codec(job->algorithm);
-
-        auto dblob = codec->decompress(&set.blobs[i]);
-
-        set.blobs[i].destroy();
-        set.blobs[i] = *dblob;
-
-        rfree(dblob);
+    if (job->reuse_mstate) {
+        job->archive->inject_mstate(job->mstate_addr, job->blob);
     }
+
+    auto *blob = codec->compress(job->blob);
+
+    if (!job->reuse_mstate) {
+        job->archive->inject_mstate(job->blob->mstate, job->blob);
+    }
+
+    if (job->archive != nullptr) {
+        auto id = job->archive->write_blob(blob);
+        HZP_STUB_CALL(job->blob_id_callback, id);
+    }
+
+    HZP_STUB_CALL(job->blob_callback, blob);
 }
 
 

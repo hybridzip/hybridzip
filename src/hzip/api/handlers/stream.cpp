@@ -189,6 +189,9 @@ void hz_streamer::encode() {
                 piggy_back = true;
                 break;
             }
+            default: {
+                error("Invalid command");
+            }
         }
     }
 }
@@ -412,6 +415,29 @@ void hz_streamer::decode() {
 
                 return;
             }
+            default: {
+                error("Invalid command");
+            }
+        }
+    }
+}
+
+void hz_streamer::start() {
+    uint8_t ctl_word;
+
+    HZ_RECV(&ctl_word, sizeof(ctl_word));
+
+    switch ((STREAM_CTL) ctl_word) {
+        case STREAM_CTL_ENCODE: {
+            encode();
+            break;
+        }
+        case STREAM_CTL_DECODE: {
+            decode();
+            break;
+        }
+        default: {
+            error("Invalid command");
         }
     }
 }

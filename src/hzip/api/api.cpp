@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <hzip/errors/api.h>
 #include <hzip/utils/utils.h>
+#include <hzip/api/handlers/stream.h>
 
 hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std::string &_passwd, sem_t *_mutex,
                                  char *_ip_addr, uint16_t _port) {
@@ -20,13 +21,8 @@ bool hz_api_instance::handshake() {
     uint64_t token = hz_rand64();
     uint64_t xtoken = hz_enc_token(passwd, token);
 
-    if (t_send(&xtoken, sizeof(token))) {
-        return true;
-    }
-
-    if (t_recv(&xtoken, sizeof(xtoken))) {
-        return true;
-    };
+    HZ_SEND(&xtoken, sizeof(token));
+    HZ_RECV(&xtoken, sizeof(xtoken));
 
     if (token == xtoken) {
         LOG_F(INFO, "hzip.api: Handshake successful with %s:%d", ip_addr, port);
@@ -51,13 +47,32 @@ void hz_api_instance::end() const {
 void hz_api_instance::start() {
     std::thread([this]() {
         sem_wait(mutex);
-        if (handshake()) {
+        if (!handshake()) {
             end();
             return;
         }
 
+        hz_streamer streamer(sock, ip_addr, port, processor);
 
-        end();
+        while (true) {
+            uint8_t ctl_word;
+            HZ_RECV(&ctl_word, sizeof(ctl_word));
+
+            switch ((API_CTL) ctl_word) {
+                case API_CTL_STREAM: {
+                    streamer.start();
+                    break;
+                }
+                case API_CTL_CLOSE: {
+                    end();
+                    return;
+                }
+                default: {
+                    error("Invalid command");
+                }
+            }
+        }
+
     }).detach();
 }
 

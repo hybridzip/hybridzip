@@ -18,6 +18,11 @@ private:
     char *ip_addr{};
     uint16_t port{};
 
+    enum API_CTL {
+        API_CTL_STREAM = 0x0,
+        API_CTL_CLOSE = 0x1,
+    };
+
 public:
     hz_api_instance() = default;
 

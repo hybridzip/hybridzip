@@ -12,6 +12,11 @@ private:
     uint64_t hzes_b_size(hzcodec::algorithms::ALGORITHM alg);
     sem_t mutex{};
 
+    enum STREAM_CTL {
+        STREAM_CTL_ENCODE = 0x0,
+        STREAM_CTL_DECODE = 0x1,
+    };
+
     enum ENCODE_CTL {
         ENCODE_CTL_STREAM = 0x0,
         ENCODE_CTL_MSTATE_ADDR = 0x1,
@@ -33,6 +38,8 @@ private:
     };
 public:
     hz_streamer(int _sock, char *_ip_addr, uint16_t port, hz_processor *_proc);
+
+    void start();
 
     void encode();
 

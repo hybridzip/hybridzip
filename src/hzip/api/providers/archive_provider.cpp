@@ -7,6 +7,7 @@ hz_archive *hzprovider::archive::provide(const std::string &path) {
         archive = arch_map[path];
     } else {
         archive = mgr->r_malloc<hz_archive>(1);
+        *archive = hz_archive(path);
         rinitptrfrom(mgr, archive);
         arch_map[path] = archive;
     }

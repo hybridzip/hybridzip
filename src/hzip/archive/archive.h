@@ -110,6 +110,8 @@ private:
     void hza_decrement_dep(uint64_t id);
 
 public:
+    hz_archive() = default;
+
     hz_archive(const std::string& archive_path);
 
     void load();

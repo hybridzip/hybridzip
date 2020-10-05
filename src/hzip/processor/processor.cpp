@@ -1,6 +1,6 @@
 #include "processor.h"
 #include <hzip/errors/processor.h>
-#include <hzip/core/compressors/victini.h>
+#include <hzip/core/compressors/compressors.h>
 
 #define HZP_STUB_CALL(f, ...) if (f != nullptr) f(__VA_ARGS__)
 
@@ -93,16 +93,11 @@ void hz_processor::hzp_decode(hz_codec_job *job) {
         job->archive->inject_mstate(job->mstate_addr, job->blob);
     }
 
-    auto *blob = codec->compress(job->blob);
-
-    if (!job->reuse_mstate) {
-        job->archive->inject_mstate(job->blob->mstate, job->blob);
+    if (job->blob->mstate == nullptr) {
+        throw ProcessorErrors::InvalidOperationError("Missing mstate");
     }
 
-    if (job->archive != nullptr) {
-        auto id = job->archive->write_blob(blob);
-        HZP_STUB_CALL(job->blob_id_callback, id);
-    }
+    auto *blob = codec->decompress(job->blob);
 
     HZP_STUB_CALL(job->blob_callback, blob);
     blob->destroy();

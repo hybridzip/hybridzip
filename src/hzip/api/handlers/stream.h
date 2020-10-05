@@ -29,6 +29,7 @@ private:
         DECODE_CTL_ALGORITHM = 0x4,
         DECODE_CTL_PIGGYBACK = 0x5,
         DECODE_CTL_MSTATE_STREAM = 0x6,
+        DECODE_CTL_BLOB_STREAM = 0x7,
     };
 public:
     hz_streamer(int _sock, char *_ip_addr, uint16_t port, hz_processor *_proc);

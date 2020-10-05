@@ -122,9 +122,13 @@ public:
 
     void create_file_entry(const std::string& file_path, hza_file file);
 
+    hza_file read_file_entry(const std::string& file_path);
+
     bool check_file_exists(const std::string& file_path);
 
     uint64_t write_blob(hzblob_t *blob);
+
+    hzblob_t *read_blob(uint64_t id);
 
     hzblob_set read_file(const std::string& file_path);
 

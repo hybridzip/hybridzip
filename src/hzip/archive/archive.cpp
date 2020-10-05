@@ -844,3 +844,19 @@ bool hz_archive::check_file_exists(const std::string &file_path) {
 
     return v;
 }
+
+hza_file hz_archive::read_file_entry(const std::string &file_path) {
+    sem_wait(mutex);
+    hza_file file = hza_read_metadata_file_entry(file_path);
+    sem_post(mutex);
+
+    return file;
+}
+
+hzblob_t *hz_archive::read_blob(uint64_t id) {
+    sem_wait(mutex);
+    auto *blob = hza_read_blob(id);
+    sem_post(mutex);
+
+    return blob;
+}

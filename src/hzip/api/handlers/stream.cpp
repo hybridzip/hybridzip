@@ -105,12 +105,19 @@ void hz_streamer::encode() {
                     job->codec->job_type = hz_codec_job::JOBTYPE::ENCODE;
 
                     job->stub = rnew(hz_job_stub);
-                    job->stub->on_completed = [this]() {
+                    job->stub->on_completed = [this, job]() {
+                        rfree(job->codec);
+                        rfree(job->stub);
+                        rfree(job);
                         sem_post(&mutex);
                     };
 
                     job->stub->on_error = [this](const std::string &msg) {
                         error(msg);
+                    };
+
+                    job->stub->on_success = [this](const std::string &msg) {
+                        success(msg);
                     };
 
                     // Dispatch hz_job to hz_processor.
@@ -190,11 +197,11 @@ void hz_streamer::decode() {
     uint16_t archive_path_len{};
     uint16_t mstate_addr_len{};
     uint16_t src_len{};
-    uint64_t data_len{};
     uint8_t word{};
     uint8_t algorithm{};
 
     hz_mstate *mstate{};
+    hzblob_t *blob{};
 
     char *archive_path{};
     char *mstate_addr{};
@@ -209,11 +216,71 @@ void hz_streamer::decode() {
 
         switch ((DECODE_CTL) word) {
             case DECODE_CTL_STREAM: {
+                if (!piggy_back) {
+                    throw ApiErrors::InvalidOperationError("Piggy-back was disabled");
+                }
 
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive not provided");
+                }
+
+                if (src == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Source not provided");
+                }
+
+                auto file_entry = archive->read_file_entry(src);
+
+                for (uint64_t i = 0; i < file_entry.blob_count; i++) {
+                    sem_wait(&mutex);
+                    auto *src_blob = archive->read_blob(file_entry.blob_ids[i]);
+
+                    // Construct hz_job
+
+                    auto *job = rnew(hz_job);
+                    job->codec = rnew(hz_codec_job);
+                    job->stub = rnew(hz_job_stub);
+
+                    job->codec->archive = archive;
+                    job->codec->job_type = hz_codec_job::JOBTYPE::DECODE;
+                    job->codec->blob = src_blob;
+                    job->codec->reuse_mstate = false;
+                    job->codec->algorithm = src_blob->mstate->alg;
+
+                    job->codec->blob_callback = [this](hzblob_t *dblob) {
+                        uint8_t ctl = COMMON_CTL_PIGGYBACK;
+
+                        HZ_SEND(&ctl, sizeof(ctl));
+
+                        HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
+                        HZ_SEND(dblob->o_data, dblob->o_size);
+                    };
+
+                    job->stub->on_completed = [this, job]() {
+                        rfree(job->codec);
+                        rfree(job->stub);
+                        rfree(job);
+                        sem_post(&mutex);
+                    };
+
+                    job->stub->on_error = [this](const std::string &msg) {
+                        error(msg);
+                    };
+
+                    job->stub->on_success = [this](const std::string &msg) {
+                        success(msg);
+                    };
+
+                    processor->cycle();
+                    processor->run(job);
+                }
 
                 return;
             }
             case DECODE_CTL_MSTATE_ADDR: {
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive was not provided");
+                }
+
                 if (mstate_addr != nullptr) {
                     rfree(mstate_addr);
                 }
@@ -270,6 +337,80 @@ void hz_streamer::decode() {
 
                 HZ_RECV(mstate->data, mstate->length);
                 break;
+            }
+            case DECODE_CTL_BLOB_STREAM: {
+                sem_wait(&mutex);
+                processor->cycle();
+
+                if (!piggy_back) {
+                    throw ApiErrors::InvalidOperationError("Piggy-back was disabled");
+                }
+
+                if (mstate == nullptr && mstate_addr == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Mstate was not provided");
+                }
+
+                if (blob != nullptr) {
+                    blob->destroy();
+                    rfree(blob);
+                }
+
+                blob = rxnew(hzblob_t);
+
+                HZ_RECV(&blob->header.length, sizeof(blob->header.length));
+                blob->header.raw = rmalloc(uint8_t, blob->header.length);
+                HZ_RECV(blob->header.raw, blob->header.length);
+
+                HZ_RECV(&blob->size, sizeof(blob->size));
+                blob->data = rmalloc(uint32_t, blob->size);
+                HZ_RECV(blob->data, blob->size * sizeof(uint32_t));
+
+                HZ_RECV(&blob->o_size, sizeof(blob->o_size));
+
+                if (mstate != nullptr) {
+                    blob->mstate = mstate;
+                }
+
+                auto *job = rnew(hz_job);
+                job->codec = rnew(hz_codec_job);
+                job->stub = rnew(hz_job_stub);
+
+                job->codec->mstate_addr = mstate_addr;
+                job->codec->reuse_mstate = mstate_addr != nullptr;
+                job->codec->archive = archive;
+
+
+                job->codec->blob_callback = [this](hzblob_t *dblob) {
+                    uint8_t ctl = COMMON_CTL_PIGGYBACK;
+
+                    HZ_SEND(&ctl, sizeof(ctl));
+
+                    HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
+                    HZ_SEND(dblob->o_data, dblob->o_size);
+                };
+
+
+                job->codec->blob = blob;
+                job->codec->job_type = hz_codec_job::JOBTYPE::DECODE;
+
+                job->stub->on_completed = [this, job]() {
+                    rfree(job->codec);
+                    rfree(job->stub);
+                    rfree(job);
+                    sem_post(&mutex);
+                };
+
+                job->stub->on_error = [this](const std::string &msg) {
+                    error(msg);
+                };
+
+                job->stub->on_success = [this](const std::string &msg) {
+                    success(msg);
+                };
+
+                processor->run(job);
+
+                return;
             }
         }
     }

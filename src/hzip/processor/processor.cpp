@@ -50,13 +50,21 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
     }
 
     if (job->reuse_mstate) {
+        if (job->archive == nullptr) {
+            throw ProcessorErrors::InvalidOperationError("Archive is required for mstate-injection by address");
+        }
+
         job->archive->inject_mstate(job->mstate_addr, job->blob);
     }
 
     auto *blob = codec->compress(job->blob);
 
     if (!job->reuse_mstate) {
-        job->archive->inject_mstate(blob->mstate, blob);
+        if (job->archive != nullptr) {
+            job->archive->inject_mstate(blob->mstate, blob);
+        } else if (job->blob_callback == nullptr) {
+            throw ProcessorErrors::InvalidOperationError("Piggy-back is disabled, null job execution is not allowed");
+        }
     }
 
     if (job->archive != nullptr) {
@@ -89,7 +97,15 @@ void hz_processor::hzp_decode(hz_codec_job *job) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
+    if (job->archive == nullptr && job->blob_callback == nullptr) {
+        throw ProcessorErrors::InvalidOperationError("Piggy-back is disabled, null job execution is not allowed");
+    }
+
     if (job->reuse_mstate) {
+        if (job->archive == nullptr) {
+            throw ProcessorErrors::InvalidOperationError("Archive is required for mstate-injection by address");
+        }
+
         job->archive->inject_mstate(job->mstate_addr, job->blob);
     }
 

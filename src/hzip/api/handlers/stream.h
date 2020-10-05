@@ -4,6 +4,7 @@
 #include <rainman/rainman.h>
 #include <hzip/core/compressors/compressors.h>
 #include <hzip/processor/processor.h>
+#include <hzip/api/providers/archive_provider.h>
 #include "socket_class.h"
 
 class hz_streamer : public rainman::module, public hz_socket_class {
@@ -11,6 +12,8 @@ private:
     hz_processor *processor;
     uint64_t hzes_b_size(hzcodec::algorithms::ALGORITHM alg);
     sem_t mutex{};
+
+    hzprovider::archive *archive_provider;
 
     enum STREAM_CTL {
         STREAM_CTL_ENCODE = 0x0,
@@ -37,7 +40,7 @@ private:
         DECODE_CTL_BLOB_STREAM = 0x7,
     };
 public:
-    hz_streamer(int _sock, char *_ip_addr, uint16_t port, hz_processor *_proc);
+    hz_streamer(int _sock, char *_ip_addr, uint16_t port, hz_processor *_proc, hzprovider::archive *_archive_provider);
 
     void start();
 

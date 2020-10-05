@@ -8,13 +8,14 @@
 #include <hzip/api/handlers/stream.h>
 
 hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std::string &_passwd, sem_t *_mutex,
-                                 char *_ip_addr, uint16_t _port) {
+                                 char *_ip_addr, uint16_t _port, hzprovider::archive *_archive_provider) {
     processor = _processor;
     sock = _sock;
     passwd = _passwd;
     mutex = _mutex;
     port = _port;
     ip_addr = _ip_addr;
+    archive_provider = _archive_provider;
 }
 
 bool hz_api_instance::handshake() {
@@ -52,7 +53,7 @@ void hz_api_instance::start() {
             return;
         }
 
-        hz_streamer streamer(sock, ip_addr, port, processor);
+        hz_streamer streamer(sock, ip_addr, port, processor, archive_provider);
 
         while (true) {
             uint8_t ctl_word;
@@ -89,6 +90,8 @@ hz_api *hz_api::process(uint64_t _n_threads) {
 [[noreturn]] void hz_api::start(const char *addr, uint16_t port) {
     mutex = rnew(sem_t);
     sem_init(mutex, 0, max_instances);
+
+    archive_provider = rnew(hzprovider::archive);
 
     sockaddr_in server_addr{};
     sockaddr_in client_addr{};
@@ -128,7 +131,8 @@ hz_api *hz_api::process(uint64_t _n_threads) {
         LOG_F(INFO, "hzip.api: Accepted connection from %s:%d", ip_addr,
               (int) ntohs(client_addr.sin_port));
 
-        hz_api_instance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port));
+        hz_api_instance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port),
+                                 archive_provider);
         rinit(instance);
 
         instance.start();

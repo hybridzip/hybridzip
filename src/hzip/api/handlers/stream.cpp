@@ -14,11 +14,13 @@ uint64_t hz_streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
     }
 }
 
-hz_streamer::hz_streamer(int _sock, char *_ip_addr, uint16_t _port, hz_processor *_proc) {
+hz_streamer::hz_streamer(int _sock, char *_ip_addr, uint16_t _port, hz_processor *_proc,
+                         hzprovider::archive *_archive_provider) {
     sock = _sock;
     ip_addr = _ip_addr;
     port = _port;
     processor = _proc;
+    archive_provider = _archive_provider;
     sem_init(&mutex, 0, 1);
 }
 
@@ -165,7 +167,7 @@ void hz_streamer::encode() {
                 archive_path = rmalloc(char, archive_path_len);
                 HZ_RECV(archive_path, archive_path_len);
 
-                archive = hzprovider::archive::provide(archive_path);
+                archive = archive_provider->provide(archive_path);
                 break;
             }
             case ENCODE_CTL_DEST: {
@@ -303,7 +305,7 @@ void hz_streamer::decode() {
                 archive_path = rmalloc(char, archive_path_len);
                 HZ_RECV(archive_path, archive_path_len);
 
-                archive = hzprovider::archive::provide(archive_path);
+                archive = archive_provider->provide(archive_path);
                 break;
             }
             case DECODE_CTL_SRC: {

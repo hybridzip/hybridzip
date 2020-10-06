@@ -25,25 +25,25 @@ bool hz_api_instance::handshake() {
     uint64_t token = hz_rand64();
     uint64_t xtoken = hz_enc_token(passwd, token);
 
-    LOG_F(INFO, "hzip.api: Generated handshake token: %lu", xtoken);
+    HZAPI_LOG(INFO, "Generated handshake token");
 
     HZ_SEND(&xtoken, sizeof(xtoken));
     HZ_RECV(&xtoken, sizeof(xtoken));
 
     if (token == xtoken) {
-        LOG_F(INFO, "hzip.api: Handshake successful with %s:%d", ip_addr, port);
-        success("Handshake successful.");
+        HZAPI_LOG(INFO, "Handshake successful");
+        success("Handshake successful");
         return false;
     } else {
-        LOG_F(INFO, "hzip.api: Handshake failed with %s:%d", ip_addr, port);
-        error("Handshake failed.");
+        HZAPI_LOG(WARNING, "Handshake failed");
+        error("Handshake failed");
         return true;
     }
 }
 
 void hz_api_instance::end() const {
     close(sock);
-    LOG_F(INFO, "hzip.api: Closed connection from %s:%d", ip_addr, port);
+    HZAPI_LOG(INFO, "Closed connection");
     rfree(ip_addr);
     sem_post(mutex);
 }
@@ -52,7 +52,7 @@ void hz_api_instance::start() {
     sem_wait(mutex);
 
     std::thread([this]() {
-        LOG_F(INFO, "hzip.api: Instance created for %s:%d", ip_addr, port);
+        HZAPI_LOG(INFO, "Instance created successfully");
 
         try {
             if (handshake()) {
@@ -82,7 +82,7 @@ void hz_api_instance::start() {
             }
         } catch (std::exception &e) {
             end();
-            LOG_F(ERROR, "hzip.api: Instance was terminated");
+            HZAPI_LOG(ERROR, "Instance was terminated");
         }
 
     }).detach();
@@ -139,7 +139,7 @@ hz_api *hz_api::process(uint64_t _n_threads) {
 
         inet_ntop(AF_INET, &client_addr.sin_addr, ip_addr, INET_ADDRSTRLEN);
 
-        LOG_F(INFO, "hzip.api: Accepted connection from %s:%d", ip_addr,
+        LOG_F(INFO, "hzip.api: [%s:%d] Accepted connection", ip_addr,
               (int) ntohs(client_addr.sin_port));
 
         hz_api_instance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port),

@@ -108,7 +108,6 @@ protected:
             EXPECT_TRUE(false);
         }
 
-        printf("connected socket: %d\n", sock);
         handshake(sock);
 
         return sock;

@@ -1,7 +1,10 @@
 #include "stream.h"
 #include <hzip/api/providers/archive_provider.h>
 #include <hzip/utils/validation.h>
+#include <hzip/api/api_enums.h>
 #include <hzip/errors/api.h>
+
+using namespace hzapi;
 
 #define HZ_MIN(a, b) (a) < (b) ? (a) : (b)
 

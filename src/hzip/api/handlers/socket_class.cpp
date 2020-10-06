@@ -2,7 +2,10 @@
 #include <loguru/loguru.hpp>
 #include <sys/socket.h>
 #include <hzip/errors/api.h>
+#include <hzip/api/api_enums.h>
 #include "socket_class.h"
+
+using namespace hzapi;
 
 void hz_socket_class::t_send(const void *buf, size_t n) {
     if (send(sock, buf, n, 0) < n) {

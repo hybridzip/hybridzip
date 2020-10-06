@@ -6,6 +6,9 @@
 #include <hzip/errors/api.h>
 #include <hzip/utils/utils.h>
 #include <hzip/api/handlers/stream.h>
+#include <hzip/api/api_enums.h>
+
+using namespace hzapi;
 
 hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std::string &_passwd, sem_t *_mutex,
                                  char *_ip_addr, uint16_t _port, hzprovider::archive *_archive_provider) {
@@ -54,7 +57,7 @@ void hz_api_instance::start() {
                 return;
             }
 
-            hz_streamer streamer(sock, ip_addr, port, processor, archive_provider);
+            auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
 
             while (true) {
                 uint8_t ctl_word;

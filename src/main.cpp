@@ -46,7 +46,7 @@ int main(int argc, const char **argv) {
 
     check_env(dotenv);
 
-    hz_api api;
+    hzapi::hz_api api;
     rinitfrom(mgr, api);
 
     api.limit(std::stoi(dotenv["HZIP_API_THREADS"]))

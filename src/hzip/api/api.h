@@ -13,11 +13,8 @@
 class hz_api_instance : public rainman::context, public hz_socket_class {
 private:
     hz_processor *processor{};
-    int sock{};
     std::string passwd;
     sem_t *mutex{};
-    char *ip_addr{};
-    uint16_t port{};
 
     hzprovider::archive *archive_provider{};
 
@@ -51,6 +48,7 @@ private:
     timeval time_out{};
 
     hzprovider::archive *archive_provider{};
+    int server_sock{};
 
 public:
     hz_api *limit(uint64_t _max_instances);

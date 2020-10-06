@@ -48,30 +48,35 @@ void hz_api_instance::end() const {
 void hz_api_instance::start() {
     std::thread([this]() {
         sem_wait(mutex);
-        if (!handshake()) {
-            end();
-            return;
-        }
+        try {
+            if (handshake()) {
+                end();
+                return;
+            }
 
-        hz_streamer streamer(sock, ip_addr, port, processor, archive_provider);
+            hz_streamer streamer(sock, ip_addr, port, processor, archive_provider);
 
-        while (true) {
-            uint8_t ctl_word;
-            HZ_RECV(&ctl_word, sizeof(ctl_word));
+            while (true) {
+                uint8_t ctl_word;
+                HZ_RECV(&ctl_word, sizeof(ctl_word));
 
-            switch ((API_CTL) ctl_word) {
-                case API_CTL_STREAM: {
-                    streamer.start();
-                    break;
-                }
-                case API_CTL_CLOSE: {
-                    end();
-                    return;
-                }
-                default: {
-                    error("Invalid command");
+                switch ((API_CTL) ctl_word) {
+                    case API_CTL_STREAM: {
+                        streamer.start();
+                        break;
+                    }
+                    case API_CTL_CLOSE: {
+                        end();
+                        return;
+                    }
+                    default: {
+                        error("Invalid command");
+                    }
                 }
             }
+        } catch (std::exception &e) {
+            end();
+            LOG_F(ERROR, "hzip.api: Instance was terminated");
         }
 
     }).detach();
@@ -97,7 +102,7 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     sockaddr_in client_addr{};
     socklen_t sock_addr_size{};
 
-    int server_sock = socket(PF_INET, SOCK_STREAM, 0);
+    server_sock = socket(PF_INET, SOCK_STREAM, 0);
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = inet_addr(addr);

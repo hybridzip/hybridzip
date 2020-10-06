@@ -16,7 +16,10 @@ RUN cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release . && make hybr
 # Runner
 FROM archlinux:latest
 
-COPY --from=build /app/bin/hybridzip ./
+RUN mkdir /hybridzip
 
-#Run hybridzip
+COPY --from=build /app/bin/hybridzip /hybridzip
+
+WORKDIR /hybridzip
+
 RUN ./hybridzip

@@ -19,7 +19,7 @@ hz_archive::hz_archive(const std::string &archive_path) {
     FILE *fp = fopen(path.c_str(), "rb+");
     stream = new bitio::stream(fp);
 
-    auto sha2_path = sha512(path);
+    auto sha2_path = hz_sha512(path);
 
     const char *sname = sha2_path.c_str();
 
@@ -112,7 +112,7 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
             break;
         }
         case hza_metadata_entry_type::FILEINFO: {
-            uint64_t path_length = elias_gamma_inv(read).obj;
+            uint64_t path_length = hz_elias_gamma_inv(read).obj;
             std::string _path;
 
             for (uint64_t i = 0; i < path_length; i++) {
@@ -140,7 +140,7 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
             // this is used when the same mstate is used by other blobs.
             // format: <path-length (elias-gamma)> <path (8-bit-array)> <mstate-id (64-bit)>
 
-            uint64_t path_length = elias_gamma_inv(read).obj;
+            uint64_t path_length = hz_elias_gamma_inv(read).obj;
             std::string _path;
 
             for (uint64_t i = 0; i < path_length; i++) {
@@ -271,7 +271,7 @@ void hz_archive::hza_create_metadata_file_entry(const std::string &file_path, hz
 
     uint64_t length = 0;
 
-    bin_t path_length = elias_gamma(file_path.length());
+    bin_t path_length = hz_elias_gamma(file_path.length());
     length += path_length.n;
     length += (file_path.length() << 3);
 
@@ -400,9 +400,9 @@ uint64_t hz_archive::hza_write_blob(hzblob_t *blob) {
     stream->write(length, 0x40);
 
     // Create a new unique blob-id and write it.
-    uint64_t blob_id = rand64();
+    uint64_t blob_id = hz_rand64();
     while (metadata.blob_map.contains(blob_id)) {
-        blob_id = rand64();
+        blob_id = hz_rand64();
     }
 
     stream->write(blob_id, 0x40);
@@ -511,9 +511,9 @@ uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     stream->write(length, 0x40);
 
     // Create new mstate-id
-    uint64_t mstate_id = rand64();
+    uint64_t mstate_id = hz_rand64();
     while (metadata.mstate_map.contains(mstate_id)) {
-        mstate_id = rand64();
+        mstate_id = hz_rand64();
     }
 
     stream->write(mstate_id, 0x40);
@@ -546,7 +546,7 @@ void hz_archive::install_mstate(const std::string &_path, hz_mstate *mstate) {
     // Create auxillary mstate-entry.
     uint64_t length = 0;
 
-    bin_t path_length = elias_gamma(_path.length());
+    bin_t path_length = hz_elias_gamma(_path.length());
     length += path_length.n;
     length += (_path.length() << 3) + 0x48;
 
@@ -802,9 +802,11 @@ void hz_archive::load() {
 std::vector<std::string> hz_archive::list_files() {
     std::vector<std::string> files;
 
+    sem_wait(mutex);
     for (const auto& entry : metadata.file_map) {
         files.push_back(entry.first);
     }
+    sem_post(mutex);
 
     return files;
 }
@@ -812,9 +814,49 @@ std::vector<std::string> hz_archive::list_files() {
 std::vector<std::string> hz_archive::list_mstates() {
     std::vector<std::string> mstates;
 
+    sem_wait(mutex);
     for (const auto& entry : metadata.mstate_aux_map) {
         mstates.push_back(entry.first);
     }
+    sem_post(mutex);
 
     return mstates;
+}
+
+void hz_archive::create_file_entry(const std::string &file_path, hza_file file) {
+    sem_wait(mutex);
+    hza_create_metadata_file_entry(file_path, file);
+    sem_post(mutex);
+}
+
+uint64_t hz_archive::write_blob(hzblob_t *blob) {
+    sem_wait(mutex);
+    uint64_t id = hza_write_blob(blob);
+    sem_post(mutex);
+
+    return id;
+}
+
+bool hz_archive::check_file_exists(const std::string &file_path) {
+    sem_wait(mutex);
+    bool v = metadata.file_map.contains(file_path);
+    sem_post(mutex);
+
+    return v;
+}
+
+hza_file hz_archive::read_file_entry(const std::string &file_path) {
+    sem_wait(mutex);
+    hza_file file = hza_read_metadata_file_entry(file_path);
+    sem_post(mutex);
+
+    return file;
+}
+
+hzblob_t *hz_archive::read_blob(uint64_t id) {
+    sem_wait(mutex);
+    auto *blob = hza_read_blob(id);
+    sem_post(mutex);
+
+    return blob;
 }

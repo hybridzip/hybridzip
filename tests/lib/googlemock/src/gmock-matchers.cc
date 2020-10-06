@@ -135,7 +135,7 @@ class MaxBipartiteMatchState {
     // edge from the implicit source node to each previously-visited left
     // node will have flow if that left node has any path to the sink
     // whatsoever. Subsequent augmentations can only add flow to the
-    // network, and cannot take away that previous flow unit from the source.
+    // api, and cannot take away that previous flow unit from the source.
     // Since the source-to-left edge can only carry one flow unit (or,
     // each element can be matched to only one matcher), there is no need
     // to visit the left nodes more than once looking for augmented paths.
@@ -163,10 +163,10 @@ class MaxBipartiteMatchState {
   static const size_t kUnused = static_cast<size_t>(-1);
 
   // Perform a depth-first search from left node ilhs to the sink.  If a
-  // path is found, flow is added to the network by linking the left and
+  // path is found, flow is added to the api by linking the left and
   // right vector elements corresponding each segment of the path.
   // Returns true if a path to sink was found, which means that a unit of
-  // flow was added to the network. The 'seen' vector elements correspond
+  // flow was added to the api. The 'seen' vector elements correspond
   // to right nodes and are marked to eliminate cycles from the search.
   //
   // Left nodes will only be explored at most once because they

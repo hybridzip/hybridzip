@@ -32,7 +32,7 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     header.raw = rmalloc(uint8_t, 32);
     auto h_stream = new bitio::stream(header.raw, 32);
 
-    bin_t bwt_index_bin = elias_gamma(bwt_index);
+    bin_t bwt_index_bin = hz_elias_gamma(bwt_index);
     h_stream->write(bwt_index_bin.obj, bwt_index_bin.n);
     h_stream->flush();
 
@@ -96,7 +96,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     // Parse blob_header using bitio
     auto h_stream = new bitio::stream(blob->header.raw, blob->header.length);
 
-    uint64_t bwt_index = elias_gamma_inv([h_stream](uint64_t n) {
+    uint64_t bwt_index = hz_elias_gamma_inv([h_stream](uint64_t n) {
         return h_stream->read(n);
     }).obj;
 

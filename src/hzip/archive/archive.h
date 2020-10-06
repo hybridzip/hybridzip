@@ -110,6 +110,8 @@ private:
     void hza_decrement_dep(uint64_t id);
 
 public:
+    hz_archive() = default;
+
     hz_archive(const std::string& archive_path);
 
     void load();
@@ -119,6 +121,16 @@ public:
     std::vector<std::string> list_mstates();
 
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
+
+    void create_file_entry(const std::string& file_path, hza_file file);
+
+    hza_file read_file_entry(const std::string& file_path);
+
+    bool check_file_exists(const std::string& file_path);
+
+    uint64_t write_blob(hzblob_t *blob);
+
+    hzblob_t *read_blob(uint64_t id);
 
     hzblob_set read_file(const std::string& file_path);
 

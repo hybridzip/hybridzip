@@ -8,9 +8,9 @@
 #include <hzip/utils/common.h>
 
 struct hz_mstate: public rainman::context {
-    uint8_t *data;
-    uint64_t length;
-    hzcodec::algorithms::ALGORITHM alg;
+    uint8_t *data{};
+    uint64_t length{};
+    hzcodec::algorithms::ALGORITHM alg{};
 
     hz_mstate() {
         data = nullptr;
@@ -20,6 +20,10 @@ struct hz_mstate: public rainman::context {
 
     [[nodiscard]] bool is_empty() const {
         return data == nullptr;
+    }
+
+    void destroy() {
+        rfree(data);
     }
 };
 
@@ -58,6 +62,7 @@ struct hzblob_t: public rainman::context {
         rfree(data);
         rfree(o_data);
         rfree(header.raw);
+        rfree(mstate->data);
     }
 };
 

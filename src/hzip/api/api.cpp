@@ -25,7 +25,9 @@ bool hz_api_instance::handshake() {
     uint64_t token = hz_rand64();
     uint64_t xtoken = hz_enc_token(passwd, token);
 
-    HZ_SEND(&xtoken, sizeof(token));
+    LOG_F(INFO, "hzip.api: Generated handshake token: %lu", xtoken);
+
+    HZ_SEND(&xtoken, sizeof(xtoken));
     HZ_RECV(&xtoken, sizeof(xtoken));
 
     if (token == xtoken) {
@@ -40,17 +42,18 @@ bool hz_api_instance::handshake() {
 }
 
 void hz_api_instance::end() const {
-    sem_post(mutex);
     close(sock);
-
     LOG_F(INFO, "hzip.api: Closed connection from %s:%d", ip_addr, port);
-
     rfree(ip_addr);
+    sem_post(mutex);
 }
 
 void hz_api_instance::start() {
+    sem_wait(mutex);
+
     std::thread([this]() {
-        sem_wait(mutex);
+        LOG_F(INFO, "hzip.api: Instance created for %s:%d", ip_addr, port);
+
         try {
             if (handshake()) {
                 end();
@@ -113,7 +116,7 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     memset(server_addr.sin_zero, '\0', sizeof(server_addr.sin_zero));
 
     if (bind(server_sock, (sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
-        throw ApiErrors::InitializationError(std::string("Failed to bind to socket addr: ") + std::string(addr));
+        throw ApiErrors::InitializationError(std::string("Failed to bind to socket at: ") + std::string(addr));
     }
 
     if (listen(server_sock, max_instances) != 0) {

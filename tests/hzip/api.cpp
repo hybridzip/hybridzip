@@ -4,33 +4,19 @@
 #include <hzip/api/api.h>
 #include <hzip/api/handlers/socket_class.h>
 #include <hzip/api/api_enums.h>
+#include <hzip/errors/api.h>
 
 using namespace hzapi;
 
 class ApiTestEnvironment : public testing::Environment {
 public:
-    // Assume there's only going to be a single instance of this class, so we can just
-    // hold the timestamp as a const static local variable and expose it through a
-    // static member function
-
-
-    static bool launchApi() {
+    static void launchApi() {
         static bool hasApiLaunched = false;
-        bool z = hasApiLaunched;
-        hasApiLaunched = true;
 
-        return z;
-    }
-
-    // Initialise the timestamp in the environment setup.
-    void SetUp() override { }
-};
-
-class ApiTest : public testing::Test {
-protected:
-    void SetUp() override {
-        if (ApiTestEnvironment::launchApi()) {
+        if (hasApiLaunched) {
             return;
+        } else {
+            hasApiLaunched = true;
         }
 
         std::thread([]() {
@@ -43,16 +29,45 @@ protected:
             api.limit(1)
                     ->process(1)
                     ->protect("hybridzip")
-                    ->timeout(timeval{.tv_sec=120, .tv_usec=0})
+                    ->timeout(timeval{.tv_sec=5, .tv_usec=0})
                     ->start("127.0.0.1", 1729);
         }).detach();
 
         usleep(100000);
     }
 
+    void SetUp() override { }
+};
+
+class ApiTest : public testing::Test {
+protected:
+    void SetUp() override {
+        ApiTestEnvironment::launchApi();
+    }
+
+    static void tsend(int sock, const void *buf, size_t n) {
+        if (send(sock, buf, n, 0) < n) {
+            throw ApiErrors::ConnectionError("Insufficient data sent");
+        }
+
+        if (errno != 0) {
+            throw ApiErrors::ConnectionError("Send operation failed");
+        }
+    }
+
+    static void trecv(int sock, void *buf, size_t n) {
+        if (recv(sock, buf, n, 0) < n) {
+            throw ApiErrors::ConnectionError("Insufficient data received");
+        }
+
+        if (errno != 0) {
+            throw ApiErrors::ConnectionError("Receive operation failed");
+        }
+    }
+
     static void handshake(int sock) {
         uint64_t token;
-        recv(sock, &token, sizeof(token), 0);
+        trecv(sock, &token, sizeof(token));
         std::string pass = "hybridzip";
 
         int n = pass.length() - 1;
@@ -63,7 +78,19 @@ protected:
             n--;
         }
 
-        send(sock, &token, sizeof(token), 0);
+        tsend(sock, &token, sizeof(token));
+
+        uint8_t word;
+
+        trecv(sock, &word, sizeof(word));
+
+        ASSERT_EQ(word, COMMON_CTL_SUCCESS);
+
+        uint64_t len;
+        trecv(sock, &len, sizeof(len));
+
+        char *msg = new char[len];
+        trecv(sock, msg, len);
     }
 
     static int get_connection() {
@@ -81,14 +108,8 @@ protected:
             EXPECT_TRUE(false);
         }
 
+        printf("connected socket: %d\n", sock);
         handshake(sock);
-
-        uint8_t word;
-        recv(sock, &word, sizeof(word), 0);
-
-        if (word != COMMON_CTL_SUCCESS) {
-            throw std::exception();
-        }
 
         return sock;
     }
@@ -100,32 +121,11 @@ protected:
 };
 
 TEST_F(ApiTest, hzip_api_test_handshake) {
-    int sock = socket(PF_INET, SOCK_STREAM, 0);
-    sockaddr_in server_addr{};
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(1729);
-
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    memset(server_addr.sin_zero, 0, sizeof(server_addr.sin_zero));
-
-    socklen_t addr_size = sizeof(server_addr);
-    if (connect(sock, (sockaddr *) &server_addr, addr_size) < 0) {
-        EXPECT_TRUE(false);
-    }
-
-    handshake(sock);
-
-    uint8_t word;
-
-    recv(sock, &word, sizeof(word), 0);
-    ASSERT_EQ(word, COMMON_CTL_SUCCESS);
-
+    int sock = get_connection();
     end(sock);
 }
 
 TEST_F(ApiTest, hzip_api_test_stream_1) {
     int sock = get_connection();
-
     end(sock);
 }

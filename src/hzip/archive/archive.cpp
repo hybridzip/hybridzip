@@ -16,17 +16,28 @@ hz_archive::hz_archive(const std::string &archive_path) {
         fsutils::create_empty_file(path);
     }
 
-    FILE *fp = fopen(path.c_str(), "rb+");
+    FILE *fp;
+    if ((fp = fopen(path.c_str(), "rb+")) == 0) {
+        throw ArchiveErrors::InvalidOperationException(std::string("fopen() failed with errno=") +
+        std::to_string(errno));
+    }
+
     stream = new bitio::stream(fp);
 
-    auto sha2_path = hz_sha512(path);
+    auto sha512_path = "/" + hz_sha512(path);
 
-    const char *sname = sha2_path.c_str();
+    const char *sname = sha512_path.c_str();
 
     // Lock archive.
     LOG_F(INFO, "hzip.archive: Requesting access to archive (%s)", path.c_str());
 
-    archive_mutex = sem_open(sname, O_CREAT, 0777, 1);
+
+    if ((archive_mutex = sem_open(sname, O_CREAT, 0777, 1)) == SEM_FAILED) {
+        throw ArchiveErrors::InvalidOperationException("sem_open() failed with errno=" + std::to_string(errno));
+    }
+
+    errno = 0;
+
     sem_wait(archive_mutex);
 
     LOG_F(INFO, "hzip.archive: Access granted to archive (%s)", path.c_str());

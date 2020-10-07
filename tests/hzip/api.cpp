@@ -29,7 +29,7 @@ public:
             api.limit(1)
                     ->process(1)
                     ->protect("hybridzip")
-                    ->timeout(timeval{.tv_sec=5, .tv_usec=0})
+                    ->timeout(timeval{.tv_sec=360, .tv_usec=0})
                     ->start("127.0.0.1", 1729);
         }).detach();
 
@@ -126,5 +126,48 @@ TEST_F(ApiTest, hzip_api_test_handshake) {
 
 TEST_F(ApiTest, hzip_api_test_stream_1) {
     int sock = get_connection();
+
+    uint8_t word = API_CTL_STREAM;
+    tsend(sock, &word, sizeof(word));
+
+    word = STREAM_CTL_ENCODE;
+    tsend(sock, &word, sizeof(word));
+
+    word = ENCODE_CTL_ARCHIVE;
+    tsend(sock, &word, sizeof(word));
+
+    std::string archive_path = "test.hz";
+    uint16_t len = archive_path.length();
+
+    tsend(sock, &len, sizeof(len));
+    tsend(sock, archive_path.c_str(), len);
+
+    word = ENCODE_CTL_DEST;
+    tsend(sock, &word, sizeof(word));
+
+    std::string dest_path = "/data.txt";
+    len = dest_path.length();
+
+    tsend(sock, &len, sizeof(len));
+    tsend(sock, dest_path.c_str(), len);
+
+    word = ENCODE_CTL_ALGORITHM;
+    tsend(sock, &word, sizeof(word));
+
+    uint8_t algorithm = hzcodec::algorithms::ALGORITHM::VICTINI;
+    tsend(sock, &algorithm, sizeof(algorithm));
+
+    word = ENCODE_CTL_STREAM;
+    tsend(sock, &word, sizeof(word));
+
+    std::string text = "This is some sample data to compress.";
+
+    uint64_t data_len = text.length();
+    tsend(sock, &data_len, sizeof(data_len));
+    tsend(sock, text.c_str(), data_len);
+
+    trecv(sock, &word, sizeof(word));
+    ASSERT_EQ(word, COMMON_CTL_SUCCESS);
+
     end(sock);
 }

@@ -103,6 +103,7 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     sem_init(mutex, 0, max_instances);
 
     archive_provider = rnew(hzprovider::archive);
+    archive_provider->init(rmemmgr);
 
     sockaddr_in server_addr{};
     sockaddr_in client_addr{};

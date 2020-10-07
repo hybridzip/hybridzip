@@ -79,8 +79,10 @@ void hz_streamer::encode() {
 
                     job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
                     job->codec->archive = archive;
-                    job->codec->mstate_addr = mstate_addr;
                     job->codec->reuse_mstate = mstate_addr != nullptr;
+                    if (mstate_addr != nullptr) {
+                        job->codec->mstate_addr = mstate_addr;
+                    }
                     job->codec->blob = blob;
 
                     if (archive != nullptr) {
@@ -383,7 +385,9 @@ void hz_streamer::decode() {
                 job->codec = rnew(hz_codec_job);
                 job->stub = rnew(hz_job_stub);
 
-                job->codec->mstate_addr = mstate_addr;
+                if (mstate_addr != nullptr) {
+                    job->codec->mstate_addr = mstate_addr;
+                }
                 job->codec->reuse_mstate = mstate_addr != nullptr;
                 job->codec->archive = archive;
 

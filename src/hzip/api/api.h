@@ -54,6 +54,8 @@ namespace hzapi {
 
         hz_api *protect(const std::string &_passwd);
 
+        void shutdown();
+
         [[noreturn]] void start(const char *addr, uint16_t port);
     };
 }

@@ -163,3 +163,11 @@ hz_api *hz_api::timeout(timeval _time_out) {
     time_out = _time_out;
     return this;
 }
+
+void hz_api::shutdown() {
+    archive_provider->close();
+    if (::shutdown(server_sock, SHUT_RDWR) < 0) {
+        LOG_F(WARNING, "hzip.api: Socket shutdown failed with error=%s", strerror(errno));
+    }
+    close(server_sock);
+}

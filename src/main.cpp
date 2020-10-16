@@ -1,9 +1,10 @@
-#include <iostream>
+#include <signal.h>
 #include <loguru/loguru.hpp>
-#include <rainman/rainman.h>
 #include <dotenv.h>
-#include <terminal.h>
+#include <rainman/rainman.h>
 #include <hzip/api/api.h>
+
+std::function<void()> _hzapi_graceful_shutdown;
 
 void setup_logger() {
 #ifndef DEBUG
@@ -35,6 +36,19 @@ void check_env(cpp_dotenv::dotenv &dotenv) {
     }
 }
 
+void set_signal_handlers() {
+    auto signal_handler = [](int signum) {
+        LOG_F(ERROR, "hzip: Signal captured %d", signum);
+        _hzapi_graceful_shutdown();
+        exit(signum);
+    };
+
+    signal(SIGINT, signal_handler);
+    signal(SIGSEGV, signal_handler);
+    signal(SIGTERM, signal_handler);
+    signal(SIGABRT, signal_handler);
+}
+
 int main(int argc, const char **argv) {
     setup_logger();
     set_unhandled_exception_handler();
@@ -46,10 +60,18 @@ int main(int argc, const char **argv) {
 
     check_env(dotenv);
 
-    hzapi::hz_api api;
-    rinitfrom(mgr, api);
+    auto api = new hzapi::hz_api;
+    rinitptrfrom(mgr, api);
 
-    api.limit(std::stoi(dotenv["HZIP_API_THREADS"]))
+    _hzapi_graceful_shutdown = [api]() {
+        LOG_F(WARNING, "Gracefully shutting down.");
+        api->shutdown();
+        LOG_F(WARNING, "Graceful shutdown was successful.");
+    };
+
+    set_signal_handlers();
+
+    api->limit(std::stoi(dotenv["HZIP_API_THREADS"]))
             ->process(std::stoi(dotenv["HZIP_PROCESSOR_THREADS"]))
             ->protect(dotenv["HZIP_API_KEY"])
             ->timeout(timeval{.tv_sec=std::stoi(dotenv["HZIP_API_TIMEOUT"])})

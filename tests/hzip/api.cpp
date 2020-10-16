@@ -42,7 +42,7 @@ public:
 class ApiTest : public testing::Test {
 protected:
     void SetUp() override {
-        ApiTestEnvironment::launchApi();
+        //ApiTestEnvironment::launchApi();
     }
 
     static void tsend(int sock, const void *buf, size_t n) {

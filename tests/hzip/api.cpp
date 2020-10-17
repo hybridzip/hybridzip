@@ -117,6 +117,22 @@ protected:
         uint8_t word = API_CTL_CLOSE;
         send(sock, &word, sizeof(word), 0);
     }
+
+    static uint8_t get_next_nse_word(int sock) {
+        while (true) {
+            uint8_t word;
+            trecv(sock, &word, sizeof(word));
+
+            if (word != COMMON_CTL_ERROR && word != COMMON_CTL_SUCCESS) {
+                return word;
+            }
+
+            uint64_t l;
+            trecv(sock, &l, sizeof(l));
+            char *msg = new char[l];
+            trecv(sock, msg, l);
+        }
+    }
 };
 
 TEST_F(ApiTest, hzip_api_test_handshake) {
@@ -167,7 +183,46 @@ TEST_F(ApiTest, hzip_api_test_stream_1) {
     tsend(sock, text.c_str(), data_len);
 
     trecv(sock, &word, sizeof(word));
-    ASSERT_EQ(word, COMMON_CTL_SUCCESS);
+    ASSERT_TRUE(word == COMMON_CTL_SUCCESS || COMMON_CTL_ERROR);
 
+    uint64_t l;
+    trecv(sock, &l, sizeof(l));
+    char *msg = new char[l];
+    trecv(sock, msg, l);
+
+    // Decode
+    word = API_CTL_STREAM;
+    tsend(sock, &word, sizeof(word));
+
+    word = STREAM_CTL_DECODE;
+    tsend(sock, &word, sizeof(word));
+
+    word = DECODE_CTL_ARCHIVE;
+    tsend(sock, &word, sizeof(word));
+
+    tsend(sock, &len, sizeof(len));
+    tsend(sock, archive_path.c_str(), len);
+
+    word = DECODE_CTL_SRC;
+    tsend(sock, &word, sizeof(word));
+    tsend(sock, &len, sizeof(len));
+    tsend(sock, dest_path.c_str(), len);
+
+    word = DECODE_CTL_PIGGYBACK;
+    tsend(sock, &word, sizeof(word));
+
+    word = DECODE_CTL_STREAM;
+    tsend(sock, &word, sizeof(word));
+
+    ASSERT_EQ(get_next_nse_word(sock), COMMON_CTL_PIGGYBACK);
+
+    uint64_t length;
+    trecv(sock, &length, sizeof(length));
+
+    char *ddata = new char[length + 1];
+    trecv(sock, ddata, length);
+    ddata[length] = 0;
+
+    ASSERT_EQ(std::string(ddata), text);
     end(sock);
 }

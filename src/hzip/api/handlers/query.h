@@ -1,0 +1,4 @@
+#ifndef HYBRIDZIP_API_QUERY_H
+#define HYBRIDZIP_API_QUERY_H
+
+#endif

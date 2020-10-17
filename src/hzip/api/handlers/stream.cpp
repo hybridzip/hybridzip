@@ -52,6 +52,12 @@ void hz_streamer::encode() {
                     throw ApiErrors::InvalidOperationError("No algorithm was provided");
                 }
 
+                if (archive != nullptr && dest != nullptr) {
+                    if (archive->check_file_exists(dest)) {
+                        throw ApiErrors::InvalidOperationError("File already exists");
+                    }
+                }
+
                 uint64_t max_blob_size = hzes_b_size((hzcodec::algorithms::ALGORITHM) algorithm);
 
                 HZ_RECV(&data_len, sizeof(data_len));
@@ -260,7 +266,6 @@ void hz_streamer::decode() {
                         uint8_t ctl = COMMON_CTL_PIGGYBACK;
 
                         HZ_SEND(&ctl, sizeof(ctl));
-
                         HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
                         HZ_SEND(dblob->o_data, dblob->o_size);
                     };

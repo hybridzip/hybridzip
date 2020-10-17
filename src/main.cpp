@@ -66,7 +66,6 @@ int main(int argc, const char **argv) {
     _hzapi_graceful_shutdown = [api]() {
         LOG_F(WARNING, "Gracefully shutting down.");
         api->shutdown();
-        LOG_F(WARNING, "Graceful shutdown was successful.");
     };
 
     set_signal_handlers();

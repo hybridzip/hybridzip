@@ -10,7 +10,8 @@ namespace hzapi {
 
     enum API_CTL {
         API_CTL_STREAM = 0x0,
-        API_CTL_CLOSE = 0x1,
+        API_CTL_QUERY = 0x1,
+        API_CTL_CLOSE = 0xff,
     };
 
     enum STREAM_CTL {

@@ -23,7 +23,6 @@ namespace ApiErrors {
         std::string _msg;
     public:
         InvalidOperationError(const std::string &msg) {
-            LOG_F(ERROR, "hzip.api: %s", msg.c_str());
             _msg = msg;
         }
 

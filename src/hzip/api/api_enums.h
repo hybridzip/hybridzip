@@ -38,6 +38,13 @@ namespace hzapi {
         DECODE_CTL_MSTATE_STREAM = 0x6,
         DECODE_CTL_BLOB_STREAM = 0x7,
     };
+
+    enum QUERY_CTL {
+        QUERY_CTL_ARCHIVE = 0x0,
+        QUERY_CTL_CHECK_IF_FILE_EXISTS = 0x1,
+        QUERY_CTL_GET_ALL_FILES = 0x2,
+        QUERY_CTL_PIGGYBACK = 0x3,
+    };
 }
 
 #endif

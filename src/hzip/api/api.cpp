@@ -80,7 +80,7 @@ void hz_api_instance::start() {
                         return;
                     }
                     default: {
-                        error("Invalid command");
+                        throw ApiErrors::InvalidOperationError("Invalid command");
                     }
                 }
             }

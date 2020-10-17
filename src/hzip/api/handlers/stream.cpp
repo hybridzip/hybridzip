@@ -165,7 +165,9 @@ void hz_streamer::encode() {
 
                 HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
 
-                mstate_addr = rmalloc(char, mstate_addr_len);
+                mstate_addr = rmalloc(char, mstate_addr_len + 1);
+                mstate_addr[mstate_addr_len] = 0;
+
                 HZ_RECV(mstate_addr, mstate_addr_len);
                 break;
             }
@@ -175,7 +177,9 @@ void hz_streamer::encode() {
                 }
 
                 HZ_RECV(&archive_path_len, sizeof(archive_path_len));
-                archive_path = rmalloc(char, archive_path_len);
+                archive_path = rmalloc(char, archive_path_len + 1);
+                archive_path[archive_path_len] = 0;
+
                 HZ_RECV(archive_path, archive_path_len);
 
                 archive = archive_provider->provide(archive_path);
@@ -188,7 +192,9 @@ void hz_streamer::encode() {
 
                 HZ_RECV(&dest_len, sizeof(dest_len));
 
-                dest = rmalloc(char, dest_len);
+                dest = rmalloc(char, dest_len + 1);
+                dest[dest_len] = 0;
+
                 HZ_RECV(dest, dest_len);
 
                 hz_validate_path(dest);
@@ -302,7 +308,9 @@ void hz_streamer::decode() {
 
                 HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
 
-                mstate_addr = rmalloc(char, mstate_addr_len);
+                mstate_addr = rmalloc(char, mstate_addr_len + 1);
+                mstate_addr[mstate_addr_len] = 0;
+
                 HZ_RECV(mstate_addr, mstate_addr_len);
                 break;
             }
@@ -312,7 +320,9 @@ void hz_streamer::decode() {
                 }
 
                 HZ_RECV(&archive_path_len, sizeof(archive_path_len));
-                archive_path = rmalloc(char, archive_path_len);
+                archive_path = rmalloc(char, archive_path_len + 1);
+                archive_path[archive_path_len] = 0;
+
                 HZ_RECV(archive_path, archive_path_len);
 
                 archive = archive_provider->provide(archive_path);
@@ -324,7 +334,9 @@ void hz_streamer::decode() {
                 }
 
                 HZ_RECV(&src_len, sizeof(src_len));
-                src = rmalloc(char, src_len);
+                src = rmalloc(char, src_len + 1);
+                src[src_len] = 0;
+
                 HZ_RECV(src, src_len);
 
                 hz_validate_path(src);

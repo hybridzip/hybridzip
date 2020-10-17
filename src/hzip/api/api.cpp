@@ -6,6 +6,9 @@
 #include <hzip/errors/api.h>
 #include <hzip/utils/utils.h>
 #include <hzip/api/handlers/stream.h>
+#include <hzip/api/api_enums.h>
+
+using namespace hzapi;
 
 hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std::string &_passwd, sem_t *_mutex,
                                  char *_ip_addr, uint16_t _port, hzprovider::archive *_archive_provider) {
@@ -22,56 +25,69 @@ bool hz_api_instance::handshake() {
     uint64_t token = hz_rand64();
     uint64_t xtoken = hz_enc_token(passwd, token);
 
-    HZ_SEND(&xtoken, sizeof(token));
+    HZAPI_LOG(INFO, "Generated handshake token");
+
+    HZ_SEND(&xtoken, sizeof(xtoken));
     HZ_RECV(&xtoken, sizeof(xtoken));
 
     if (token == xtoken) {
-        LOG_F(INFO, "hzip.api: Handshake successful with %s:%d", ip_addr, port);
-        success("Handshake successful.");
+        HZAPI_LOG(INFO, "Handshake successful");
+        success("Handshake successful");
         return false;
     } else {
-        LOG_F(INFO, "hzip.api: Handshake failed with %s:%d", ip_addr, port);
-        error("Handshake failed.");
+        HZAPI_LOG(WARNING, "Handshake failed");
+        error("Handshake failed");
         return true;
     }
 }
 
 void hz_api_instance::end() const {
-    sem_post(mutex);
     close(sock);
-
-    LOG_F(INFO, "hzip.api: Closed connection from %s:%d", ip_addr, port);
-
+    HZAPI_LOG(INFO, "Closed connection");
     rfree(ip_addr);
+    sem_post(mutex);
 }
 
 void hz_api_instance::start() {
+    sem_wait(mutex);
+
     std::thread([this]() {
-        sem_wait(mutex);
-        if (!handshake()) {
-            end();
-            return;
-        }
+        HZAPI_LOG(INFO, "Instance created successfully");
 
-        hz_streamer streamer(sock, ip_addr, port, processor, archive_provider);
+        try {
+            if (handshake()) {
+                end();
+                return;
+            }
 
-        while (true) {
-            uint8_t ctl_word;
-            HZ_RECV(&ctl_word, sizeof(ctl_word));
+            auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
 
-            switch ((API_CTL) ctl_word) {
-                case API_CTL_STREAM: {
-                    streamer.start();
-                    break;
-                }
-                case API_CTL_CLOSE: {
-                    end();
-                    return;
-                }
-                default: {
-                    error("Invalid command");
+            while (true) {
+                uint8_t ctl_word;
+                HZ_RECV(&ctl_word, sizeof(ctl_word));
+
+                switch ((API_CTL) ctl_word) {
+                    case API_CTL_STREAM: {
+                        streamer.start();
+                        break;
+                    }
+                    case API_CTL_QUERY: {
+
+                        break;
+                    }
+                    case API_CTL_CLOSE: {
+                        end();
+                        return;
+                    }
+                    default: {
+                        throw ApiErrors::InvalidOperationError("Invalid command");
+                    }
                 }
             }
+        } catch (std::exception &e) {
+            HZAPI_LOG(ERROR, e.what());
+            error(e.what());
+            end();
         }
 
     }).detach();
@@ -92,12 +108,13 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     sem_init(mutex, 0, max_instances);
 
     archive_provider = rnew(hzprovider::archive);
+    archive_provider->init(rmemmgr);
 
     sockaddr_in server_addr{};
     sockaddr_in client_addr{};
     socklen_t sock_addr_size{};
 
-    int server_sock = socket(PF_INET, SOCK_STREAM, 0);
+    server_sock = socket(PF_INET, SOCK_STREAM, 0);
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = inet_addr(addr);
@@ -105,7 +122,7 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     memset(server_addr.sin_zero, '\0', sizeof(server_addr.sin_zero));
 
     if (bind(server_sock, (sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
-        throw ApiErrors::InitializationError(std::string("Failed to bind to socket addr: ") + std::string(addr));
+        throw ApiErrors::InitializationError(std::string("Failed to bind to socket at: ") + std::string(addr));
     }
 
     if (listen(server_sock, max_instances) != 0) {
@@ -128,7 +145,7 @@ hz_api *hz_api::process(uint64_t _n_threads) {
 
         inet_ntop(AF_INET, &client_addr.sin_addr, ip_addr, INET_ADDRSTRLEN);
 
-        LOG_F(INFO, "hzip.api: Accepted connection from %s:%d", ip_addr,
+        LOG_F(INFO, "hzip.api: [%s:%d] Accepted connection", ip_addr,
               (int) ntohs(client_addr.sin_port));
 
         hz_api_instance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port),
@@ -150,4 +167,12 @@ hz_api *hz_api::protect(const std::string &_passwd) {
 hz_api *hz_api::timeout(timeval _time_out) {
     time_out = _time_out;
     return this;
+}
+
+void hz_api::shutdown() {
+    archive_provider->close();
+    if (::shutdown(server_sock, SHUT_RDWR) < 0) {
+        LOG_F(WARNING, "hzip.api: Socket shutdown failed with error=%s", strerror(errno));
+    }
+    close(server_sock);
 }

@@ -51,12 +51,12 @@ namespace ArchiveErrors {
         std::string msg;
 
         InvalidOperationException(const std::string &msg) {
-            LOG_F(ERROR, "hzip.archive: Invalid operation (%s)", msg.c_str());
+            LOG_F(ERROR, "hzip.archive: %s", msg.c_str());
             this->msg = msg;
         }
 
         [[nodiscard]] const char *what() const noexcept override {
-            return "hzip.mstate: Invalid operation";
+            return "hzip.archive: Invalid operation";
         }
     };
 }

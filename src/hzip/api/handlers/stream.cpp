@@ -1,7 +1,10 @@
 #include "stream.h"
 #include <hzip/api/providers/archive_provider.h>
 #include <hzip/utils/validation.h>
+#include <hzip/api/api_enums.h>
 #include <hzip/errors/api.h>
+
+using namespace hzapi;
 
 #define HZ_MIN(a, b) (a) < (b) ? (a) : (b)
 
@@ -49,6 +52,12 @@ void hz_streamer::encode() {
                     throw ApiErrors::InvalidOperationError("No algorithm was provided");
                 }
 
+                if (archive != nullptr && dest != nullptr) {
+                    if (archive->check_file_exists(dest)) {
+                        throw ApiErrors::InvalidOperationError("File already exists");
+                    }
+                }
+
                 uint64_t max_blob_size = hzes_b_size((hzcodec::algorithms::ALGORITHM) algorithm);
 
                 HZ_RECV(&data_len, sizeof(data_len));
@@ -76,8 +85,10 @@ void hz_streamer::encode() {
 
                     job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
                     job->codec->archive = archive;
-                    job->codec->mstate_addr = mstate_addr;
                     job->codec->reuse_mstate = mstate_addr != nullptr;
+                    if (mstate_addr != nullptr) {
+                        job->codec->mstate_addr = mstate_addr;
+                    }
                     job->codec->blob = blob;
 
                     if (archive != nullptr) {
@@ -154,7 +165,9 @@ void hz_streamer::encode() {
 
                 HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
 
-                mstate_addr = rmalloc(char, mstate_addr_len);
+                mstate_addr = rmalloc(char, mstate_addr_len + 1);
+                mstate_addr[mstate_addr_len] = 0;
+
                 HZ_RECV(mstate_addr, mstate_addr_len);
                 break;
             }
@@ -164,7 +177,9 @@ void hz_streamer::encode() {
                 }
 
                 HZ_RECV(&archive_path_len, sizeof(archive_path_len));
-                archive_path = rmalloc(char, archive_path_len);
+                archive_path = rmalloc(char, archive_path_len + 1);
+                archive_path[archive_path_len] = 0;
+
                 HZ_RECV(archive_path, archive_path_len);
 
                 archive = archive_provider->provide(archive_path);
@@ -177,7 +192,9 @@ void hz_streamer::encode() {
 
                 HZ_RECV(&dest_len, sizeof(dest_len));
 
-                dest = rmalloc(char, dest_len);
+                dest = rmalloc(char, dest_len + 1);
+                dest[dest_len] = 0;
+
                 HZ_RECV(dest, dest_len);
 
                 hz_validate_path(dest);
@@ -255,7 +272,6 @@ void hz_streamer::decode() {
                         uint8_t ctl = COMMON_CTL_PIGGYBACK;
 
                         HZ_SEND(&ctl, sizeof(ctl));
-
                         HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
                         HZ_SEND(dblob->o_data, dblob->o_size);
                     };
@@ -292,7 +308,9 @@ void hz_streamer::decode() {
 
                 HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
 
-                mstate_addr = rmalloc(char, mstate_addr_len);
+                mstate_addr = rmalloc(char, mstate_addr_len + 1);
+                mstate_addr[mstate_addr_len] = 0;
+
                 HZ_RECV(mstate_addr, mstate_addr_len);
                 break;
             }
@@ -302,7 +320,9 @@ void hz_streamer::decode() {
                 }
 
                 HZ_RECV(&archive_path_len, sizeof(archive_path_len));
-                archive_path = rmalloc(char, archive_path_len);
+                archive_path = rmalloc(char, archive_path_len + 1);
+                archive_path[archive_path_len] = 0;
+
                 HZ_RECV(archive_path, archive_path_len);
 
                 archive = archive_provider->provide(archive_path);
@@ -314,7 +334,9 @@ void hz_streamer::decode() {
                 }
 
                 HZ_RECV(&src_len, sizeof(src_len));
-                src = rmalloc(char, src_len);
+                src = rmalloc(char, src_len + 1);
+                src[src_len] = 0;
+
                 HZ_RECV(src, src_len);
 
                 hz_validate_path(src);
@@ -380,7 +402,9 @@ void hz_streamer::decode() {
                 job->codec = rnew(hz_codec_job);
                 job->stub = rnew(hz_job_stub);
 
-                job->codec->mstate_addr = mstate_addr;
+                if (mstate_addr != nullptr) {
+                    job->codec->mstate_addr = mstate_addr;
+                }
                 job->codec->reuse_mstate = mstate_addr != nullptr;
                 job->codec->archive = archive;
 

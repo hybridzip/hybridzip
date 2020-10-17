@@ -2,6 +2,10 @@
 #include <hzip/utils/utils.h>
 
 hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
+    if (blob->mstate == nullptr) {
+        blob->mstate = rnew(hz_mstate);
+    }
+
     auto mstate = blob->mstate;
     auto header = blob->header;
     auto length = blob->o_size;

@@ -7,6 +7,7 @@
 #include <hzip/utils/utils.h>
 #include <hzip/api/handlers/stream.h>
 #include <hzip/api/api_enums.h>
+#include <hzip/api/handlers/query.h>
 
 using namespace hzapi;
 
@@ -43,7 +44,7 @@ bool hz_api_instance::handshake() {
 
 void hz_api_instance::end() const {
     close(sock);
-    HZAPI_LOG(INFO, "Closed connection");
+    HZAPI_LOG(INFO, "Closed session");
     rfree(ip_addr);
     sem_post(mutex);
 }
@@ -52,7 +53,7 @@ void hz_api_instance::start() {
     sem_wait(mutex);
 
     std::thread([this]() {
-        HZAPI_LOG(INFO, "Instance created successfully");
+        HZAPI_LOG(INFO, "Session created successfully");
 
         try {
             if (handshake()) {
@@ -61,6 +62,7 @@ void hz_api_instance::start() {
             }
 
             auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
+            auto query = rmod(hz_query, sock, ip_addr, port, archive_provider);
 
             while (true) {
                 uint8_t ctl_word;
@@ -72,12 +74,16 @@ void hz_api_instance::start() {
                         break;
                     }
                     case API_CTL_QUERY: {
-
+                        query.start();
                         break;
                     }
                     case API_CTL_CLOSE: {
                         end();
                         return;
+                    }
+                    case API_CTL_HEALTH_CHECK: {
+                        success("API is active and running");
+                        break;
                     }
                     default: {
                         throw ApiErrors::InvalidOperationError("Invalid command");

@@ -4,7 +4,7 @@
 namespace hzcodec::algorithms {
     enum ALGORITHM {
         UNDEFINED = 0x0,
-        VICTINI = 0x10
+        VICTINI = 0x1
     };
 }
 

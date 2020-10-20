@@ -142,7 +142,8 @@ void hz_streamer::encode() {
                 sem_wait(&mutex);
 
                 if (archive != nullptr && dest != nullptr) {
-                    auto *blob_id_arr = rmalloc(uint64_t, blob_ids.size());
+                    // Allocate outside the scope of the rainman module for persistence.
+                    auto *blob_id_arr = rmemmgr->get_parent()->r_malloc<uint64_t>(blob_ids.size());
                     for (int i = 0; i < blob_ids.size(); i++) {
                         blob_id_arr[i] = blob_ids[i];
                     }

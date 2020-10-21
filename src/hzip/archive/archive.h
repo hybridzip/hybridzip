@@ -11,7 +11,7 @@
 #include <hzip/utils/common.h>
 
 
-#define HZ_ARCHIVE_VERSION 0x001000
+#define HZ_ARCHIVE_VERSION 0x000100
 
 enum hza_marker {
     EMPTY = 0x0,

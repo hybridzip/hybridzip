@@ -45,6 +45,8 @@ namespace hzapi {
         QUERY_CTL_CHECK_IF_FILE_EXISTS = 0x1,
         QUERY_CTL_GET_ALL_FILES = 0x2,
         QUERY_CTL_PIGGYBACK = 0x3,
+        QUERY_CTL_DELETE_FILE = 0x4,
+        QUERY_CTL_DELETE_MSTATE = 0x5,
     };
 }
 

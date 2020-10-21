@@ -18,6 +18,8 @@ void hz_query::start() {
     uint16_t archive_path_len = 0;
     char *dest = nullptr;
     uint16_t dest_len = 0;
+    char *mstate_addr = nullptr;
+    uint16_t mstate_addr_len = 0;
     bool piggy_back = false;
 
     while (true) {
@@ -92,6 +94,38 @@ void hz_query::start() {
             case QUERY_CTL_PIGGYBACK: {
                 piggy_back = true;
                 break;
+            }
+            case QUERY_CTL_DELETE_FILE: {
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive not provided");
+                }
+
+                HZ_RECV(&dest_len, sizeof(dest_len));
+
+                dest = rmalloc(char, dest_len + 1);
+                dest[dest_len] = 0;
+
+                HZ_RECV(dest, dest_len);
+                hz_validate_path(dest);
+
+                archive->remove_file(dest);
+                return;
+            }
+            case QUERY_CTL_DELETE_MSTATE: {
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive not provided");
+                }
+
+                HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
+
+                mstate_addr = rmalloc(char, mstate_addr_len + 1);
+                mstate_addr[mstate_addr_len] = 0;
+
+                HZ_RECV(mstate_addr, mstate_addr_len);
+                hz_validate_path(mstate_addr);
+
+                archive->uninstall_mstate(mstate_addr);
+                return;
             }
             default: {
                 throw ApiErrors::InvalidOperationError("Invalid command");

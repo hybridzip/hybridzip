@@ -135,6 +135,8 @@ public:
 
     hzblob_set read_file(const std::string& file_path);
 
+    hz_mstate *read_mstate(std::string _path);
+
     void remove_file(const std::string& file_path);
 
     void install_mstate(const std::string &_path, hz_mstate *mstate);

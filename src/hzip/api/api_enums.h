@@ -18,6 +18,8 @@ namespace hzapi {
     enum STREAM_CTL {
         STREAM_CTL_ENCODE = 0x0,
         STREAM_CTL_DECODE = 0x1,
+        STREAM_CTL_WRITE_MSTATE = 0x2,
+        STREAM_CTL_READ_MSTATE = 0x3,
     };
 
     enum ENCODE_CTL {
@@ -38,6 +40,13 @@ namespace hzapi {
         DECODE_CTL_PIGGYBACK = 0x5,
         DECODE_CTL_MSTATE_STREAM = 0x6,
         DECODE_CTL_BLOB_STREAM = 0x7,
+    };
+
+    enum MSTATE_CTL {
+        MSTATE_CTL_ARCHIVE = 0x0,
+        MSTATE_CTL_ADDR = 0x1,
+        MSTATE_CTL_STREAM = 0x2,
+        MSTATE_CTL_PIGGYBACK = 0x3
     };
 
     enum QUERY_CTL {

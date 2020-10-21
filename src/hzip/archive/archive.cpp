@@ -875,3 +875,17 @@ hzblob_t *hz_archive::read_blob(uint64_t id) {
 
     return blob;
 }
+
+hz_mstate *hz_archive::read_mstate(std::string _path) {
+    sem_wait(mutex);
+    if (!metadata.mstate_aux_map.contains(_path)) {
+        sem_post(mutex);
+        throw ArchiveErrors::InvalidOperationException("Mstate not found");
+    }
+
+    auto id = metadata.mstate_aux_map[_path].data;
+    auto *mstate = hza_read_mstate(id);
+    sem_post(mutex);
+
+    return mstate;
+}

@@ -14,6 +14,8 @@ uint64_t hz_streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
             return 0xffffffffffffffff;
         case hzcodec::algorithms::VICTINI:
             return 0x400000;
+        default:
+            return 0xffffffffffffffff;
     }
 }
 

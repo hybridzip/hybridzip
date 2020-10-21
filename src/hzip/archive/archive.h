@@ -58,6 +58,7 @@ struct hza_metadata {
     uint64_t eof;
     std::unordered_map<std::string, hza_entry<hza_file>> file_map;
     std::unordered_map<std::string, hza_entry<uint64_t>> mstate_aux_map;
+    std::unordered_map<uint64_t, bool> mstate_inv_aux_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
     std::unordered_map<uint64_t, uint64_t> dep_counter;

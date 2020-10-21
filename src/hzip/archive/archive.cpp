@@ -579,6 +579,7 @@ void hz_archive::install_mstate(const std::string &_path, hz_mstate *mstate) {
 
     // Update metadata
     metadata.mstate_aux_map[_path] = hza_entry(id, sof);
+    metadata.mstate_inv_aux_map[id] = true;
 
     // Write block-info
     stream->write(hza_marker::METADATA, 0x8);
@@ -641,6 +642,10 @@ void hz_archive::hza_decrement_dep(uint64_t id) {
             metadata.dep_counter[id]--;
         } else {
             metadata.dep_counter.erase(id);
+
+            if (!metadata.mstate_inv_aux_map.contains(id)) {
+                hza_rm_mstate(id);
+            }
         }
     }
 }
@@ -747,6 +752,7 @@ void hz_archive::uninstall_mstate(const std::string &_path) {
     });
 
     metadata.mstate_aux_map.erase(_path);
+    metadata.mstate_inv_aux_map.erase(id);
 
     sem_post(mutex);
 }

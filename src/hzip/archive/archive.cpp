@@ -112,14 +112,12 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
     switch (entry_type) {
         case hza_metadata_entry_type::VERSION: {
             // Version ranges from 0.0.0 to ff.ff.ff
+            metadata.version = read(0x18);
 
-            char version[3];
+            if (metadata.version != HZ_ARCHIVE_VERSION) {
+                throw ArchiveErrors::InvalidOperationException("Archive version not supported");
+            }
 
-            version[0] = read(0x8);
-            version[1] = read(0x8);
-            version[2] = read(0x8);
-
-            metadata.version = version;
             break;
         }
         case hza_metadata_entry_type::FILEINFO: {

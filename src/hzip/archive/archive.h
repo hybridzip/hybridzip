@@ -54,7 +54,7 @@ struct hza_entry {
 };
 
 struct hza_metadata {
-    std::string version;
+    uint32_t version;
     uint64_t eof;
     std::unordered_map<std::string, hza_entry<hza_file>> file_map;
     std::unordered_map<std::string, hza_entry<uint64_t>> mstate_aux_map;

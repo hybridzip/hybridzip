@@ -30,7 +30,7 @@ namespace hzapi {
         // The client has to decrypt the token and send it back to the hzip api.
         void handshake();
 
-        void end() const;
+        void end();
     };
 
 // An API based on socket-communication.

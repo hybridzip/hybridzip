@@ -93,6 +93,9 @@ void hz_api_instance::start() {
         } catch (std::exception &e) {
             HZAPI_LOG(ERROR, e.what());
             error(e.what());
+            sleep(3);
+            end();
+            return;
         }
     }
 

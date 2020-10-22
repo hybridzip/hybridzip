@@ -32,6 +32,15 @@ void hz_socket_class::t_recv(void *buf, size_t n) {
     if (errno != 0) {
         throw ApiErrors::ConnectionError(std::string("Receive operation failed: ") + strerror(errno));
     }
+
+    uint8_t word = COMMON_CTL_SUCCESS;
+    if (send(sock, &word, sizeof(word), 0) < sizeof(word)) {
+        throw ApiErrors::ConnectionError("Insufficient data sent");
+    }
+
+    if (errno != 0) {
+        throw ApiErrors::ConnectionError(std::string("Send operation failed: ") + strerror(errno));
+    }
 }
 
 void hz_socket_class::error(const std::string &msg) {
@@ -40,7 +49,7 @@ void hz_socket_class::error(const std::string &msg) {
     uint8_t word = COMMON_CTL_ERROR;
     send(sock, &word, sizeof(word), 0);
 
-    uint64_t len = msg.length();
+    uint16_t len = msg.length();
 
     send(sock, &len, sizeof(len), 0);
     send(sock, msg.c_str(), len, 0);

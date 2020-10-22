@@ -7,8 +7,7 @@
 
 #define HZ_SEND(buf, n) t_send(buf, n)
 #define HZ_RECV(buf, n) t_recv(buf, n)
-#define HZAPI_LOG(verbosity, str) LOG_F(verbosity, "hzip.api: [%s:%d:%d] %s", ip_addr, sock, port, \
-                                        str)
+#define HZAPI_LOG(verbosity, str) LOG_F(verbosity, "hzip.api: [%s:%d] %s", ip_addr, port, str)
 
 
 namespace hzapi {

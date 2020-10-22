@@ -58,9 +58,6 @@ void hz_query::start() {
                 HZ_RECV(dest, dest_len);
                 hz_validate_path(dest);
 
-                uint8_t ctl_word = COMMON_CTL_PIGGYBACK;
-                HZ_SEND(&ctl_word, sizeof(ctl_word));
-
                 bool found = archive->check_file_exists(dest);
                 HZ_SEND(&found, sizeof(found));
 
@@ -74,9 +71,6 @@ void hz_query::start() {
                 if (archive == nullptr) {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
-
-                uint8_t ctl_word = COMMON_CTL_PIGGYBACK;
-                HZ_SEND(&ctl_word, sizeof(ctl_word));
 
                 auto files = archive->list_files();
 

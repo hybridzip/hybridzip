@@ -101,10 +101,6 @@ void hz_streamer::encode() {
 
                     if (piggy_back) {
                         job->codec->blob_callback = [this](hzblob_t *cblob) {
-                            uint8_t ctl = COMMON_CTL_PIGGYBACK;
-
-                            HZ_SEND(&ctl, sizeof(ctl));
-
                             HZ_SEND(&cblob->mstate->alg, sizeof(cblob->mstate->alg));
                             HZ_SEND(&cblob->mstate->length, sizeof(cblob->mstate->length));
                             HZ_SEND(cblob->mstate->data, cblob->mstate->length);
@@ -272,9 +268,6 @@ void hz_streamer::decode() {
                     job->codec->algorithm = src_blob->mstate->alg;
 
                     job->codec->blob_callback = [this](hzblob_t *dblob) {
-                        uint8_t ctl = COMMON_CTL_PIGGYBACK;
-
-                        HZ_SEND(&ctl, sizeof(ctl));
                         HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
                         HZ_SEND(dblob->o_data, dblob->o_size);
                     };
@@ -413,10 +406,6 @@ void hz_streamer::decode() {
 
 
                 job->codec->blob_callback = [this](hzblob_t *dblob) {
-                    uint8_t ctl = COMMON_CTL_PIGGYBACK;
-
-                    HZ_SEND(&ctl, sizeof(ctl));
-
                     HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
                     HZ_SEND(dblob->o_data, dblob->o_size);
                 };
@@ -615,9 +604,6 @@ void hz_streamer::read_mstate() {
 
                 auto *mstate = archive->read_mstate(mstate_addr);
 
-                uint8_t ctl = COMMON_CTL_PIGGYBACK;
-
-                HZ_SEND(&ctl, sizeof(ctl));
                 HZ_SEND(&mstate->alg, sizeof(mstate->alg));
                 HZ_SEND(&mstate->length, sizeof(mstate->length));
                 HZ_SEND(mstate->data, mstate->length);

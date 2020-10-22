@@ -465,7 +465,8 @@ void hz_archive::hza_rm_blob(uint64_t id) {
         // erase entry from blob map
         metadata.blob_map.erase(id);
     } else {
-        LOG_F(WARNING, "hzip.archive: blob(0x%lx) was not found", id);
+        sem_post(mutex);
+        throw ArchiveErrors::BlobNotFoundException(id);
     }
 
 }

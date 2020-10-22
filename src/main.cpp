@@ -38,15 +38,21 @@ void check_env(cpp_dotenv::dotenv &dotenv) {
 
 void set_signal_handlers() {
     auto signal_handler = [](int signum) {
-        LOG_F(ERROR, "hzip: Signal captured %d", signum);
+        LOG_F(ERROR, "hzip: Signal captured: %s", strsignal(signum));
         _hzapi_graceful_shutdown();
         exit(signum);
+    };
+
+    auto signal_ignore = [](int signum) {
+        LOG_F(ERROR, "hzip: Signal captured: %s", strsignal(signum));
+        LOG_F(WARNING, "hzip: Ignoring signal: %s", strsignal(signum));
     };
 
     signal(SIGINT, signal_handler);
     signal(SIGSEGV, signal_handler);
     signal(SIGTERM, signal_handler);
     signal(SIGABRT, signal_handler);
+    signal(SIGPIPE, signal_ignore);
 }
 
 int main(int argc, const char **argv) {

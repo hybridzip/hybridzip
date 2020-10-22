@@ -4,7 +4,6 @@
 namespace hzapi {
     enum COMMON_CTL {
         COMMON_CTL_SUCCESS = 0x0,
-        COMMON_CTL_PIGGYBACK = 0x1,
         COMMON_CTL_ERROR = 0xff,
     };
 

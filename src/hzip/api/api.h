@@ -28,7 +28,7 @@ namespace hzapi {
 
         // The hzip api sends an encrypted random token to the client.
         // The client has to decrypt the token and send it back to the hzip api.
-        bool handshake();
+        void handshake();
 
         void end() const;
     };

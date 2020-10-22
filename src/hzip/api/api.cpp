@@ -22,7 +22,7 @@ hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std:
     archive_provider = _archive_provider;
 }
 
-bool hz_api_instance::handshake() {
+void hz_api_instance::handshake() {
     uint64_t token = hz_rand64();
     uint64_t xtoken = hz_enc_token(passwd, token);
 
@@ -34,11 +34,8 @@ bool hz_api_instance::handshake() {
     if (token == xtoken) {
         HZAPI_LOG(INFO, "Handshake successful");
         success("Handshake successful");
-        return false;
     } else {
-        HZAPI_LOG(WARNING, "Handshake failed");
-        error("Handshake failed");
-        return true;
+        throw ApiErrors::InvalidOperationError("Handshake failed");
     }
 }
 
@@ -56,15 +53,18 @@ void hz_api_instance::start() {
         HZAPI_LOG(INFO, "Session created successfully");
 
         try {
-            if (handshake()) {
-                end();
-                return;
-            }
+            handshake();
+        } catch (std::exception &e) {
+            HZAPI_LOG(ERROR, e.what());
+            end();
+            return;
+        }
 
-            auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
-            auto query = rmod(hz_query, sock, ip_addr, port, archive_provider);
+        auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
+        auto query = rmod(hz_query, sock, ip_addr, port, archive_provider);
 
-            while (true) {
+        while (true) {
+            try {
                 uint8_t ctl_word;
                 HZ_RECV(&ctl_word, sizeof(ctl_word));
 
@@ -89,11 +89,16 @@ void hz_api_instance::start() {
                         throw ApiErrors::InvalidOperationError("Invalid command");
                     }
                 }
+            } catch (ApiErrors::ConnectionError &e) {
+                HZAPI_LOG(ERROR, e.what());
+                end();
+                return;
+            } catch (std::exception &e) {
+                HZAPI_LOG(ERROR, e.what());
+                error(e.what());
             }
-        } catch (std::exception &e) {
-            HZAPI_LOG(ERROR, e.what());
-            end();
         }
+
 
     }).detach();
 }
@@ -136,9 +141,13 @@ hz_api *hz_api::process(uint64_t _n_threads) {
 
     LOG_F(INFO, "hzip.api: Started listening at port: %d", port);
 
+    int count = 0;
+
     while (true) {
         sock_addr_size = sizeof(client_addr);
         int client_sock = accept(server_sock, (sockaddr *) &client_addr, &sock_addr_size);
+
+        LOG_F(INFO, "Instance-count: %d", ++count);
 
         if (setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (uint8_t *) &time_out, sizeof(time_out)) < 0) {
             LOG_F(ERROR, "hzip.api: setsockopt() failed");

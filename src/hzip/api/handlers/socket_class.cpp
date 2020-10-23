@@ -24,14 +24,9 @@ void hz_socket_class::t_send(const void *buf, size_t n) {
     }
 }
 
-void hz_socket_class::t_recv(void *buf, size_t n) {
-    uint8_t word = COMMON_CTL_SUCCESS;
-    if (send(sock, &word, sizeof(word), 0) < sizeof(word)) {
-        throw ApiErrors::ConnectionError("Insufficient data sent");
-    }
-
-    if (errno != 0) {
-        throw ApiErrors::ConnectionError(std::string("Send operation failed: ") + strerror(errno));
+void hz_socket_class::t_recv(void *buf, size_t n, bool sync) {
+    if (sync) {
+        t_recv_sync();
     }
 
     if (recv(sock, buf, n, 0) < n) {
@@ -40,6 +35,17 @@ void hz_socket_class::t_recv(void *buf, size_t n) {
 
     if (errno != 0) {
         throw ApiErrors::ConnectionError(std::string("Receive operation failed: ") + strerror(errno));
+    }
+}
+
+void hz_socket_class::t_recv_sync() const {
+    uint8_t word = COMMON_CTL_SUCCESS;
+    if (send(sock, &word, sizeof(word), 0) < sizeof(word)) {
+        throw ApiErrors::ConnectionError("Insufficient data sent");
+    }
+
+    if (errno != 0) {
+        throw ApiErrors::ConnectionError(std::string("Send operation failed: ") + strerror(errno));
     }
 }
 

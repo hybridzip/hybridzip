@@ -66,6 +66,9 @@ void hz_streamer::encode() {
 
                 std::vector<uint64_t> blob_ids;
 
+                // Start raw-streaming using manual sync.
+                HZ_RECV_SYNC;
+
                 while (data_len > 0) {
                     sem_wait(&mutex);
 
@@ -79,7 +82,8 @@ void hz_streamer::encode() {
                     blob->o_size = max_blob_size;
                     blob->o_data = rmalloc(uint8_t, max_blob_size);
 
-                    HZ_RECV(blob->o_data, max_blob_size);
+                    // Enable raw streaming in hzip-protocol
+                    t_recv(blob->o_data, max_blob_size, false);
 
                     // Construct hz_job struct for processing.
                     auto *job = rnew(hz_job);

@@ -249,10 +249,11 @@ void hz_streamer::decode() {
                     throw ApiErrors::InvalidOperationError("Source not provided");
                 }
 
+                sem_wait(&mutex);
+
                 auto file_entry = archive->read_file_entry(src);
 
                 for (uint64_t i = 0; i < file_entry.blob_count; i++) {
-                    sem_wait(&mutex);
                     auto *src_blob = archive->read_blob(file_entry.blob_ids[i]);
 
                     // Construct hz_job
@@ -289,7 +290,11 @@ void hz_streamer::decode() {
 
                     processor->cycle();
                     processor->run(job);
+
+                    sem_wait(&mutex);
                 }
+
+                sem_post(&mutex);
 
                 return;
             }

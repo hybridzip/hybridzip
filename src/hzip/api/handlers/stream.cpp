@@ -91,7 +91,7 @@ void hz_streamer::encode() {
 
                     job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
                     job->codec->archive = archive;
-                    job->codec->reuse_mstate = mstate_addr != nullptr;
+                    job->codec->use_mstate_addr = mstate_addr != nullptr;
                     if (mstate_addr != nullptr) {
                         job->codec->mstate_addr = mstate_addr;
                     }
@@ -257,6 +257,8 @@ void hz_streamer::decode() {
 
                 auto file_entry = archive->read_file_entry(src);
 
+                HZ_SEND(&file_entry.blob_count, sizeof(file_entry.blob_count));
+
                 for (uint64_t i = 0; i < file_entry.blob_count; i++) {
                     auto *src_blob = archive->read_blob(file_entry.blob_ids[i]);
 
@@ -269,7 +271,7 @@ void hz_streamer::decode() {
                     job->codec->archive = archive;
                     job->codec->job_type = hz_codec_job::JOBTYPE::DECODE;
                     job->codec->blob = src_blob;
-                    job->codec->reuse_mstate = false;
+                    job->codec->use_mstate_addr = false;
                     job->codec->algorithm = src_blob->mstate->alg;
 
                     job->codec->blob_callback = [this](hzblob_t *dblob) {
@@ -410,7 +412,7 @@ void hz_streamer::decode() {
                 if (mstate_addr != nullptr) {
                     job->codec->mstate_addr = mstate_addr;
                 }
-                job->codec->reuse_mstate = mstate_addr != nullptr;
+                job->codec->use_mstate_addr = mstate_addr != nullptr;
                 job->codec->archive = archive;
 
 

@@ -16,7 +16,7 @@ struct hz_codec_job {
     hz_archive *archive;
     hzcodec::algorithms::ALGORITHM algorithm;
     JOBTYPE job_type;
-    bool reuse_mstate;
+    bool use_mstate_addr;
     std::string mstate_addr;
     std::function<void(uint64_t)> blob_id_callback{};
     std::function<void(hzblob_t*)> blob_callback{};

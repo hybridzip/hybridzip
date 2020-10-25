@@ -350,3 +350,52 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
         }
     }
 }
+
+hz_mstate *hzcodec::victini::train(hzblob_t *blob) {
+    if (blob->mstate == nullptr) {
+        blob->mstate = rnew(hz_mstate);
+    }
+
+    auto mstate = blob->mstate;
+    auto header = blob->header;
+    auto length = blob->o_size;
+
+    auto *data = rmalloc(int16_t, length);
+
+    for (uint64_t i = 0; i < length; i++) {
+        data[i] = blob->o_data[i];
+    }
+
+    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, length, 0x100);
+    rinit(bwt);
+
+    auto bwt_index = bwt.transform();
+
+    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
+    mtf.transform();
+
+    auto *dict = rmalloc(uint64_t*, 256);
+    auto *cdict = rmalloc(uint64_t*, 256);
+
+    for (int i = 0; i < 256; i++) {
+        dict[i] = rmalloc(uint64_t, 256);
+        cdict[i] = rmalloc(uint64_t, 256);
+    }
+
+    // Write blob-header.
+    header.raw = rmalloc(uint8_t, 32);
+    auto h_stream = new bitio::stream(header.raw, 32);
+
+    bin_t bwt_index_bin = hz_elias_gamma(bwt_index);
+    h_stream->write(bwt_index_bin.obj, bwt_index_bin.n);
+    h_stream->flush();
+
+    header.length = h_stream->get_stream_size();
+
+    delete h_stream;
+
+    // Manage mstate
+    gen_model_from_mstate(mstate, dict, cdict, data, length);
+
+    return mstate;
+}

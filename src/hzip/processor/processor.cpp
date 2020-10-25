@@ -83,12 +83,18 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
 
 void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
     switch (job->job_type) {
-        case hz_codec_job::ENCODE:
+        case hz_codec_job::ENCODE: {
             hzp_encode(job);
             break;
-        case hz_codec_job::DECODE:
+        }
+        case hz_codec_job::DECODE: {
             hzp_decode(job);
             break;
+        }
+        case hz_codec_job::TRAIN: {
+            hzp_train(job);
+            break;
+        }
     }
 }
 

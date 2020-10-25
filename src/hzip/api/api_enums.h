@@ -28,6 +28,7 @@ namespace hzapi {
         ENCODE_CTL_DEST = 0x3,
         ENCODE_CTL_ALGORITHM = 0x4,
         ENCODE_CTL_PIGGYBACK = 0x5,
+        ENCODE_CTL_TRAIN = 0x6,
     };
 
     enum DECODE_CTL {

@@ -10,6 +10,7 @@ struct hz_codec_job {
     enum JOBTYPE {
         ENCODE = 0x0,
         DECODE = 0x1,
+        TRAIN = 0x2,
     };
 
     hzblob_t *blob;

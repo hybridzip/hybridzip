@@ -60,6 +60,10 @@ void hz_streamer::encode() {
                     }
                 }
 
+                if (!piggy_back && dest == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Null operations are not allowed");
+                }
+
                 uint64_t max_blob_size = hzes_b_size((hzcodec::algorithms::ALGORITHM) algorithm);
 
                 HZ_RECV(&data_len, sizeof(data_len));
@@ -210,6 +214,72 @@ void hz_streamer::encode() {
             case ENCODE_CTL_PIGGYBACK: {
                 piggy_back = true;
                 break;
+            }
+            case ENCODE_CTL_TRAIN: {
+                if (!algorithm) {
+                    throw ApiErrors::InvalidOperationError("No algorithm was provided");
+                }
+
+                if (mstate_addr == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Mstate address not found");
+                }
+
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive not found");
+                }
+
+                HZ_RECV(&data_len, sizeof(data_len));
+
+                std::vector<uint64_t> blob_ids;
+
+                // Start raw-streaming using manual sync.
+                HZ_RECV_SYNC;
+
+                sem_wait(&mutex);
+
+                // Avoid processor overload.
+                processor->cycle();
+
+                auto *blob = rxnew(hzblob_t);
+
+                blob->o_size = data_len;
+                blob->o_data = rmalloc(uint8_t, data_len);
+
+                // Enable raw streaming in hzip-protocol
+                t_recv(blob->o_data, data_len, false);
+
+                // Construct hz_job struct for processing.
+                auto *job = rnew(hz_job);
+                job->codec = rnew(hz_codec_job);
+
+                job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
+                job->codec->archive = archive;
+                job->codec->use_mstate_addr = mstate_addr != nullptr;
+                if (mstate_addr != nullptr) {
+                    job->codec->mstate_addr = mstate_addr;
+                }
+                job->codec->blob = blob;
+
+                job->codec->job_type = hz_codec_job::JOBTYPE::TRAIN;
+
+                job->stub = rnew(hz_job_stub);
+                job->stub->on_completed = [this, job]() {
+                    rfree(job->codec);
+                    rfree(job->stub);
+                    rfree(job);
+                    sem_post(&mutex);
+                };
+
+                job->stub->on_error = [this](const std::string &msg) {
+                    error(msg);
+                };
+
+                job->stub->on_success = [this](const std::string &msg) {
+                    success(msg);
+                };
+
+                // Dispatch hz_job to hz_processor.
+                processor->run(job);
             }
             default: {
                 error("Invalid command");

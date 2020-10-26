@@ -228,9 +228,13 @@ void hz_streamer::encode() {
                     throw ApiErrors::InvalidOperationError("Archive not found");
                 }
 
-                HZ_RECV(&data_len, sizeof(data_len));
+                if (archive->check_mstate_exists(mstate_addr)) {
+                    throw ApiErrors::InvalidOperationError("Incremental mstate training is not supported");
+                }
 
-                std::vector<uint64_t> blob_ids;
+                //todo: Support incremental mstate-training
+
+                HZ_RECV(&data_len, sizeof(data_len));
 
                 // Start raw-streaming using manual sync.
                 HZ_RECV_SYNC;

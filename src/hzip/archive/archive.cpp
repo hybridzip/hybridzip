@@ -890,3 +890,11 @@ hz_mstate *hz_archive::read_mstate(std::string _path) {
 
     return mstate;
 }
+
+bool hz_archive::check_mstate_exists(const std::string &_path) {
+    sem_wait(mutex);
+    bool exists = metadata.mstate_aux_map.contains(_path);
+    sem_post(mutex);
+
+    return exists;
+}

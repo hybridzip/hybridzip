@@ -153,6 +153,8 @@ public:
     // Inject mstate by tag-reference. This mstate can be reused by other blobs.
     void inject_mstate(const std::string &_path, hzblob_t *blob);
 
+    bool check_mstate_exists(const std::string &_path);
+
     void close();
 };
 

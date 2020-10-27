@@ -49,7 +49,7 @@ u32ptr hzu_encoder::encode() {
 }
 
 hzu_encoder::~hzu_encoder() {
-    rfree(state);
+    hzrans64_destroy(state);
     rfree(distptr);
 }
 
@@ -95,12 +95,13 @@ u64ptr hzu_decoder::decode(uint32_t *raw) {
         }
     }
 
+    dummy_stack->destroy();
     rfree(dummy_stack);
     return u64ptr{.data = sym, .n = size};
 }
 
 hzu_decoder::~hzu_decoder() {
-    rfree(state);
+    hzrans64_destroy(state);
     rfree(distptr);
 }
 

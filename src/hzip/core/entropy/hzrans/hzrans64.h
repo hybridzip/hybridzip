@@ -40,4 +40,6 @@ void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data);
 
 void hzrans64_decode_s(hzrans64_t *state, uint32_t **data);
 
+void hzrans64_destroy(hzrans64_t *state);
+
 #endif

@@ -163,7 +163,7 @@ void bitio::stream::close() {
         fclose(file);
     }
 
-    free(buffer);
+    delete[] buffer;
     sem_post(&mutex);
 }
 

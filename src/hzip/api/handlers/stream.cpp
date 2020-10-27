@@ -135,10 +135,6 @@ void hz_streamer::encode() {
                         error(msg);
                     };
 
-                    job->stub->on_success = [this](const std::string &msg) {
-                        success(msg);
-                    };
-
                     // Dispatch hz_job to hz_processor.
                     processor->run(job);
                     data_len -= max_blob_size;
@@ -228,62 +224,71 @@ void hz_streamer::encode() {
                     throw ApiErrors::InvalidOperationError("Archive not found");
                 }
 
-                if (archive->check_mstate_exists(mstate_addr)) {
-                    throw ApiErrors::InvalidOperationError("Incremental mstate training is not supported");
-                }
-
                 //todo: Support incremental mstate-training
 
                 HZ_RECV(&data_len, sizeof(data_len));
 
+                uint64_t max_blob_size = hzes_b_size((hzcodec::algorithms::ALGORITHM) algorithm);
+
                 // Start raw-streaming using manual sync.
                 HZ_RECV_SYNC;
 
-                sem_wait(&mutex);
+                uint64_t batch_count = 0;
 
-                // Avoid processor overload.
-                processor->cycle();
+                while (data_len > 0) {
+                    sem_wait(&mutex);
+                    LOG_F(INFO, "hzip: Training: %s :: Batch: %lu", mstate_addr, ++batch_count);
 
-                auto *blob = rxnew(hzblob_t);
 
-                blob->o_size = data_len;
-                blob->o_data = rmalloc(uint8_t, data_len);
+                    // Avoid processor overload.
+                    processor->cycle();
 
-                // Enable raw streaming in hzip-protocol
-                t_recv(blob->o_data, data_len, false);
+                    auto *blob = rxnew(hzblob_t);
 
-                // Construct hz_job struct for processing.
-                auto *job = rnew(hz_job);
-                job->codec = rnew(hz_codec_job);
+                    max_blob_size = HZ_MIN(max_blob_size, data_len);
 
-                job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
-                job->codec->archive = archive;
-                job->codec->use_mstate_addr = mstate_addr != nullptr;
-                if (mstate_addr != nullptr) {
-                    job->codec->mstate_addr = mstate_addr;
+                    blob->o_size = max_blob_size;
+                    blob->o_data = rmalloc(uint8_t, max_blob_size);
+
+                    // Enable raw streaming in hzip-protocol
+                    t_recv(blob->o_data, max_blob_size, false);
+
+                    // Construct hz_job struct for processing.
+                    auto *job = rnew(hz_job);
+                    job->codec = rnew(hz_codec_job);
+
+                    job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
+                    job->codec->archive = archive;
+                    job->codec->use_mstate_addr = mstate_addr != nullptr;
+                    if (mstate_addr != nullptr) {
+                        job->codec->mstate_addr = mstate_addr;
+                    }
+                    job->codec->blob = blob;
+
+                    job->codec->job_type = hz_codec_job::JOBTYPE::TRAIN;
+
+                    job->stub = rnew(hz_job_stub);
+                    job->stub->on_completed = [this, job]() {
+                        job->codec->blob->destroy();
+                        rfree(job->codec->blob);
+                        rfree(job->codec);
+                        rfree(job->stub);
+                        rfree(job);
+                        sem_post(&mutex);
+                    };
+
+                    job->stub->on_error = [this](const std::string &msg) {
+                        error(msg);
+                    };
+
+                    // Dispatch hz_job to hz_processor.
+                    processor->run(job);
+
+                    data_len -= max_blob_size;
                 }
-                job->codec->blob = blob;
 
-                job->codec->job_type = hz_codec_job::JOBTYPE::TRAIN;
-
-                job->stub = rnew(hz_job_stub);
-                job->stub->on_completed = [this, job]() {
-                    rfree(job->codec);
-                    rfree(job->stub);
-                    rfree(job);
-                    sem_post(&mutex);
-                };
-
-                job->stub->on_error = [this](const std::string &msg) {
-                    error(msg);
-                };
-
-                job->stub->on_success = [this](const std::string &msg) {
-                    success(msg);
-                };
-
-                // Dispatch hz_job to hz_processor.
-                processor->run(job);
+                sem_wait(&mutex);
+                sem_post(&mutex);
             }
             default: {
                 error("Invalid command");
@@ -354,6 +359,8 @@ void hz_streamer::decode() {
                     };
 
                     job->stub->on_completed = [this, job]() {
+                        job->codec->blob->destroy();
+                        rparentmgr->r_free(job->codec->blob);
                         rfree(job->codec);
                         rfree(job->stub);
                         rfree(job);
@@ -362,10 +369,6 @@ void hz_streamer::decode() {
 
                     job->stub->on_error = [this](const std::string &msg) {
                         error(msg);
-                    };
-
-                    job->stub->on_success = [this](const std::string &msg) {
-                        success(msg);
                     };
 
                     processor->cycle();
@@ -508,10 +511,6 @@ void hz_streamer::decode() {
 
                 job->stub->on_error = [this](const std::string &msg) {
                     error(msg);
-                };
-
-                job->stub->on_success = [this](const std::string &msg) {
-                    success(msg);
                 };
 
                 processor->run(job);

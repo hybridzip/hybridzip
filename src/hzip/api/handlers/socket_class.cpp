@@ -29,7 +29,7 @@ void hz_socket_class::t_recv(void *buf, size_t n, bool sync) {
         t_recv_sync();
     }
 
-    if (recv(sock, buf, n, 0) < n) {
+    if (recv(sock, buf, n, MSG_WAITALL) < n) {
         throw ApiErrors::ConnectionError("Insufficient data received");
     }
 

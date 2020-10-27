@@ -3,7 +3,7 @@
 
 hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     if (blob->mstate == nullptr) {
-        blob->mstate = rnew(hz_mstate);
+        blob->mstate = rxnew(hz_mstate);
     }
 
     auto mstate = blob->mstate;
@@ -109,7 +109,6 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     auto m_stream = new bitio::stream(mstate->data, mstate->length);
 
     // Parse mstate.
-    uint64_t k = 0;
     bool is_norm_dict = m_stream->read(0x1);
 
     auto *dict = rmalloc(uint64_t*, 256);
@@ -127,6 +126,9 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
             dict[i][j] = m_stream->read(0x40);
         }
     }
+
+    delete m_stream;
+
     // check if we need to normalize the dictionary.
     if (!is_norm_dict) {
         for (int i = 0; i < 0x100; i++) {
@@ -215,7 +217,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
         sdata[i] = dataptr.data[i];
     }
 
-    free(dataptr.data);
+    rfree(dataptr.data);
 
     auto mtf = hztrans::mtf_transformer(sdata, 0x100, length);
     mtf.invert();
@@ -245,7 +247,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
 }
 
 void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data,
-                                             uint64_t length) {
+                                             uint64_t length, bool training_mode) {
     if (mstate->is_empty()) {
         auto focm = hzmodels::first_order_context_model();
         rinit(focm);
@@ -291,21 +293,9 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
         auto m_stream = new bitio::stream(mstate->data, mstate->length);
 
-        bool store_norm_dict = false;
-
-        if (length >= 16777216) {
-            store_norm_dict = true;
-        }
-
-        m_stream->write(store_norm_dict, 1);
-
-        for (int i = 0; i < 0x100; i++) {
-            for (int k = 0; k < 0x100; k++) {
-                if (store_norm_dict) {
-                    m_stream->write(dict[i][k], 0x40);
-                } else {
-                    m_stream->write(dict_f[i][k], 0x40);
-                }
+        for (auto &i : dict_f) {
+            for (unsigned long k : i) {
+                m_stream->write(k, 0x40);
             }
         }
 
@@ -313,7 +303,6 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
     } else {
         auto m_stream = new bitio::stream(mstate->data, mstate->length);
-        bool is_norm_dict = m_stream->read(0x1);
 
         for (int i = 0; i < 0x100; i++) {
             for (int j = 0; j < 0x100; j++) {
@@ -323,29 +312,64 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
         delete m_stream;
 
-        // check if we need to normalize the dictionary.
-        if (!is_norm_dict) {
-            for (int i = 0; i < 0x100; i++) {
-                auto row = dict[i];
-                uint64_t sum = 0;
-                for (int k = 0; k < 0x100; k++) {
-                    sum += row[k];
-                }
-                uint64_t dsum = 0;
-                for (int k = 0; k < 0x100; k++) {
-                    dict[i][k] = 1 + (row[k] * 16776960 / sum);
-                    dsum += dict[i][k];
-                }
-                dsum = 16777216 - dsum;
-                for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
-                    dict[i][k]++;
-                }
+        // Dispose mstate after it is interpreted.
+        mstate->destroy();
 
-                sum = 0;
+        if (training_mode) {
+            auto focm = hzmodels::first_order_context_model();
+            rinit(focm);
+
+            focm.set_alphabet_size(0x100);
+            // Now we contruct a First-Order-Context-Dictionary.
+            for (uint64_t i = 0; i < length; i++) {
+                focm.update(data[i], 32);
+            }
+
+            // Incremental training on FOCM
+            for (int i = 0; i < 0x100; i++) {
+                auto row = focm.get_dist(i);
                 for (int k = 0; k < 0x100; k++) {
-                    cdict[i][k] = sum;
-                    sum += dict[i][k];
+                    dict[i][k] += row[k];
                 }
+            }
+
+            // Generate mstate object.
+            mstate->length = 65537 << 3;
+
+            mstate->data = rmalloc(uint8_t, mstate->length);
+
+            auto m_stream = new bitio::stream(mstate->data, mstate->length);
+
+            for (int i = 0; i < 0x100; i++) {
+                for (int k = 0; k < 0x100; k++) {
+                    m_stream->write(dict[i][k], 0x40);
+                }
+            }
+
+            delete m_stream;
+        }
+
+
+        for (int i = 0; i < 0x100; i++) {
+            auto row = dict[i];
+            uint64_t sum = 0;
+            for (int k = 0; k < 0x100; k++) {
+                sum += row[k];
+            }
+            uint64_t dsum = 0;
+            for (int k = 0; k < 0x100; k++) {
+                dict[i][k] = 1 + (row[k] * 16776960 / sum);
+                dsum += dict[i][k];
+            }
+            dsum = 16777216 - dsum;
+            for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
+                dict[i][k]++;
+            }
+
+            sum = 0;
+            for (int k = 0; k < 0x100; k++) {
+                cdict[i][k] = sum;
+                sum += dict[i][k];
             }
         }
     }
@@ -353,11 +377,10 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
 
 hz_mstate *hzcodec::victini::train(hzblob_t *blob) {
     if (blob->mstate == nullptr) {
-        blob->mstate = rnew(hz_mstate);
+        blob->mstate = rxnew(hz_mstate);
     }
 
     auto mstate = blob->mstate;
-    auto header = blob->header;
     auto length = blob->o_size;
 
     auto *data = rmalloc(int16_t, length);
@@ -369,7 +392,7 @@ hz_mstate *hzcodec::victini::train(hzblob_t *blob) {
     auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, length, 0x100);
     rinit(bwt);
 
-    auto bwt_index = bwt.transform();
+    bwt.transform();
 
     auto mtf = hztrans::mtf_transformer(data, 0x100, length);
     mtf.transform();
@@ -382,20 +405,19 @@ hz_mstate *hzcodec::victini::train(hzblob_t *blob) {
         cdict[i] = rmalloc(uint64_t, 256);
     }
 
-    // Write blob-header.
-    header.raw = rmalloc(uint8_t, 32);
-    auto h_stream = new bitio::stream(header.raw, 32);
-
-    bin_t bwt_index_bin = hz_elias_gamma(bwt_index);
-    h_stream->write(bwt_index_bin.obj, bwt_index_bin.n);
-    h_stream->flush();
-
-    header.length = h_stream->get_stream_size();
-
-    delete h_stream;
-
     // Manage mstate
-    gen_model_from_mstate(mstate, dict, cdict, data, length);
+    gen_model_from_mstate(mstate, dict, cdict, data, length, true);
+
+    for (int i = 0; i < 256; i++) {
+        rfree(dict[i]);
+        rfree(cdict[i]);
+    }
+
+    rfree(dict);
+    rfree(cdict);
+    rfree(data);
+
+    mstate->alg = hzcodec::algorithms::VICTINI;
 
     return mstate;
 }

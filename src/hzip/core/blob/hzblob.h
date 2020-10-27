@@ -62,7 +62,6 @@ struct hzblob_t: public rainman::context {
         rfree(data);
         rfree(o_data);
         rfree(header.raw);
-        rfree(mstate->data);
     }
 };
 

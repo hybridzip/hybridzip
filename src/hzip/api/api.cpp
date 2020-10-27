@@ -57,20 +57,22 @@ void hz_api_instance::start() {
         return;
     }
 
-    auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
-    auto query = rmod(hz_query, sock, ip_addr, port, archive_provider);
-
     while (true) {
         try {
             uint8_t ctl_word;
             HZ_RECV(&ctl_word, sizeof(ctl_word));
 
+            LOG_F(INFO, "Memory-allocated: %lu bytes", rmemmgr->get_alloc_size());
+            LOG_F(INFO, "Memory-allocation-count: %lu", rmemmgr->get_alloc_count());
+
             switch ((API_CTL) ctl_word) {
                 case API_CTL_STREAM: {
+                    auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
                     streamer.start();
                     break;
                 }
                 case API_CTL_QUERY: {
+                    auto query = rmod(hz_query, sock, ip_addr, port, archive_provider);
                     query.start();
                     break;
                 }
@@ -140,9 +142,16 @@ hz_api *hz_api::process(uint64_t _n_threads) {
         sock_addr_size = sizeof(client_addr);
         int client_sock = accept(server_sock, (sockaddr *) &client_addr, &sock_addr_size);
 
-        if (setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (uint8_t *) &time_out, sizeof(time_out)) < 0) {
-            LOG_F(ERROR, "hzip.api: setsockopt() failed");
-            continue;
+        if (time_out.tv_sec > 0) {
+            if (setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (uint8_t *) &time_out, sizeof(time_out)) < 0) {
+                LOG_F(ERROR, "hzip.api: setsockopt() failed");
+                continue;
+            }
+
+            if (setsockopt(client_sock, SOL_SOCKET, SO_SNDTIMEO, (uint8_t *) &time_out, sizeof(time_out)) < 0) {
+                LOG_F(ERROR, "hzip.api: setsockopt() failed");
+                continue;
+            }
         }
 
         char *ip_addr = rmalloc(char, INET_ADDRSTRLEN + 1);

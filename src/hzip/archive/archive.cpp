@@ -477,7 +477,7 @@ hz_mstate *hz_archive::hza_read_mstate(uint64_t id) {
         throw ArchiveErrors::MstateNotFoundException(id);
     }
 
-    auto mstate = rnew(hz_mstate);
+    auto mstate = rxnew(hz_mstate);
     uint64_t sof = metadata.mstate_map[id];
 
     stream->seek_to(sof);
@@ -548,7 +548,7 @@ void hz_archive::install_mstate(const std::string &_path, hz_mstate *mstate) {
     sem_wait(mutex);
     if (metadata.mstate_aux_map.contains(_path)) {
         sem_post(mutex);
-        throw ArchiveErrors::InvalidOperationException("mstate_aux_entry_overwrite");
+        throw ArchiveErrors::InvalidOperationException("Mstate already exists");
     }
 
     uint64_t id = hza_write_mstate(mstate);
@@ -685,8 +685,6 @@ void hz_archive::remove_file(const std::string &file_path) {
     uint64_t sof = entry.sof;
     hza_file file = entry.data;
 
-    metadata.file_map.erase(file_path);
-
     stream->seek_to(sof);
     stream->write(hza_marker::EMPTY, 0x8);
 
@@ -698,6 +696,8 @@ void hz_archive::remove_file(const std::string &file_path) {
     for (uint64_t i = 0; i < file.blob_count; i++) {
         hza_rm_blob(file.blob_ids[i]);
     }
+
+    hza_metadata_erase_file(file_path);
 
     sem_post(mutex);
 }
@@ -897,4 +897,13 @@ bool hz_archive::check_mstate_exists(const std::string &_path) {
     sem_post(mutex);
 
     return exists;
+}
+
+void hz_archive::hza_metadata_erase_file(const std::string &_file_path) {
+    if (metadata.file_map.contains(_file_path)) {
+        auto file = metadata.file_map[_file_path].data;
+        rfree(file.blob_ids);
+
+        metadata.file_map.erase(_file_path);
+    }
 }

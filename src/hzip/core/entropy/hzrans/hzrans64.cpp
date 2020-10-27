@@ -100,3 +100,8 @@ hzrans64_decode_s(hzrans64_t *state, uint32_t **data) {
 
     state->x = x;
 }
+
+void hzrans64_destroy(hzrans64_t *state) {
+    rmemmgrfrom(state)->r_free(state->ftable);
+    rmemmgrfrom(state)->r_free(state);
+}

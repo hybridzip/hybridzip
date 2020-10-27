@@ -43,9 +43,7 @@ struct hza_entry {
     T data;
     uint64_t sof{};
 
-    hza_entry() {
-        // empty-constructor
-    }
+    hza_entry() = default;
 
     hza_entry(T data, uint64_t sof) {
         this->data = data;
@@ -109,6 +107,8 @@ private:
     void hza_increment_dep(uint64_t id);
 
     void hza_decrement_dep(uint64_t id);
+
+    void hza_metadata_erase_file(const std::string &_file_path);
 
 public:
     hz_archive() = default;

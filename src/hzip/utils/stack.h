@@ -18,7 +18,7 @@ struct hz_stack {
         }
 
         void destroy() {
-            free(data);
+            delete[] data;
         }
     };
 
@@ -27,7 +27,7 @@ struct hz_stack {
     uint64_t index;
 
     hz_stack() {
-        buffer = new hz_buffer(bufsize);
+        buffer = nullptr;
         index = 0;
     }
 
@@ -56,7 +56,7 @@ struct hz_stack {
 
             if (buffer != nullptr) {
                 buffer->next->destroy();
-                free(buffer->next);
+                delete buffer->next;
             }
         }
     }
@@ -79,6 +79,16 @@ struct hz_stack {
 
     bool empty() {
         return buffer == nullptr || (buffer->prev == nullptr && index == 0);
+    }
+
+    void destroy() {
+        while (buffer != nullptr) {
+            auto *tmp = buffer;
+            buffer = buffer->prev;
+
+            tmp->destroy();
+            delete tmp;
+        }
     }
 };
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
-project(tensorflow-lite)
+project(tensorflow)
 
 set(CMAKE_CXX_STANDARD 20)
 

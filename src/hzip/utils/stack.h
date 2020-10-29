@@ -48,16 +48,19 @@ struct hz_stack {
     }
 
     void pop() {
+        if (buffer == nullptr) {
+            return;
+        }
+
         if (index > 1) {
             index--;
         } else {
             index = bufsize;
+            auto tmp = buffer;
             buffer = buffer->prev;
 
-            if (buffer != nullptr) {
-                buffer->next->destroy();
-                delete buffer->next;
-            }
+            tmp->destroy();
+            delete tmp;
         }
     }
 
@@ -67,18 +70,21 @@ struct hz_stack {
 
     uint64_t size() {
         uint64_t count = index;
-        auto tmp = buffer->prev;
 
-        while (tmp != nullptr) {
-            tmp = tmp->prev;
-            count += bufsize;
+        if (buffer != nullptr) {
+            auto tmp = buffer->prev;
+
+            while (tmp != nullptr) {
+                tmp = tmp->prev;
+                count += bufsize;
+            }
         }
 
         return count;
     }
 
     bool empty() {
-        return buffer == nullptr || (buffer->prev == nullptr && index == 0);
+        return buffer == nullptr;
     }
 
     void destroy() {

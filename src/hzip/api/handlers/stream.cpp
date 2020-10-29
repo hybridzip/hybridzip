@@ -109,7 +109,8 @@ void hz_streamer::encode() {
 
                     if (piggy_back) {
                         job->codec->blob_callback = [this](hzblob_t *cblob) {
-                            HZ_SEND(&cblob->mstate->alg, sizeof(cblob->mstate->alg));
+                            uint8_t alg = cblob->mstate->alg;
+                            HZ_SEND(&alg, sizeof(alg));
                             HZ_SEND(&cblob->mstate->length, sizeof(cblob->mstate->length));
                             HZ_SEND(cblob->mstate->data, cblob->mstate->length);
 
@@ -125,6 +126,8 @@ void hz_streamer::encode() {
 
                     job->stub = rnew(hz_job_stub);
                     job->stub->on_completed = [this, job]() {
+                        job->codec->blob->destroy();
+                        rfree(job->codec->blob);
                         rfree(job->codec);
                         rfree(job->stub);
                         rfree(job);
@@ -158,6 +161,8 @@ void hz_streamer::encode() {
                 }
 
                 sem_post(&mutex);
+
+                success("Operation completed successfully");
 
                 return;
             }
@@ -224,8 +229,6 @@ void hz_streamer::encode() {
                     throw ApiErrors::InvalidOperationError("Archive not found");
                 }
 
-                //todo: Support incremental mstate-training
-
                 HZ_RECV(&data_len, sizeof(data_len));
 
                 uint64_t max_blob_size = hzes_b_size((hzcodec::algorithms::ALGORITHM) algorithm);
@@ -237,8 +240,7 @@ void hz_streamer::encode() {
 
                 while (data_len > 0) {
                     sem_wait(&mutex);
-                    LOG_F(INFO, "hzip: Training: %s :: Batch: %lu", mstate_addr, ++batch_count);
-
+                    HZAPI_LOGF(INFO, "Training: %s :: Batch: %lu", mstate_addr, ++batch_count);
 
                     // Avoid processor overload.
                     processor->cycle();
@@ -289,6 +291,9 @@ void hz_streamer::encode() {
 
                 sem_wait(&mutex);
                 sem_post(&mutex);
+
+                success("Operation completed successfully");
+                return;
             }
             default: {
                 error("Invalid command");
@@ -378,6 +383,7 @@ void hz_streamer::decode() {
                 }
 
                 sem_post(&mutex);
+                success("Operation completed successfully");
 
                 return;
             }
@@ -515,6 +521,10 @@ void hz_streamer::decode() {
 
                 processor->run(job);
 
+                sem_wait(&mutex);
+                sem_post(&mutex);
+
+                success("Operation completed successfully");
                 return;
             }
             default: {
@@ -618,6 +628,7 @@ void hz_streamer::write_mstate() {
 
                 archive->install_mstate(mstate_addr, mstate);
 
+                success("Operation completed successfully");
                 return;
             }
             default: {
@@ -688,9 +699,16 @@ void hz_streamer::read_mstate() {
 
                 auto *mstate = archive->read_mstate(mstate_addr);
 
-                HZ_SEND(&mstate->alg, sizeof(mstate->alg));
+                uint8_t alg = mstate->alg;
+
+                HZ_SEND(&alg, sizeof(alg));
                 HZ_SEND(&mstate->length, sizeof(mstate->length));
                 HZ_SEND(mstate->data, mstate->length);
+
+                mstate->destroy();
+                rparentmgr->r_free(mstate);
+
+                success("Operation completed successfully");
 
                 return;
             }

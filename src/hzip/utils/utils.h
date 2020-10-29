@@ -96,4 +96,21 @@ HZ_INLINE uint64_t hz_enc_token(std::string pwd, uint64_t x) {
     return x;
 }
 
+HZ_INLINE void hz_u64_to_u8buf(uint64_t x, uint8_t *buf) {
+    for (int i = 0; i < 8; i++) {
+        buf[i] = x & 0xff;
+        x >>= 0x8;
+    }
+}
+
+HZ_INLINE uint64_t hz_u8buf_to_u64(uint8_t *buf) {
+    uint64_t x = 0;
+    for (int i = 7; i >= 0; i--) {
+        x <<= 0x8;
+        x += buf[i];
+    }
+
+    return x;
+}
+
 #endif

@@ -115,8 +115,8 @@ class bw_transformer: public rainman::context {
                 zdata[i + 1] = data[i] + 1;
             }
 
-            auto *T = rmalloc(mtype, data_len + 3);
-            auto *SA = rmalloc(mtype, data_len + 3);
+            auto T = rmalloc(mtype, data_len + 3);
+            auto SA = rmalloc(mtype, data_len + 3);
 
             for (uint64_t i = 0; i < data_len + 3; i++) {
                 T[i] = 0;
@@ -170,7 +170,7 @@ class bw_transformer: public rainman::context {
             zdata = zzdata;
 
             std::vector<int> jumpers;
-            auto *base_list = rmalloc(std::vector<uint64_t>, alphabet_size + 1);
+            auto base_list = rmalloc(std::vector<uint64_t>, alphabet_size + 1);
 
             for (int i = 0; i <= alphabet_size; i++) {
                 base_list[i] = std::vector<uint64_t>();

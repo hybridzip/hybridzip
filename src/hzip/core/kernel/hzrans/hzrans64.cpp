@@ -60,8 +60,7 @@ void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
 }
 
 
-void
-hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol) {
+void hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol) {
     state->bs = 0;
     state->ls = state->ftable[symbol];
 
@@ -74,8 +73,6 @@ void hzrans64_enc_flush(hzrans64_t *state, hz_stack<uint32_t> *data) {
     data->push(state->x >> 32);
     data->push(state->x >> 0);
     state->count += 2;
-
-    rmemmgrfrom(state)->r_free(state->ftable);
 }
 
 void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
@@ -86,8 +83,7 @@ void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
     state->x = x;
 }
 
-void
-hzrans64_decode_s(hzrans64_t *state, uint32_t **data) {
+void hzrans64_decode_s(hzrans64_t *state, uint32_t **data) {
     uint64_t x = state->x;
     uint64_t ls = state->ls;
     uint64_t bs = state->bs;

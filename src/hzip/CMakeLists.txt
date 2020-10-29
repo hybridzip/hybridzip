@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.16)
 
 add_library(hzip STATIC
         utils/platform.h
-        core/entropy/hzrans/hzrans64.h
-        core/entropy/hzrans/hzrans.h
+        core/kernel/hzrans/hzrans64.h
+        core/kernel/hzrans/hzrans.h
         core/blob/hzblob.h
         utils/distribution.h
         utils/fsutils.h
-        core/entropy/hzrans/hzbin.h
+        core/kernel/hzrans/hzrans64_codec.h
         core/preprocessor/png_codec.h
         core/preprocessor/transforms.h
         core/models/models.h
@@ -19,8 +19,8 @@ add_library(hzip STATIC
         core/preprocessor/delta_transformer.cpp
         core/compressors/victini.cpp
         core/compressors/victini.h
-        core/entropy/hzrans/hzbin.cpp
-        core/entropy/hzrans/hzrans64.cpp
+        core/kernel/hzrans/hzrans64_codec.cpp
+        core/kernel/hzrans/hzrans64.cpp
         core/models/first_order_context_model.h
         core/preprocessor/bw_transformer.h
         core/preprocessor/delta_transformer.h

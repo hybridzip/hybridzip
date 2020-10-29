@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_HZBIN_H
-#define HYBRIDZIP_HZBIN_H
+#ifndef HYBRIDZIP_HZRANS64_CODEC_H
+#define HYBRIDZIP_HZRANS64_CODEC_H
 
 #include <functional>
 #include <utility>
@@ -7,7 +7,7 @@
 #include "hzrans.h"
 
 
-class hzu_encoder: public rainman::context {
+class hzrans64_encoder: public rainman::context {
 private:
     hz_cross_codec cross_encoder;
     uint64_t *distptr{};
@@ -16,7 +16,7 @@ private:
     hzrans64_t *state{};
 
 public:
-    hzu_encoder() = default;
+    hzrans64_encoder() = default;
 
     void set_header(uint64_t alphabet_size, uint16_t scale, uint64_t buffer_size);
 
@@ -28,11 +28,11 @@ public:
 
     u32ptr encode();
 
-    ~hzu_encoder();
+    ~hzrans64_encoder();
 
 };
 
-class hzu_decoder: public rainman::context {
+class hzrans64_decoder: public rainman::context {
 private:
     hz_codec_callback callback;
     hz_cross_codec cross_decoder;
@@ -42,7 +42,7 @@ private:
     hzrans64_t *state = nullptr;
 
 public:
-    hzu_decoder() = default;
+    hzrans64_decoder() = default;
 
     void set_header(uint64_t alphabet_size, uint16_t scale, uint64_t buffer_size);
 
@@ -54,7 +54,7 @@ public:
 
     u64ptr decode(uint32_t *raw);
 
-    ~hzu_decoder();
+    ~hzrans64_decoder();
 
 };
 

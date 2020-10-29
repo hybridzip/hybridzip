@@ -62,9 +62,6 @@ void hz_api_instance::start() {
             uint8_t ctl_word;
             HZ_RECV(&ctl_word, sizeof(ctl_word));
 
-            LOG_F(INFO, "Memory-allocated: %lu bytes", rmemmgr->get_alloc_size());
-            LOG_F(INFO, "Memory-allocation-count: %lu", rmemmgr->get_alloc_count());
-
             switch ((API_CTL) ctl_word) {
                 case API_CTL_STREAM: {
                     auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);

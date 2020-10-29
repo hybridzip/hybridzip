@@ -3,7 +3,7 @@
 
 #include <bitio/bitio.h>
 #include <rainman/rainman.h>
-#include <hzip/core/entropy/hzrans/hzbin.h>
+#include <hzip/core/kernel/hzrans/hzrans64_codec.h>
 #include <hzip/utils/distribution.h>
 #include <hzip/core/preprocessor/transforms.h>
 #include <hzip/core/models/models.h>

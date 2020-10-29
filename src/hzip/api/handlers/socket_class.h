@@ -10,6 +10,10 @@
 #define HZ_RECV_SYNC t_recv_sync()
 #define HZAPI_LOG(verbosity, str) LOG_F(verbosity, "hzip.api: [%s:%d] %s", ip_addr, port, str)
 
+#define HZAPI_LOGF(verbosity, fmt, ...) [&]() {                 \
+    auto s = "hzip.api: [%s:%d] " + std::string(fmt);           \
+    LOG_F(verbosity, s.c_str(), ip_addr, port, __VA_ARGS__);    \
+}()                                                             \
 
 namespace hzapi {
     class hz_socket_class {

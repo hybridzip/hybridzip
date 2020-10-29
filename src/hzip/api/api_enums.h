@@ -56,6 +56,7 @@ namespace hzapi {
         QUERY_CTL_PIGGYBACK = 0x3,
         QUERY_CTL_DELETE_FILE = 0x4,
         QUERY_CTL_DELETE_MSTATE = 0x5,
+        QUERY_CTL_GET_MEM_USAGE = 0x6,
     };
 }
 

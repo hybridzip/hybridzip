@@ -37,12 +37,12 @@ namespace ArchiveErrors {
         uint64_t id{};
 
         MstateNotFoundException(uint64_t id) {
-            LOG_F(ERROR, "hzip.archive: MState(0x%lx) was not found", id);
+            LOG_F(ERROR, "hzip.archive: Mstate(0x%lx) was not found", id);
             this->id = id;
         }
 
         [[nodiscard]] const char *what() const noexcept override {
-            return "hzip.archive: MState not found";
+            return "hzip.archive: Mstate not found";
         }
     };
 
@@ -51,12 +51,11 @@ namespace ArchiveErrors {
         std::string msg;
 
         InvalidOperationException(const std::string &msg) {
-            LOG_F(ERROR, "hzip.archive: %s", msg.c_str());
-            this->msg = msg;
+            this->msg = "hzip.archive: Invalid operation: " + msg;
         }
 
         [[nodiscard]] const char *what() const noexcept override {
-            return "hzip.archive: Invalid operation";
+            return msg.c_str();
         }
     };
 }

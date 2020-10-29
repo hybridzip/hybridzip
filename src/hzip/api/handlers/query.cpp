@@ -121,6 +121,12 @@ void hz_query::start() {
                 archive->uninstall_mstate(mstate_addr);
                 return;
             }
+            case QUERY_CTL_GET_MEM_USAGE: {
+                uint64_t alloc_size = rparentmgr->get_alloc_size();
+                HZ_SEND(&alloc_size, sizeof(alloc_size));
+
+                return;
+            }
             default: {
                 throw ApiErrors::InvalidOperationError("Invalid command");
             }

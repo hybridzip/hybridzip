@@ -83,6 +83,9 @@ void hz_streamer::encode() {
 
                     max_blob_size = HZ_MIN(max_blob_size, data_len);
 
+                    HZAPI_LOGF(INFO, "(%s) Compressing blob of size: %lu bytes", hzcodec::algorithms::algorithm_to_str(
+                            static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), max_blob_size);
+
                     blob->o_size = max_blob_size;
                     blob->o_data = rmalloc(uint8_t, max_blob_size);
 
@@ -240,7 +243,8 @@ void hz_streamer::encode() {
 
                 while (data_len > 0) {
                     sem_wait(&mutex);
-                    HZAPI_LOGF(INFO, "Training: %s :: Batch: %lu", mstate_addr, ++batch_count);
+                    HZAPI_LOGF(INFO, "(%s) Training: '%s' - Batch: %lu", hzcodec::algorithms::algorithm_to_str(
+                            static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), mstate_addr, ++batch_count);
 
                     // Avoid processor overload.
                     processor->cycle();
@@ -375,6 +379,9 @@ void hz_streamer::decode() {
                     job->stub->on_error = [this](const std::string &msg) {
                         error(msg);
                     };
+
+                    HZAPI_LOGF(INFO, "(%s) Decompressing blob of size: %lu bytes", hzcodec::algorithms::algorithm_to_str(
+                            static_cast<hzcodec::algorithms::ALGORITHM>(job->codec->algorithm)), src_blob->size << 2);
 
                     processor->cycle();
                     processor->run(job);

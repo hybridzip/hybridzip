@@ -52,6 +52,7 @@ void set_signal_handlers() {
     signal(SIGSEGV, signal_handler);
     signal(SIGTERM, signal_handler);
     signal(SIGABRT, signal_handler);
+    signal(SIGFPE, signal_handler);
     signal(SIGPIPE, signal_ignore);
 }
 

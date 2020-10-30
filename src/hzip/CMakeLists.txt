@@ -54,7 +54,7 @@ add_library(hzip STATIC
         api/handlers/query.cpp)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
-target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv tensorflow-lite)
+target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv tensorflowlite)
 
 target_link_libraries(hzip PUBLIC crypto)
 

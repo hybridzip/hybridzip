@@ -1,14 +1,14 @@
 #!/usr/bin/bash
 
+set -e
 # Install all dependencies
 echo "Installing dependencies for hybridzip ..."
 
 echo "Installing tensorflow-lite ..."
 # Install tflite libraries at /usr/lib
-sh ./install_tflite.sh "/usr/lib"
+sh "$(dirname "$0")/install_tflite.sh" "/usr/lib"
 
 # Compile hybridzip
-cd ..
 
 cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release . && make hybridzip
 

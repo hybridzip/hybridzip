@@ -1,8 +1,10 @@
 #!/usr/bin/bash
 
+set -e
+
 pacman -Sy
 
-pacman -S git python3 python-pip which gcc clang libglvnd mesa --noconfirm
+pacman -S bazel git python3 python-pip which gcc clang libglvnd mesa --noconfirm
 
 pip install numpy
 
@@ -15,8 +17,6 @@ cd tensorflow
 cd "/usr/bin" && curl -fLO https://releases.bazel.build/3.1.0/release/bazel-3.1.0-linux-x86_64 && chmod +x bazel-3.1.0-linux-x86_64
 
 cd /build-space-tflite/tensorflow
-
-sh ./tensorflow/lite/tools/make/download_dependencies.sh
 
 bazel build -c opt tensorflow/lite:libtensorflowlite.so
 

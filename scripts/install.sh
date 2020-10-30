@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+set -e
 
-cp ./bin /usr/bin
-cp ./lib /usr/lib
+cp -rp "$(dirname "$0")/bin" /usr/bin
+cp -rp "$(dirname "$0")/lib" /usr/lib

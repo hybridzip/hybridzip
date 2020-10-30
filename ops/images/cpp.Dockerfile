@@ -1,7 +1,7 @@
 # Builder
 FROM archlinux:latest AS build
 
-RUN pacman -Syu --noconfirm
+RUN pacman -Sy
 
 RUN pacman -S cmake clang make --noconfirm
 
@@ -11,7 +11,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release . && make hybridzip
+RUN ./scripts/package.sh
 
 # Runner
 FROM archlinux:latest
@@ -28,8 +28,12 @@ ENV HZIP_API_KEY=hybridzip
 
 RUN mkdir /hybridzip
 
-COPY --from=build /app/bin/hybridzip /hybridzip
+COPY --from=build /app/package.tar.gz /hybridzip
 
 WORKDIR /hybridzip
 
-CMD ["./hybridzip"]
+RUN tar -xzvf package.tar.gz
+
+RUN sh package/install.sh
+
+CMD ["hybridzip"]

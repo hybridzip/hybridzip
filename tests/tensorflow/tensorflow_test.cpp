@@ -9,11 +9,11 @@ class TensorflowTest : public testing::Test {
 };
 
 TEST(TensorflowTest, tensorflow_lite_test_1) {
-    std::unique_ptr<tflite::FlatBufferModel> model = tflite::FlatBufferModel::BuildFromFile("/home/supercmmetry/Workspace/rendum/linear.tflite");
+    std::unique_ptr<tflite::FlatBufferModel> model = tflite::FlatBufferModel::BuildFromFile("/test-space/linear.tflite");
 
     if(!model){
         printf("Failed to mmap model\n");
-        exit(0);
+        exit(1);
     }
 
     tflite::ops::builtin::BuiltinOpResolver resolver;

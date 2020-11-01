@@ -27,4 +27,4 @@ cp bazel-bin/tensorflow/lite/libtensorflowlite.so "$1/libtensorflowlite.so"
 cp bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so "$1/libtensorflowlite_gpu_delegate.so"
 
 #Cleanup builds
-cd / && rm -rf build-space
+cd / && rm -rf build-space-tflite

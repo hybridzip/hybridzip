@@ -1,9 +1,9 @@
 # Builder
-FROM archlinux:latest AS build
+FROM archlinux:20200908 AS build
 
 RUN pacman -Sy
 
-RUN pacman -S cmake clang make --noconfirm
+RUN pacman -S cmake clang make mesa libglvnd --noconfirm
 
 RUN mkdir /app
 
@@ -14,7 +14,7 @@ WORKDIR /app
 RUN ./scripts/package.sh
 
 # Runner
-FROM archlinux:latest
+FROM archlinux:20200908
 
 ENV HZIP_API_THREADS=4
 

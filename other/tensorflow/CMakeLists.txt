@@ -10,13 +10,13 @@ set_target_properties(tensorflowlite_gpu_delegate PROPERTIES IMPORTED_LOCATION_D
         "${CMAKE_CURRENT_LIST_DIR}/lib/linux-x86_64/libtensorflowlite_gpu_delegate.so")
 
 set_target_properties(tensorflowlite_gpu_delegate PROPERTIES IMPORTED_LOCATION_RELEASE
-        "/usr/lib/libtensorflowlite_gpu_delegate.so")
+        "/usr/lib/hzip/libtensorflowlite_gpu_delegate.so")
 
 add_library(tensorflowlite SHARED IMPORTED GLOBAL)
 set_target_properties(tensorflowlite PROPERTIES IMPORTED_LOCATION_DEBUG
         "${CMAKE_CURRENT_LIST_DIR}/lib/linux-x86_64/libtensorflowlite.so")
 
 set_target_properties(tensorflowlite PROPERTIES IMPORTED_LOCATION_RELEASE
-        "/usr/lib/libtensorflowlite.so")
+        "/usr/lib/hzip/libtensorflowlite.so")
 
 target_link_libraries(tensorflowlite INTERFACE tensorflowlite_gpu_delegate GL EGL)

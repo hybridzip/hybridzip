@@ -21,7 +21,7 @@ TEST(TensorflowTest, tensorflow_lite_test_1) {
     tflite::InterpreterBuilder(*model.get(), resolver)(&interpreter);
 
     auto *delegate = TfLiteGpuDelegateV2Create(nullptr);
-    ASSERT_EQ(interpreter->ModifyGraphWithDelegate(delegate), kTfLiteOk);
+    interpreter->ModifyGraphWithDelegate(delegate);
     // Resize input tensors, if desired.
     interpreter->AllocateTensors();
 

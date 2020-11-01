@@ -26,6 +26,8 @@ ENV HZIP_API_TIMEOUT=120
 
 ENV HZIP_API_KEY=hybridzip
 
+ENV HZIP_MAX_MEM_USAGE=1073741824
+
 RUN mkdir /hybridzip
 
 COPY --from=build /app/package.tar.gz /hybridzip

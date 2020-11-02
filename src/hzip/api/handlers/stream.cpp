@@ -35,7 +35,7 @@ void hz_streamer::encode() {
     uint16_t dest_len{};
     uint64_t data_len{};
     uint8_t word{};
-    uint8_t algorithm{};
+    uint64_t algorithm{};
 
     char *archive_path{};
     char *mstate_addr{};
@@ -112,7 +112,7 @@ void hz_streamer::encode() {
 
                     if (piggy_back) {
                         job->codec->blob_callback = [this](hzblob_t *cblob) {
-                            uint8_t alg = cblob->mstate->alg;
+                            uint64_t alg = cblob->mstate->alg;
                             HZ_SEND(&alg, sizeof(alg));
                             HZ_SEND(&cblob->mstate->length, sizeof(cblob->mstate->length));
                             HZ_SEND(cblob->mstate->data, cblob->mstate->length);
@@ -311,7 +311,7 @@ void hz_streamer::decode() {
     uint16_t mstate_addr_len{};
     uint16_t src_len{};
     uint8_t word{};
-    uint8_t algorithm{};
+    uint64_t algorithm{};
 
     hz_mstate *mstate{};
     hzblob_t *blob{};
@@ -619,7 +619,7 @@ void hz_streamer::write_mstate() {
                     throw ApiErrors::InvalidOperationError("Mstate address was not provided");
                 }
 
-                uint8_t mstate_algorithm;
+                uint64_t mstate_algorithm;
                 HZ_RECV(&mstate_algorithm, sizeof(mstate_algorithm));
 
                 uint64_t mstate_data_len;
@@ -706,7 +706,7 @@ void hz_streamer::read_mstate() {
 
                 auto *mstate = archive->read_mstate(mstate_addr);
 
-                uint8_t alg = mstate->alg;
+                uint64_t alg = mstate->alg;
 
                 HZ_SEND(&alg, sizeof(alg));
                 HZ_SEND(&mstate->length, sizeof(mstate->length));

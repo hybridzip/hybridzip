@@ -485,7 +485,7 @@ hz_mstate *hz_archive::hza_read_mstate(uint64_t id) {
     // Ignore block-marker, block-length and mstate-id as we know the mstate-format.
     stream->seek(0x88);
 
-    mstate->alg = (hzcodec::algorithms::ALGORITHM) stream->read(0x8);
+    mstate->alg = (hzcodec::algorithms::ALGORITHM) stream->read(0x40);
 
     auto length = stream->read(0x40);
     mstate->length = length;
@@ -500,9 +500,9 @@ hz_mstate *hz_archive::hza_read_mstate(uint64_t id) {
 
 uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
-    // <mstate-id (64-bit)> <algorithm (8-bit)> <data-length (64-bit)> <data (8-bit-array)>
+    // <mstate-id (64-bit)> <algorithm (64-bit)> <data-length (64-bit)> <data (8-bit-array)>
 
-    uint64_t length = 0x88 + (mstate->length << 0x3);
+    uint64_t length = 0xC0 + (mstate->length << 0x3);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
     uint64_t sof;
@@ -527,7 +527,7 @@ uint64_t hz_archive::hza_write_mstate(hz_mstate *mstate) {
     }
 
     stream->write(mstate_id, 0x40);
-    stream->write(mstate->alg, 0x8);
+    stream->write(mstate->alg, 0x40);
 
     // Update mstate-map
     metadata.mstate_map[mstate_id] = sof;

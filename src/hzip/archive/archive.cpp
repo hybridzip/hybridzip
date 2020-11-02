@@ -140,6 +140,8 @@ void hz_archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
                     .blob_count=blob_count
             };
 
+            rinit(file);
+
             metadata.file_map[_path] = hza_entry(file, sof - 0x8);
 
             break;
@@ -659,6 +661,7 @@ void hz_archive::create_file(const std::string &file_path, hzblob_t *blobs, uint
     }
 
     hza_file file{};
+    rinit(file);
     file.blob_count = blob_count;
     file.blob_ids = rmalloc(uint64_t, blob_count);
 
@@ -841,6 +844,7 @@ std::vector<std::string> hz_archive::list_mstates() {
 
 void hz_archive::create_file_entry(const std::string &file_path, hza_file file) {
     sem_wait(mutex);
+    rinit(file);
     hza_create_metadata_file_entry(file_path, file);
     sem_post(mutex);
 }

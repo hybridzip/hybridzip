@@ -58,5 +58,18 @@ namespace ArchiveErrors {
             return msg.c_str();
         }
     };
+
+    class TargetNotFoundException: public std::exception {
+    public:
+        std::string msg;
+
+        TargetNotFoundException(const std::string &msg) {
+            this->msg = "hzip.archive: Target not found: " + msg;
+        }
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return msg.c_str();
+        }
+    };
 }
 #endif

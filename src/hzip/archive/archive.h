@@ -27,10 +27,14 @@ enum hza_metadata_entry_type {
     MSTATE_AUX = 0x2
 };
 
-struct hza_file {
+struct hza_file : public rainman::context {
     uint64_t *blob_ids;
     uint64_t blob_count;
     //todo: Add file information.
+
+    void destroy() {
+        rfree(blob_ids);
+    }
 };
 
 struct hza_fragment {
@@ -67,9 +71,9 @@ class hz_archive: public rainman::context {
 private:
     std::string path;
     hza_metadata metadata;
-    bitio::stream *stream;
-    sem_t *archive_mutex;
-    sem_t *mutex;
+    bitio::stream *stream{};
+    sem_t *archive_mutex{};
+    sem_t *mutex{};
 
     void hza_scan();
 

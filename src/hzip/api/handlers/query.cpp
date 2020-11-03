@@ -84,6 +84,33 @@ void hz_query::start() {
 
                 return;
             }
+            case QUERY_CTL_LIST_MSTATE_SYSTEM: {
+                if (!piggy_back) {
+                    throw ApiErrors::InvalidOperationError("Piggyback was disabled");
+                }
+
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive not provided");
+                }
+
+                if (target == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Target not provided");
+                }
+
+                auto list = archive->list_mstate_system(target);
+
+                uint64_t count = list.size();
+                HZ_SEND(&count, sizeof(count));
+
+                for (const auto& elem : list) {
+                    uint16_t len = elem.entry.length();
+                    HZ_SEND(&len, sizeof(len));
+                    HZ_SEND(elem.entry.c_str(), len);
+                    HZ_SEND(&elem.is_leaf, sizeof(elem.is_leaf));
+                }
+
+                return;
+            }
             case QUERY_CTL_PIGGYBACK: {
                 piggy_back = true;
                 break;

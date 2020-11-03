@@ -328,6 +328,11 @@ TEST(ArchiveTest, hzip_archive_trie) {
 
         ASSERT_EQ(trie.children("/").size(), 0);
 
+        trie.set("/rtytrydfgdfgdfgrtertfdgdfg", 1);
+        trie.erase("/rtytrydfgdfgdfgrtertfdgdfg");
+
+        ASSERT_EQ(trie.contains("/rtytrydfgdfgdfgrtertfdgdfg"), false);
+
     } catch (std::exception &e) {
         EXPECT_TRUE(false) << e.what();
     }

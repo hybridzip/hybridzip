@@ -150,13 +150,13 @@ public:
             curr = curr->parent;
         }
 
-        erase_node(descendant);
-
         if (curr == descendant) {
             curr = curr->parent;
         }
 
         curr->children.erase(descendant->key);
+
+        erase_node(descendant);
     }
 
     std::vector<hza_trie_list_elem> children(const std::string &prefix) {

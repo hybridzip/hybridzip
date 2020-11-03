@@ -16,8 +16,8 @@ void hz_query::start() {
     hz_archive *archive = nullptr;
     char *archive_path = nullptr;
     uint16_t archive_path_len = 0;
-    char *dest = nullptr;
-    uint16_t dest_len = 0;
+    char *target = nullptr;
+    uint16_t target_len = 0;
     bool piggy_back = false;
 
     while (true) {
@@ -48,11 +48,11 @@ void hz_query::start() {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (dest == nullptr) {
+                if (target == nullptr) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                bool found = archive->check_file_exists(dest);
+                bool found = archive->check_file_exists(target);
                 HZ_SEND(&found, sizeof(found));
 
                 return;
@@ -66,11 +66,11 @@ void hz_query::start() {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (dest == nullptr) {
+                if (target == nullptr) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                auto list = archive->list_file_system(dest);
+                auto list = archive->list_file_system(target);
 
                 uint64_t count = list.size();
                 HZ_SEND(&count, sizeof(count));
@@ -93,11 +93,11 @@ void hz_query::start() {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (dest == nullptr) {
+                if (target == nullptr) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                archive->remove_file(dest);
+                archive->remove_file(target);
                 return;
             }
             case QUERY_CTL_DELETE_MSTATE: {
@@ -105,11 +105,11 @@ void hz_query::start() {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (dest == nullptr) {
+                if (target == nullptr) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                archive->uninstall_mstate(dest);
+                archive->uninstall_mstate(target);
                 return;
             }
             case QUERY_CTL_GET_MEM_USAGE: {
@@ -118,14 +118,14 @@ void hz_query::start() {
 
                 return;
             }
-            case QUERY_CTL_DEST: {
-                HZ_RECV(&dest_len, sizeof(dest_len));
+            case QUERY_CTL_TARGET: {
+                HZ_RECV(&target_len, sizeof(target_len));
 
-                dest = rmalloc(char, dest_len + 1);
-                dest[dest_len] = 0;
+                target = rmalloc(char, target_len + 1);
+                target[target_len] = 0;
 
-                HZ_RECV(dest, dest_len);
-                hz_validate_path(dest);
+                HZ_RECV(target, target_len);
+                hz_validate_path(target);
 
                 break;
             }

@@ -36,8 +36,7 @@ namespace ApiErrors {
         std::string _msg;
     public:
         ConnectionError(const std::string &msg) {
-            LOG_F(ERROR, "hzip.api: %s", msg.c_str());
-            _msg = "hzip.api: " + msg;
+            _msg = msg;
         }
 
         [[nodiscard]] const char *what() const noexcept override {

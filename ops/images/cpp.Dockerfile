@@ -1,9 +1,9 @@
 # Builder
-FROM archlinux:latest AS build
+FROM archlinux:20200908 AS build
 
-RUN pacman -Syu --noconfirm
+RUN pacman -Sy
 
-RUN pacman -S cmake clang make --noconfirm
+RUN pacman -S cmake clang make mesa libglvnd --noconfirm
 
 RUN mkdir /app
 
@@ -11,10 +11,10 @@ COPY . /app
 
 WORKDIR /app
 
-RUN cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release . && make hybridzip
+RUN ./scripts/package.sh
 
 # Runner
-FROM archlinux:latest
+FROM archlinux:20200908
 
 ENV HZIP_API_THREADS=4
 
@@ -26,10 +26,16 @@ ENV HZIP_API_TIMEOUT=120
 
 ENV HZIP_API_KEY=hybridzip
 
+ENV HZIP_MAX_MEM_USAGE=1073741824
+
 RUN mkdir /hybridzip
 
-COPY --from=build /app/bin/hybridzip /hybridzip
+COPY --from=build /app/package.tar.gz /hybridzip
 
 WORKDIR /hybridzip
 
-CMD ["./hybridzip"]
+RUN tar -xzvf package.tar.gz
+
+RUN sh package/install.sh
+
+CMD ["hybridzip"]

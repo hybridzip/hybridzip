@@ -78,10 +78,9 @@ HZ_INLINE uint64_t hz_unary_read(std::function<uint64_t(uint8_t)> readfunc) {
     return n + 1;
 }
 
-
 HZ_INLINE uint64_t hz_rand64() {
     std::random_device rd;
-    static std::mt19937_64 _utils_mersenne_twister_engine_rand64 = std::mt19937_64(rd());
+    static thread_local auto _utils_mersenne_twister_engine_rand64 = std::mt19937_64(rd());
 
     std::uniform_int_distribution<uint64_t> distribution(0, 0xffffffffffffffff);
     return distribution(_utils_mersenne_twister_engine_rand64);
@@ -92,6 +91,23 @@ HZ_INLINE uint64_t hz_enc_token(std::string pwd, uint64_t x) {
 
     for (int i = 0; i < pwd.length(); i++) {
         y[i & 0x7] ^= pwd[i];
+    }
+
+    return x;
+}
+
+HZ_INLINE void hz_u64_to_u8buf(uint64_t x, uint8_t *buf) {
+    for (int i = 0; i < 8; i++) {
+        buf[i] = x & 0xff;
+        x >>= 0x8;
+    }
+}
+
+HZ_INLINE uint64_t hz_u8buf_to_u64(uint8_t *buf) {
+    uint64_t x = 0;
+    for (int i = 7; i >= 0; i--) {
+        x <<= 0x8;
+        x += buf[i];
     }
 
     return x;

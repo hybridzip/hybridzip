@@ -24,6 +24,8 @@ private:
 
     void hzp_decode(hz_codec_job *job);
 
+    void hzp_train(hz_codec_job *job);
+
     void hzp_run_codec_job(hz_codec_job *job);
 
 public:

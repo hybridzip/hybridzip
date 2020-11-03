@@ -14,6 +14,8 @@ uint64_t hz_streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
             return 0xffffffffffffffff;
         case hzcodec::algorithms::VICTINI:
             return 0x400000;
+        default:
+            return 0xffffffffffffffff;
     }
 }
 
@@ -33,7 +35,7 @@ void hz_streamer::encode() {
     uint16_t dest_len{};
     uint64_t data_len{};
     uint8_t word{};
-    uint8_t algorithm{};
+    uint64_t algorithm{};
 
     char *archive_path{};
     char *mstate_addr{};
@@ -58,11 +60,18 @@ void hz_streamer::encode() {
                     }
                 }
 
+                if (!piggy_back && dest == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Null operations are not allowed");
+                }
+
                 uint64_t max_blob_size = hzes_b_size((hzcodec::algorithms::ALGORITHM) algorithm);
 
                 HZ_RECV(&data_len, sizeof(data_len));
 
                 std::vector<uint64_t> blob_ids;
+
+                // Start raw-streaming using manual sync.
+                HZ_RECV_SYNC;
 
                 while (data_len > 0) {
                     sem_wait(&mutex);
@@ -74,10 +83,14 @@ void hz_streamer::encode() {
 
                     max_blob_size = HZ_MIN(max_blob_size, data_len);
 
+                    HZAPI_LOGF(INFO, "(%s) Compressing blob of size: %lu bytes", hzcodec::algorithms::algorithm_to_str(
+                            static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), max_blob_size);
+
                     blob->o_size = max_blob_size;
                     blob->o_data = rmalloc(uint8_t, max_blob_size);
 
-                    HZ_RECV(blob->o_data, max_blob_size);
+                    // Enable raw streaming in hzip-protocol
+                    t_recv(blob->o_data, max_blob_size, false);
 
                     // Construct hz_job struct for processing.
                     auto *job = rnew(hz_job);
@@ -85,7 +98,7 @@ void hz_streamer::encode() {
 
                     job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
                     job->codec->archive = archive;
-                    job->codec->reuse_mstate = mstate_addr != nullptr;
+                    job->codec->use_mstate_addr = mstate_addr != nullptr;
                     if (mstate_addr != nullptr) {
                         job->codec->mstate_addr = mstate_addr;
                     }
@@ -99,11 +112,8 @@ void hz_streamer::encode() {
 
                     if (piggy_back) {
                         job->codec->blob_callback = [this](hzblob_t *cblob) {
-                            uint8_t ctl = COMMON_CTL_PIGGYBACK;
-
-                            HZ_SEND(&ctl, sizeof(ctl));
-
-                            HZ_SEND(&cblob->mstate->alg, sizeof(cblob->mstate->alg));
+                            uint64_t alg = cblob->mstate->alg;
+                            HZ_SEND(&alg, sizeof(alg));
                             HZ_SEND(&cblob->mstate->length, sizeof(cblob->mstate->length));
                             HZ_SEND(cblob->mstate->data, cblob->mstate->length);
 
@@ -119,6 +129,8 @@ void hz_streamer::encode() {
 
                     job->stub = rnew(hz_job_stub);
                     job->stub->on_completed = [this, job]() {
+                        job->codec->blob->destroy();
+                        rfree(job->codec->blob);
                         rfree(job->codec);
                         rfree(job->stub);
                         rfree(job);
@@ -127,10 +139,6 @@ void hz_streamer::encode() {
 
                     job->stub->on_error = [this](const std::string &msg) {
                         error(msg);
-                    };
-
-                    job->stub->on_success = [this](const std::string &msg) {
-                        success(msg);
                     };
 
                     // Dispatch hz_job to hz_processor.
@@ -142,7 +150,8 @@ void hz_streamer::encode() {
                 sem_wait(&mutex);
 
                 if (archive != nullptr && dest != nullptr) {
-                    auto *blob_id_arr = rmalloc(uint64_t, blob_ids.size());
+                    // Allocate outside the scope of the rainman module for persistence.
+                    auto *blob_id_arr = rmemmgr->get_parent()->r_malloc<uint64_t>(blob_ids.size());
                     for (int i = 0; i < blob_ids.size(); i++) {
                         blob_id_arr[i] = blob_ids[i];
                     }
@@ -155,6 +164,8 @@ void hz_streamer::encode() {
                 }
 
                 sem_post(&mutex);
+
+                success("Operation completed successfully");
 
                 return;
             }
@@ -208,6 +219,86 @@ void hz_streamer::encode() {
                 piggy_back = true;
                 break;
             }
+            case ENCODE_CTL_TRAIN: {
+                if (!algorithm) {
+                    throw ApiErrors::InvalidOperationError("No algorithm was provided");
+                }
+
+                if (mstate_addr == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Mstate address not found");
+                }
+
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive not found");
+                }
+
+                HZ_RECV(&data_len, sizeof(data_len));
+
+                uint64_t max_blob_size = hzes_b_size((hzcodec::algorithms::ALGORITHM) algorithm);
+
+                // Start raw-streaming using manual sync.
+                HZ_RECV_SYNC;
+
+                uint64_t batch_count = 0;
+
+                while (data_len > 0) {
+                    sem_wait(&mutex);
+                    HZAPI_LOGF(INFO, "(%s) Training: '%s' - Batch: %lu", hzcodec::algorithms::algorithm_to_str(
+                            static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), mstate_addr, ++batch_count);
+
+                    // Avoid processor overload.
+                    processor->cycle();
+
+                    auto *blob = rxnew(hzblob_t);
+
+                    max_blob_size = HZ_MIN(max_blob_size, data_len);
+
+                    blob->o_size = max_blob_size;
+                    blob->o_data = rmalloc(uint8_t, max_blob_size);
+
+                    // Enable raw streaming in hzip-protocol
+                    t_recv(blob->o_data, max_blob_size, false);
+
+                    // Construct hz_job struct for processing.
+                    auto *job = rnew(hz_job);
+                    job->codec = rnew(hz_codec_job);
+
+                    job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
+                    job->codec->archive = archive;
+                    job->codec->use_mstate_addr = mstate_addr != nullptr;
+                    if (mstate_addr != nullptr) {
+                        job->codec->mstate_addr = mstate_addr;
+                    }
+                    job->codec->blob = blob;
+
+                    job->codec->job_type = hz_codec_job::JOBTYPE::TRAIN;
+
+                    job->stub = rnew(hz_job_stub);
+                    job->stub->on_completed = [this, job]() {
+                        job->codec->blob->destroy();
+                        rfree(job->codec->blob);
+                        rfree(job->codec);
+                        rfree(job->stub);
+                        rfree(job);
+                        sem_post(&mutex);
+                    };
+
+                    job->stub->on_error = [this](const std::string &msg) {
+                        error(msg);
+                    };
+
+                    // Dispatch hz_job to hz_processor.
+                    processor->run(job);
+
+                    data_len -= max_blob_size;
+                }
+
+                sem_wait(&mutex);
+                sem_post(&mutex);
+
+                success("Operation completed successfully");
+                return;
+            }
             default: {
                 error("Invalid command");
             }
@@ -220,7 +311,7 @@ void hz_streamer::decode() {
     uint16_t mstate_addr_len{};
     uint16_t src_len{};
     uint8_t word{};
-    uint8_t algorithm{};
+    uint64_t algorithm{};
 
     hz_mstate *mstate{};
     hzblob_t *blob{};
@@ -250,10 +341,13 @@ void hz_streamer::decode() {
                     throw ApiErrors::InvalidOperationError("Source not provided");
                 }
 
+                sem_wait(&mutex);
+
                 auto file_entry = archive->read_file_entry(src);
 
+                HZ_SEND(&file_entry.blob_count, sizeof(file_entry.blob_count));
+
                 for (uint64_t i = 0; i < file_entry.blob_count; i++) {
-                    sem_wait(&mutex);
                     auto *src_blob = archive->read_blob(file_entry.blob_ids[i]);
 
                     // Construct hz_job
@@ -265,18 +359,17 @@ void hz_streamer::decode() {
                     job->codec->archive = archive;
                     job->codec->job_type = hz_codec_job::JOBTYPE::DECODE;
                     job->codec->blob = src_blob;
-                    job->codec->reuse_mstate = false;
+                    job->codec->use_mstate_addr = false;
                     job->codec->algorithm = src_blob->mstate->alg;
 
                     job->codec->blob_callback = [this](hzblob_t *dblob) {
-                        uint8_t ctl = COMMON_CTL_PIGGYBACK;
-
-                        HZ_SEND(&ctl, sizeof(ctl));
                         HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
                         HZ_SEND(dblob->o_data, dblob->o_size);
                     };
 
                     job->stub->on_completed = [this, job]() {
+                        job->codec->blob->destroy();
+                        rparentmgr->r_free(job->codec->blob);
                         rfree(job->codec);
                         rfree(job->stub);
                         rfree(job);
@@ -287,13 +380,17 @@ void hz_streamer::decode() {
                         error(msg);
                     };
 
-                    job->stub->on_success = [this](const std::string &msg) {
-                        success(msg);
-                    };
+                    HZAPI_LOGF(INFO, "(%s) Decompressing blob of size: %lu bytes", hzcodec::algorithms::algorithm_to_str(
+                            static_cast<hzcodec::algorithms::ALGORITHM>(job->codec->algorithm)), src_blob->size << 2);
 
                     processor->cycle();
                     processor->run(job);
+
+                    sem_wait(&mutex);
                 }
+
+                sem_post(&mutex);
+                success("Operation completed successfully");
 
                 return;
             }
@@ -405,15 +502,11 @@ void hz_streamer::decode() {
                 if (mstate_addr != nullptr) {
                     job->codec->mstate_addr = mstate_addr;
                 }
-                job->codec->reuse_mstate = mstate_addr != nullptr;
+                job->codec->use_mstate_addr = mstate_addr != nullptr;
                 job->codec->archive = archive;
 
 
                 job->codec->blob_callback = [this](hzblob_t *dblob) {
-                    uint8_t ctl = COMMON_CTL_PIGGYBACK;
-
-                    HZ_SEND(&ctl, sizeof(ctl));
-
                     HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
                     HZ_SEND(dblob->o_data, dblob->o_size);
                 };
@@ -433,12 +526,12 @@ void hz_streamer::decode() {
                     error(msg);
                 };
 
-                job->stub->on_success = [this](const std::string &msg) {
-                    success(msg);
-                };
-
                 processor->run(job);
 
+                sem_wait(&mutex);
+                sem_post(&mutex);
+
+                success("Operation completed successfully");
                 return;
             }
             default: {
@@ -462,8 +555,173 @@ void hz_streamer::start() {
             decode();
             break;
         }
+        case STREAM_CTL_WRITE_MSTATE: {
+            write_mstate();
+            break;
+        }
+        case STREAM_CTL_READ_MSTATE: {
+            read_mstate();
+            break;
+        }
         default: {
-            error("Invalid command");
+            throw ApiErrors::InvalidOperationError("Invalid command");
+        }
+    }
+}
+
+void hz_streamer::write_mstate() {
+    uint16_t archive_path_len{};
+    uint16_t mstate_addr_len{};
+    uint8_t word{};
+
+    char *archive_path{};
+    char *mstate_addr{};
+
+    hz_archive *archive{};
+
+    while (true) {
+        HZ_RECV(&word, sizeof(word));
+
+        switch ((MSTATE_CTL) word) {
+            case MSTATE_CTL_ARCHIVE: {
+                if (archive_path != nullptr) {
+                    rfree(archive_path);
+                }
+
+                HZ_RECV(&archive_path_len, sizeof(archive_path_len));
+                archive_path = rmalloc(char, archive_path_len + 1);
+                archive_path[archive_path_len] = 0;
+
+                HZ_RECV(archive_path, archive_path_len);
+
+                archive = archive_provider->provide(archive_path);
+                break;
+            }
+            case MSTATE_CTL_ADDR: {
+                if (mstate_addr != nullptr) {
+                    rfree(mstate_addr);
+                }
+
+                HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
+
+                mstate_addr = rmalloc(char, mstate_addr_len + 1);
+                mstate_addr[mstate_addr_len] = 0;
+
+                HZ_RECV(mstate_addr, mstate_addr_len);
+                break;
+            }
+            case MSTATE_CTL_STREAM: {
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive was not provided");
+                }
+
+                if (mstate_addr == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Mstate address was not provided");
+                }
+
+                uint64_t mstate_algorithm;
+                HZ_RECV(&mstate_algorithm, sizeof(mstate_algorithm));
+
+                uint64_t mstate_data_len;
+                HZ_RECV(&mstate_data_len, sizeof(mstate_data_len));
+
+                auto *mstate_data = rmalloc(uint8_t, mstate_data_len);
+                HZ_RECV(mstate_data, mstate_data_len);
+
+                auto *mstate = rnew(hz_mstate);
+                mstate->length = mstate_data_len;
+                mstate->data = mstate_data;
+                mstate->alg = (hzcodec::algorithms::ALGORITHM) mstate_algorithm;
+
+                archive->install_mstate(mstate_addr, mstate);
+
+                success("Operation completed successfully");
+                return;
+            }
+            default: {
+                throw ApiErrors::InvalidOperationError("Invalid command");
+            }
+        }
+    }
+}
+
+void hz_streamer::read_mstate() {
+    uint16_t archive_path_len{};
+    uint16_t mstate_addr_len{};
+    uint8_t word{};
+
+    char *archive_path{};
+    char *mstate_addr{};
+    bool piggyback = false;
+
+    hz_archive *archive{};
+
+    while (true) {
+        HZ_RECV(&word, sizeof(word));
+
+        switch ((MSTATE_CTL) word) {
+            case MSTATE_CTL_ARCHIVE: {
+                if (archive_path != nullptr) {
+                    rfree(archive_path);
+                }
+
+                HZ_RECV(&archive_path_len, sizeof(archive_path_len));
+                archive_path = rmalloc(char, archive_path_len + 1);
+                archive_path[archive_path_len] = 0;
+
+                HZ_RECV(archive_path, archive_path_len);
+
+                archive = archive_provider->provide(archive_path);
+                break;
+            }
+            case MSTATE_CTL_ADDR: {
+                if (mstate_addr != nullptr) {
+                    rfree(mstate_addr);
+                }
+
+                HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
+
+                mstate_addr = rmalloc(char, mstate_addr_len + 1);
+                mstate_addr[mstate_addr_len] = 0;
+
+                HZ_RECV(mstate_addr, mstate_addr_len);
+                break;
+            }
+            case MSTATE_CTL_PIGGYBACK: {
+                piggyback = true;
+                break;
+            }
+            case MSTATE_CTL_STREAM: {
+                if (archive == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Archive was not provided");
+                }
+
+                if (mstate_addr == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Mstate address was not provided");
+                }
+
+                if (!piggyback) {
+                    throw ApiErrors::InvalidOperationError("Null operations are not allowed");
+                }
+
+                auto *mstate = archive->read_mstate(mstate_addr);
+
+                uint64_t alg = mstate->alg;
+
+                HZ_SEND(&alg, sizeof(alg));
+                HZ_SEND(&mstate->length, sizeof(mstate->length));
+                HZ_SEND(mstate->data, mstate->length);
+
+                mstate->destroy();
+                rparentmgr->r_free(mstate);
+
+                success("Operation completed successfully");
+
+                return;
+            }
+            default: {
+                throw ApiErrors::InvalidOperationError("Invalid command");
+            }
         }
     }
 }

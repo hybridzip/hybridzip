@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.16)
 
 add_library(hzip STATIC
         utils/platform.h
-        core/entropy/hzrans/hzrans64.h
-        core/entropy/hzrans/hzrans.h
+        core/kernel/hzrans/hzrans64.h
+        core/kernel/hzrans/hzrans.h
         core/blob/hzblob.h
         utils/distribution.h
         utils/fsutils.h
-        core/entropy/hzrans/hzbin.h
+        core/kernel/hzrans/hzrans64_codec.h
         core/preprocessor/png_codec.h
         core/preprocessor/transforms.h
         core/models/models.h
@@ -19,8 +19,8 @@ add_library(hzip STATIC
         core/preprocessor/delta_transformer.cpp
         core/compressors/victini.cpp
         core/compressors/victini.h
-        core/entropy/hzrans/hzbin.cpp
-        core/entropy/hzrans/hzrans64.cpp
+        core/kernel/hzrans/hzrans64_codec.cpp
+        core/kernel/hzrans/hzrans64.cpp
         core/models/first_order_context_model.h
         core/preprocessor/bw_transformer.h
         core/preprocessor/delta_transformer.h
@@ -41,10 +41,21 @@ add_library(hzip STATIC
         utils/validation.h
         errors/utils.h
         api/api.h
-        api/api.cpp errors/api.h api/handlers/stream.h api/handlers/stream.cpp api/handlers/socket_class.h api/handlers/socket_class.cpp errors/processor.h api/providers/archive_provider.h api/providers/archive_provider.cpp api/api_enums.h api/handlers/query.h api/handlers/query.cpp)
+        api/api.cpp errors/api.h
+        api/handlers/stream.h
+        api/handlers/stream.cpp
+        api/handlers/socket_class.h
+        api/handlers/socket_class.cpp
+        errors/processor.h
+        api/providers/archive_provider.h
+        api/providers/archive_provider.cpp
+        api/api_enums.h
+        api/handlers/query.h
+        api/handlers/query.cpp
+        archive/archive_trie.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
-target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv)
+target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv tensorflowlite)
 
 target_link_libraries(hzip PUBLIC crypto)
 

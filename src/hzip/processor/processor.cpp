@@ -15,6 +15,8 @@ hzcodec::abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORI
             return nullptr;
         case hzcodec::algorithms::VICTINI:
             return rxnew(hzcodec::victini);
+        default:
+            throw ProcessorErrors::InvalidOperationError("Algorithm not found");
     }
 }
 
@@ -42,14 +44,25 @@ void hz_processor::run(hz_job *job) {
     }
 }
 
-void hz_processor::hzp_encode(hz_codec_job *job) {
-    auto codec = hzp_get_codec(job->algorithm);
-
-    if (codec == nullptr) {
-        throw ProcessorErrors::InvalidOperationError("Codec not found");
+void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
+    switch (job->job_type) {
+        case hz_codec_job::ENCODE: {
+            hzp_encode(job);
+            break;
+        }
+        case hz_codec_job::DECODE: {
+            hzp_decode(job);
+            break;
+        }
+        case hz_codec_job::TRAIN: {
+            hzp_train(job);
+            break;
+        }
     }
+}
 
-    if (job->reuse_mstate) {
+void hz_processor::hzp_encode(hz_codec_job *job) {
+    if (job->use_mstate_addr) {
         if (job->archive == nullptr) {
             throw ProcessorErrors::InvalidOperationError("Archive is required for mstate-injection by address");
         }
@@ -57,51 +70,58 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
         job->archive->inject_mstate(job->mstate_addr, job->blob);
     }
 
-    auto *blob = codec->compress(job->blob);
-
-    if (!job->reuse_mstate) {
-        if (job->archive != nullptr) {
-            job->archive->inject_mstate(blob->mstate, blob);
-        } else if (job->blob_callback == nullptr) {
-            throw ProcessorErrors::InvalidOperationError("Piggy-back is disabled, null job execution is not allowed");
-        }
-    }
-
-    if (job->archive != nullptr) {
-        auto id = job->archive->write_blob(blob);
-        HZP_STUB_CALL(job->blob_id_callback, id);
-    }
-
-    HZP_STUB_CALL(job->blob_callback, blob);
-
-    blob->destroy();
-    rfree(blob);
-    rfree(codec);
-}
-
-void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
-    switch (job->job_type) {
-        case hz_codec_job::ENCODE:
-            hzp_encode(job);
-            break;
-        case hz_codec_job::DECODE:
-            hzp_decode(job);
-            break;
-    }
-}
-
-void hz_processor::hzp_decode(hz_codec_job *job) {
     auto codec = hzp_get_codec(job->algorithm);
 
     if (codec == nullptr) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
+    hzblob_t *blob = nullptr;
+    try {
+        blob = codec->compress(job->blob);
+        blob->mstate_id = job->blob->mstate_id;
+
+        if (!job->use_mstate_addr) {
+            if (job->archive != nullptr) {
+                job->archive->inject_mstate(blob->mstate, blob);
+            } else if (job->blob_callback == nullptr) {
+                throw ProcessorErrors::InvalidOperationError(
+                        "Piggy-back is disabled, null job execution is not allowed");
+            }
+        }
+
+        if (job->archive != nullptr) {
+            auto id = job->archive->write_blob(blob);
+            HZP_STUB_CALL(job->blob_id_callback, id);
+        }
+
+        HZP_STUB_CALL(job->blob_callback, blob);
+
+        blob->mstate->destroy();
+        rfree(blob->mstate);
+        blob->destroy();
+        rfree(blob);
+        rfree(codec);
+
+    } catch (std::exception &e) {
+        if (blob != nullptr) {
+            blob->mstate->destroy();
+            rfree(blob->mstate);
+            blob->destroy();
+            rfree(blob);
+        }
+
+        rfree(codec);
+        throw e;
+    }
+}
+
+void hz_processor::hzp_decode(hz_codec_job *job) {
     if (job->archive == nullptr && job->blob_callback == nullptr) {
         throw ProcessorErrors::InvalidOperationError("Piggy-back is disabled, null job execution is not allowed");
     }
 
-    if (job->reuse_mstate) {
+    if (job->use_mstate_addr) {
         if (job->archive == nullptr) {
             throw ProcessorErrors::InvalidOperationError("Archive is required for mstate-injection by address");
         }
@@ -113,12 +133,77 @@ void hz_processor::hzp_decode(hz_codec_job *job) {
         throw ProcessorErrors::InvalidOperationError("Missing mstate");
     }
 
-    auto *blob = codec->decompress(job->blob);
+    auto codec = hzp_get_codec(job->algorithm);
 
-    HZP_STUB_CALL(job->blob_callback, blob);
-    blob->destroy();
+    if (codec == nullptr) {
+        throw ProcessorErrors::InvalidOperationError("Codec not found");
+    }
+
+    hzblob_t *blob = nullptr;
+    try {
+        blob = codec->decompress(job->blob);
+
+        HZP_STUB_CALL(job->blob_callback, blob);
+
+        blob->mstate->destroy();
+        rfree(blob->mstate);
+        blob->destroy();
+        rfree(blob);
+        rfree(codec);
+    } catch (std::exception &e) {
+        if (blob != nullptr) {
+            blob->mstate->destroy();
+            rfree(blob->mstate);
+            blob->destroy();
+            rfree(blob);
+        }
+        rfree(codec);
+
+        throw e;
+    }
 }
 
+void hz_processor::hzp_train(hz_codec_job *job) {
+    if (!job->use_mstate_addr) {
+        throw ProcessorErrors::InvalidOperationError("Mstate address not found");
+    }
+
+    if (job->archive == nullptr) {
+        throw ProcessorErrors::InvalidOperationError("Archive not found");
+    }
+
+    if (job->archive->check_mstate_exists(job->mstate_addr)) {
+        job->archive->inject_mstate(job->mstate_addr, job->blob);
+        job->archive->uninstall_mstate(job->mstate_addr);
+    }
+
+    auto codec = hzp_get_codec(job->algorithm);
+
+    if (codec == nullptr) {
+        throw ProcessorErrors::InvalidOperationError("Codec not found");
+    }
+
+    hz_mstate *mstate = nullptr;
+
+    try {
+        mstate = codec->train(job->blob);
+
+        job->archive->install_mstate(job->mstate_addr, mstate);
+
+        mstate->destroy();
+        rfree(mstate);
+        rfree(codec);
+    } catch (std::exception &e) {
+        if (mstate != nullptr) {
+            mstate->destroy();
+            rfree(mstate);
+        }
+        rfree(codec);
+
+        throw e;
+    }
+
+}
 
 // To avoid processor overload.
 void hz_processor::cycle() {

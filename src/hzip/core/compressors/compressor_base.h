@@ -8,6 +8,7 @@ namespace hzcodec {
     public:
         virtual hzblob_t *compress(hzblob_t *blob) = 0;
         virtual hzblob_t *decompress(hzblob_t *blob) = 0;
+        virtual hz_mstate *train(hzblob_t *blob) = 0;
     };
 }
 

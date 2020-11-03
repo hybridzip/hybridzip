@@ -10,13 +10,14 @@ struct hz_codec_job {
     enum JOBTYPE {
         ENCODE = 0x0,
         DECODE = 0x1,
+        TRAIN = 0x2,
     };
 
     hzblob_t *blob;
     hz_archive *archive;
     hzcodec::algorithms::ALGORITHM algorithm;
     JOBTYPE job_type;
-    bool reuse_mstate;
+    bool use_mstate_addr;
     std::string mstate_addr;
     std::function<void(uint64_t)> blob_id_callback{};
     std::function<void(hzblob_t*)> blob_callback{};

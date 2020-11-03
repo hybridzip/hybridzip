@@ -12,12 +12,20 @@
     return t;                                                                   \
 }()
 
+#define ronew(type, ...) [&]() {                                             \
+    auto t = type(__VA_ARGS__);                                                     \
+    t._rain_man_memmgr_attach_memmgr(this->_rain_man_memmgr_obj);              \
+    return t;                                                                   \
+}()
+
 #define rfree(ptr) this->_rain_man_memmgr_obj->template r_free<typeof ptr>(ptr)
 #define rinit(child) child._rain_man_memmgr_attach_memmgr(this->_rain_man_memmgr_obj)
 #define rinitptr(child) child->_rain_man_memmgr_attach_memmgr(this->_rain_man_memmgr_obj)
 #define rinitfrom(mgr, child) child._rain_man_memmgr_attach_memmgr(mgr)
 #define rinitptrfrom(mgr, child) child->_rain_man_memmgr_attach_memmgr(mgr)
 #define rmemmgr this->_rain_man_memmgr_obj
+#define rmemtrace this->_rain_man_memmgr_obj->print_mem_trace()
+#define rparentmgr this->_rain_man_memmgr_obj->get_parent()
 #define rmemmgrfrom(obj) obj->_rain_man_memmgr_obj
 #define rchildmgr this->_rain_man_memmgr_obj->create_child_mgr()
 #define rwipe this->_rain_man_memmgr_obj->wipe<void>()

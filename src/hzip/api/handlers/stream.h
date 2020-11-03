@@ -29,6 +29,10 @@ namespace hzapi {
         void encode();
 
         void decode();
+
+        void write_mstate();
+
+        void read_mstate();
     };
 }
 

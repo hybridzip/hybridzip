@@ -5,6 +5,7 @@ on:
       - master
 
 jobs:
+  needs: run_tests
   publish_docker:
     runs-on: ubuntu-latest
     steps:
@@ -14,13 +15,13 @@ jobs:
       - name: Setup Docker
         uses: docker-practice/actions-setup-docker@0.0.1
 
-      - name: Publish to Docker Registry
-        env:
-          DOCKER_USERNAME: ${{ github.actor }}
-          DOCKER_PASSWORD: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Publish to Docker Registry
         run: |
-          echo $DOCKER_PASSWORD | docker login -u="$DOCKER_USERNAME" --password-stdin
           docker image build -t supercmmetry/hybridzip:latest -f ./ops/images/cpp.Dockerfile .
           docker push supercmmetry/hybridzip:latest
-

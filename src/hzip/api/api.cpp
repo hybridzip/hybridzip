@@ -7,6 +7,7 @@
 #include <hzip/utils/utils.h>
 #include <hzip/api/handlers/stream.h>
 #include <hzip/api/api_enums.h>
+#include <hzip/api/handlers/query.h>
 
 using namespace hzapi;
 
@@ -21,7 +22,7 @@ hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std:
     archive_provider = _archive_provider;
 }
 
-bool hz_api_instance::handshake() {
+void hz_api_instance::handshake() {
     uint64_t token = hz_rand64();
     uint64_t xtoken = hz_enc_token(passwd, token);
 
@@ -33,64 +34,67 @@ bool hz_api_instance::handshake() {
     if (token == xtoken) {
         HZAPI_LOG(INFO, "Handshake successful");
         success("Handshake successful");
-        return false;
     } else {
-        HZAPI_LOG(WARNING, "Handshake failed");
-        error("Handshake failed");
-        return true;
+        throw ApiErrors::InvalidOperationError("Handshake failed");
     }
 }
 
-void hz_api_instance::end() const {
+void hz_api_instance::end() {
     close(sock);
-    HZAPI_LOG(INFO, "Closed connection");
+    HZAPI_LOG(INFO, "Closed session");
     rfree(ip_addr);
     sem_post(mutex);
 }
 
 void hz_api_instance::start() {
-    sem_wait(mutex);
+    HZAPI_LOG(INFO, "Session created successfully");
 
-    std::thread([this]() {
-        HZAPI_LOG(INFO, "Instance created successfully");
+    try {
+        handshake();
+    } catch (std::exception &e) {
+        HZAPI_LOG(ERROR, e.what());
+        end();
+        return;
+    }
 
+    while (true) {
         try {
-            if (handshake()) {
-                end();
-                return;
-            }
+            uint8_t ctl_word;
+            HZ_RECV(&ctl_word, sizeof(ctl_word));
 
-            auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
-
-            while (true) {
-                uint8_t ctl_word;
-                HZ_RECV(&ctl_word, sizeof(ctl_word));
-
-                switch ((API_CTL) ctl_word) {
-                    case API_CTL_STREAM: {
-                        streamer.start();
-                        break;
-                    }
-                    case API_CTL_QUERY: {
-
-                        break;
-                    }
-                    case API_CTL_CLOSE: {
-                        end();
-                        return;
-                    }
-                    default: {
-                        throw ApiErrors::InvalidOperationError("Invalid command");
-                    }
+            switch ((API_CTL) ctl_word) {
+                case API_CTL_STREAM: {
+                    auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
+                    streamer.start();
+                    break;
+                }
+                case API_CTL_QUERY: {
+                    auto query = rmod(hz_query, sock, ip_addr, port, archive_provider);
+                    query.start();
+                    break;
+                }
+                case API_CTL_CLOSE: {
+                    end();
+                    return;
+                }
+                case API_CTL_HEALTH_CHECK: {
+                    success("API is active and running");
+                    break;
+                }
+                default: {
+                    throw ApiErrors::InvalidOperationError("Invalid command");
                 }
             }
+        } catch (ApiErrors::ConnectionError &e) {
+            HZAPI_LOG(ERROR, e.what());
+            end();
+            return;
         } catch (std::exception &e) {
             HZAPI_LOG(ERROR, e.what());
             error(e.what());
-            end();
         }
+    }
 
-    }).detach();
 }
 
 hz_api *hz_api::limit(uint64_t _max_instances) {
@@ -135,9 +139,16 @@ hz_api *hz_api::process(uint64_t _n_threads) {
         sock_addr_size = sizeof(client_addr);
         int client_sock = accept(server_sock, (sockaddr *) &client_addr, &sock_addr_size);
 
-        if (setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (uint8_t *) &time_out, sizeof(time_out)) < 0) {
-            LOG_F(ERROR, "hzip.api: setsockopt() failed");
-            continue;
+        if (time_out.tv_sec > 0) {
+            if (setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (uint8_t *) &time_out, sizeof(time_out)) < 0) {
+                LOG_F(ERROR, "hzip.api: setsockopt() failed");
+                continue;
+            }
+
+            if (setsockopt(client_sock, SOL_SOCKET, SO_SNDTIMEO, (uint8_t *) &time_out, sizeof(time_out)) < 0) {
+                LOG_F(ERROR, "hzip.api: setsockopt() failed");
+                continue;
+            }
         }
 
         char *ip_addr = rmalloc(char, INET_ADDRSTRLEN + 1);
@@ -148,11 +159,16 @@ hz_api *hz_api::process(uint64_t _n_threads) {
         LOG_F(INFO, "hzip.api: [%s:%d] Accepted connection", ip_addr,
               (int) ntohs(client_addr.sin_port));
 
-        hz_api_instance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port),
-                                 archive_provider);
-        rinit(instance);
 
-        instance.start();
+        sem_wait(mutex);
+        std::thread([this, client_sock, ip_addr, client_addr]() {
+            hz_api_instance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port),
+                                     archive_provider);
+            rinit(instance);
+
+            instance.start();
+        }).detach();
+
 
         sem_wait(mutex);
         sem_post(mutex);
@@ -172,7 +188,7 @@ hz_api *hz_api::timeout(timeval _time_out) {
 void hz_api::shutdown() {
     archive_provider->close();
     if (::shutdown(server_sock, SHUT_RDWR) < 0) {
-        LOG_F(WARNING, "hzip.api: Socket shutdown failed with error=%s", strerror(errno));
+        LOG_F(WARNING, "hzip.api: Socket shutdown failed with error (%s)", strerror(errno));
     }
     close(server_sock);
 }

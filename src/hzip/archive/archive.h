@@ -9,9 +9,10 @@
 #include <rainman/rainman.h>
 #include <hzip/core/blob/hzblob.h>
 #include <hzip/utils/common.h>
+#include <hzip/archive/archive_trie.h>
 
 
-#define HZ_ARCHIVE_VERSION 0x001000
+#define HZ_ARCHIVE_VERSION 0x000100
 
 enum hza_marker {
     EMPTY = 0x0,
@@ -27,10 +28,14 @@ enum hza_metadata_entry_type {
     MSTATE_AUX = 0x2
 };
 
-struct hza_file {
+struct hza_file : public rainman::context {
     uint64_t *blob_ids;
     uint64_t blob_count;
     //todo: Add file information.
+
+    void destroy() {
+        rfree(blob_ids);
+    }
 };
 
 struct hza_fragment {
@@ -43,9 +48,7 @@ struct hza_entry {
     T data;
     uint64_t sof{};
 
-    hza_entry() {
-        // empty-constructor
-    }
+    hza_entry() = default;
 
     hza_entry(T data, uint64_t sof) {
         this->data = data;
@@ -54,10 +57,11 @@ struct hza_entry {
 };
 
 struct hza_metadata {
-    std::string version;
+    uint32_t version;
     uint64_t eof;
-    std::unordered_map<std::string, hza_entry<hza_file>> file_map;
-    std::unordered_map<std::string, hza_entry<uint64_t>> mstate_aux_map;
+    hza_trie<hza_entry<hza_file>> file_map;
+    hza_trie<hza_entry<uint64_t>> mstate_aux_map;
+    std::unordered_map<uint64_t, bool> mstate_inv_aux_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
     std::unordered_map<uint64_t, uint64_t> dep_counter;
@@ -68,9 +72,9 @@ class hz_archive: public rainman::context {
 private:
     std::string path;
     hza_metadata metadata;
-    bitio::stream *stream;
-    sem_t *archive_mutex;
-    sem_t *mutex;
+    bitio::stream *stream{};
+    sem_t *archive_mutex{};
+    sem_t *mutex{};
 
     void hza_scan();
 
@@ -109,16 +113,14 @@ private:
 
     void hza_decrement_dep(uint64_t id);
 
+    void hza_metadata_erase_file(const std::string &_file_path);
+
 public:
     hz_archive() = default;
 
     hz_archive(const std::string& archive_path);
 
     void load();
-
-    std::vector<std::string> list_files();
-
-    std::vector<std::string> list_mstates();
 
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 
@@ -133,6 +135,8 @@ public:
     hzblob_t *read_blob(uint64_t id);
 
     hzblob_set read_file(const std::string& file_path);
+
+    hz_mstate *read_mstate(std::string _path);
 
     void remove_file(const std::string& file_path);
 
@@ -150,7 +154,13 @@ public:
     // Inject mstate by tag-reference. This mstate can be reused by other blobs.
     void inject_mstate(const std::string &_path, hzblob_t *blob);
 
+    bool check_mstate_exists(const std::string &_path);
+
     void close();
+
+    std::vector<hza_trie_list_elem> list_file_system(const std::string &prefix);
+
+    std::vector<hza_trie_list_elem> list_mstate_system(const std::string &prefix);
 };
 
 #endif

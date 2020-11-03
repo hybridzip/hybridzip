@@ -9,6 +9,7 @@
 #include <rainman/rainman.h>
 #include <hzip/core/blob/hzblob.h>
 #include <hzip/utils/common.h>
+#include <hzip/archive/archive_trie.h>
 
 
 #define HZ_ARCHIVE_VERSION 0x000100
@@ -58,8 +59,8 @@ struct hza_entry {
 struct hza_metadata {
     uint32_t version;
     uint64_t eof;
-    std::unordered_map<std::string, hza_entry<hza_file>> file_map;
-    std::unordered_map<std::string, hza_entry<uint64_t>> mstate_aux_map;
+    hza_trie<hza_entry<hza_file>> file_map;
+    hza_trie<hza_entry<uint64_t>> mstate_aux_map;
     std::unordered_map<uint64_t, bool> mstate_inv_aux_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
@@ -121,10 +122,6 @@ public:
 
     void load();
 
-    std::vector<std::string> list_files();
-
-    std::vector<std::string> list_mstates();
-
     void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
 
     void create_file_entry(const std::string& file_path, hza_file file);
@@ -160,6 +157,10 @@ public:
     bool check_mstate_exists(const std::string &_path);
 
     void close();
+
+    std::vector<hza_trie_list_elem> list_file_system(const std::string &prefix);
+
+    std::vector<hza_trie_list_elem> list_mstate_system(const std::string &prefix);
 };
 
 #endif

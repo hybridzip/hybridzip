@@ -50,10 +50,10 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
 
         // Inject mstate into blob and add mstate to the archive.
         archive->inject_mstate(cblob->mstate, cblob);
-        archive->create_file("/data.txt", cblob, 1);
+        archive->create_file("/dir1/dir2/data.txt", cblob, 1);
 
 
-        auto ccblob = &archive->read_file("/data.txt").blobs[0];
+        auto ccblob = &archive->read_file("/dir1/dir2/data.txt").blobs[0];
 
         // compare cblob and ccblob
 
@@ -280,6 +280,53 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         dblob->destroy();
 
         archive->close();
+
+    } catch (std::exception &e) {
+        EXPECT_TRUE(false) << e.what();
+    }
+}
+
+TEST(ArchiveTest, hzip_archive_trie) {
+    try {
+        auto mgr = new rainman::memmgr;
+
+        hza_trie<uint8_t> trie;
+        rinitfrom(mgr, trie);
+
+        trie.init();
+
+        trie.set("/c/x1", 100);
+        trie.set("/c/x2", 101);
+        trie.set("/c/x3", 102);
+
+        trie.erase("/c");
+
+        EXPECT_THROW(trie.get("/c/x1"), ArchiveErrors::TargetNotFoundException);
+
+        trie.set("/a/1", 1);
+        trie.set("/a/2", 2);
+        trie.set("/a/3", 3);
+        EXPECT_THROW(trie.set("/a/1/1", 2), ArchiveErrors::InvalidOperationException);
+
+        ASSERT_EQ(trie.get("/a/1"), 1);
+        ASSERT_EQ(trie.get("/a/2"), 2);
+        ASSERT_EQ(trie.get("/a/3"), 3);
+
+        trie.set("/a/3", 4);
+        ASSERT_EQ(trie.get("/a/3"), 4);
+
+        trie.set("/a/4/1/2", 10);
+        trie.erase("/a/4/1/2");
+
+        EXPECT_THROW(trie.erase("/a/4"), ArchiveErrors::TargetNotFoundException);
+        EXPECT_THROW(trie.get("/a/4/1/2"), ArchiveErrors::TargetNotFoundException);
+
+        trie.set("/a/4", 12);
+        ASSERT_EQ(trie.get("/a/4"), 12);
+
+        trie.erase("/a");
+
+        ASSERT_EQ(trie.children("/").size(), 0);
 
     } catch (std::exception &e) {
         EXPECT_TRUE(false) << e.what();

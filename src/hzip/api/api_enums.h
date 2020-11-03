@@ -52,11 +52,12 @@ namespace hzapi {
     enum QUERY_CTL {
         QUERY_CTL_ARCHIVE = 0x0,
         QUERY_CTL_CHECK_IF_FILE_EXISTS = 0x1,
-        QUERY_CTL_GET_ALL_FILES = 0x2,
+        QUERY_CTL_LIST_FILE_SYSTEM = 0x2,
         QUERY_CTL_PIGGYBACK = 0x3,
         QUERY_CTL_DELETE_FILE = 0x4,
         QUERY_CTL_DELETE_MSTATE = 0x5,
         QUERY_CTL_GET_MEM_USAGE = 0x6,
+        QUERY_CTL_DEST = 0x7,
     };
 }
 

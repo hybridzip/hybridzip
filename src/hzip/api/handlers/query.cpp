@@ -18,8 +18,6 @@ void hz_query::start() {
     uint16_t archive_path_len = 0;
     char *dest = nullptr;
     uint16_t dest_len = 0;
-    char *mstate_addr = nullptr;
-    uint16_t mstate_addr_len = 0;
     bool piggy_back = false;
 
     while (true) {
@@ -50,20 +48,16 @@ void hz_query::start() {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                HZ_RECV(&dest_len, sizeof(dest_len));
-
-                dest = rmalloc(char, dest_len + 1);
-                dest[dest_len] = 0;
-
-                HZ_RECV(dest, dest_len);
-                hz_validate_path(dest);
+                if (dest == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Target not provided");
+                }
 
                 bool found = archive->check_file_exists(dest);
                 HZ_SEND(&found, sizeof(found));
 
                 return;
             }
-            case QUERY_CTL_GET_ALL_FILES: {
+            case QUERY_CTL_LIST_FILE_SYSTEM: {
                 if (!piggy_back) {
                     throw ApiErrors::InvalidOperationError("Piggyback was disabled");
                 }
@@ -72,15 +66,20 @@ void hz_query::start() {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                auto files = archive->list_files();
+                if (dest == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Target not provided");
+                }
 
-                uint64_t count = files.size();
+                auto list = archive->list_file_system(dest);
+
+                uint64_t count = list.size();
                 HZ_SEND(&count, sizeof(count));
 
-                for (auto file : files) {
-                    uint16_t len = file.length();
+                for (const auto& elem : list) {
+                    uint16_t len = elem.entry.length();
                     HZ_SEND(&len, sizeof(len));
-                    HZ_SEND(file.c_str(), len);
+                    HZ_SEND(elem.entry.c_str(), len);
+                    HZ_SEND(&elem.is_leaf, sizeof(elem.is_leaf));
                 }
 
                 return;
@@ -94,13 +93,9 @@ void hz_query::start() {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                HZ_RECV(&dest_len, sizeof(dest_len));
-
-                dest = rmalloc(char, dest_len + 1);
-                dest[dest_len] = 0;
-
-                HZ_RECV(dest, dest_len);
-                hz_validate_path(dest);
+                if (dest == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Target not provided");
+                }
 
                 archive->remove_file(dest);
                 return;
@@ -110,15 +105,11 @@ void hz_query::start() {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                HZ_RECV(&mstate_addr_len, sizeof(mstate_addr_len));
+                if (dest == nullptr) {
+                    throw ApiErrors::InvalidOperationError("Target not provided");
+                }
 
-                mstate_addr = rmalloc(char, mstate_addr_len + 1);
-                mstate_addr[mstate_addr_len] = 0;
-
-                HZ_RECV(mstate_addr, mstate_addr_len);
-                hz_validate_path(mstate_addr);
-
-                archive->uninstall_mstate(mstate_addr);
+                archive->uninstall_mstate(dest);
                 return;
             }
             case QUERY_CTL_GET_MEM_USAGE: {
@@ -126,6 +117,17 @@ void hz_query::start() {
                 HZ_SEND(&alloc_size, sizeof(alloc_size));
 
                 return;
+            }
+            case QUERY_CTL_DEST: {
+                HZ_RECV(&dest_len, sizeof(dest_len));
+
+                dest = rmalloc(char, dest_len + 1);
+                dest[dest_len] = 0;
+
+                HZ_RECV(dest, dest_len);
+                hz_validate_path(dest);
+
+                break;
             }
             default: {
                 throw ApiErrors::InvalidOperationError("Invalid command");

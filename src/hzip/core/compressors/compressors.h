@@ -1,6 +1,6 @@
 #ifndef HYBRIDZIP_COMPRESSORS_H
 #define HYBRIDZIP_COMPRESSORS_H
 
-#include "victini.h"
+#include "Victini.h"
 
 #endif

@@ -1,13 +1,13 @@
 #include "archive_provider.h"
 
-hz_archive *hzprovider::archive::provide(const std::string &path) {
+HZ_Archive *hzprovider::ArchiveProvider::provide(const std::string &path) {
     sem_wait(&mutex);
-    hz_archive *archive;
+    HZ_Archive *archive;
     if (arch_map.contains(path)) {
         archive = arch_map[path];
     } else {
-        archive = mgr->r_malloc<hz_archive>(1);
-        *archive = hz_archive(path);
+        archive = mgr->r_malloc<HZ_Archive>(1);
+        *archive = HZ_Archive(path);
         rinitptrfrom(mgr, archive);
         archive->load();
 
@@ -19,12 +19,12 @@ hz_archive *hzprovider::archive::provide(const std::string &path) {
     return archive;
 }
 
-void hzprovider::archive::init(rainman::memmgr *_mgr) {
+void hzprovider::ArchiveProvider::init(rainman::memmgr *_mgr) {
     sem_init(&mutex, 0, 1);
     mgr = _mgr;
 }
 
-void hzprovider::archive::close() {
+void hzprovider::ArchiveProvider::close() {
     sem_wait(&mutex);
 
     for (auto &entry : arch_map) {

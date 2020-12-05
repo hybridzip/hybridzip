@@ -71,7 +71,7 @@ int main(int argc, const char **argv) {
     mgr->set_peak(std::stoull(dotenv["HZIP_MAX_MEM_USAGE"]));
     LOG_F(INFO, "hzip: Max memory usage set to %lu bytes", mgr->get_peak_size());
 
-    auto api = new hzapi::hz_api;
+    auto api = new hzapi::Api;
     rinitptrfrom(mgr, api);
 
     _hzapi_graceful_shutdown = [api]() {

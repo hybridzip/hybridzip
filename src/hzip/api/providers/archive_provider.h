@@ -7,15 +7,15 @@
 #include <hzip/archive/archive.h>
 
 namespace hzprovider {
-    class archive {
+    class ArchiveProvider {
     private:
-        std::unordered_map<std::string, hz_archive *> arch_map;
+        std::unordered_map<std::string, HZ_Archive *> arch_map;
         sem_t mutex;
         rainman::memmgr *mgr;
     public:
         void init(rainman::memmgr *_mgr);
 
-        hz_archive *provide(const std::string &path);
+        HZ_Archive *provide(const std::string &path);
 
         void close();
     };

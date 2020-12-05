@@ -1,9 +1,9 @@
-#include "victini.h"
+#include "Victini.h"
 #include <hzip/utils/utils.h>
 
-hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
+HZ_Blob *hzcodec::Victini::compress(HZ_Blob *blob) {
     if (blob->mstate == nullptr) {
-        blob->mstate = rxnew(hz_mstate);
+        blob->mstate = rxnew(HZ_MState);
     }
 
     auto mstate = blob->mstate;
@@ -16,12 +16,12 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
         data[i] = blob->o_data[i];
     }
 
-    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, length, 0x100);
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, length, 0x100);
     rinit(bwt);
 
     auto bwt_index = bwt.transform();
 
-    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
+    auto mtf = hztrans::MoveToFrontTransformer(data, 0x100, length);
     mtf.transform();
 
     auto *dict = rmalloc(uint64_t*, 256);
@@ -44,7 +44,7 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     // Perform cross-encoding.
     uint64_t index = length;
 
-    auto cross_encoder = [dict, cdict, &index, data](hzrans64_t *state, hz_stack<uint32_t> *_data) {
+    auto cross_encoder = [dict, cdict, &index, data](hzrans64_t *state, HZ_Stack<uint32_t> *_data) {
         index--;
         if (index != 0) {
             state->ls = dict[data[index - 1]][data[index]];
@@ -73,7 +73,7 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     rfree(cdict);
     rfree(data);
 
-    auto cblob = rxnew(hzblob_t);
+    auto cblob = rxnew(HZ_Blob);
 
     cblob->data = blob_data.data;
     cblob->size = blob_data.n;
@@ -85,7 +85,7 @@ hzblob_t *hzcodec::victini::compress(hzblob_t *blob) {
     return cblob;
 }
 
-hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
+HZ_Blob *hzcodec::Victini::decompress(HZ_Blob *blob) {
     auto mstate = blob->mstate;
     uint64_t length = blob->o_size;
 
@@ -150,7 +150,7 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     int prev_symbol = -1;
     auto sym_optr = rnew(uint64_t);
 
-    auto cross_decoder = [dict, cdict, &prev_symbol, sym_optr](hzrans64_t *state, hz_stack<uint32_t> *data) {
+    auto cross_decoder = [dict, cdict, &prev_symbol, sym_optr](hzrans64_t *state, HZ_Stack<uint32_t> *data) {
         uint64_t x = state->x;
         uint64_t bs = x & state->mask;
         uint8_t symbol = 0;
@@ -206,15 +206,15 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
 
     rfree(dataptr.data);
 
-    auto mtf = hztrans::mtf_transformer(sdata, 0x100, length);
+    auto mtf = hztrans::MoveToFrontTransformer(sdata, 0x100, length);
     mtf.invert();
 
-    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(sdata, length, 0x100);
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(sdata, length, 0x100);
     rinit(bwt);
 
     bwt.invert(bwt_index);
 
-    auto dblob = rxnew(hzblob_t);
+    auto dblob = rxnew(HZ_Blob);
 
     dblob->o_data = rmalloc(uint8_t, length);
     dblob->o_size = length;
@@ -231,10 +231,10 @@ hzblob_t *hzcodec::victini::decompress(hzblob_t *blob) {
     return dblob;
 }
 
-void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data,
+void hzcodec::Victini::gen_model_from_mstate(HZ_MState *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data,
                                              uint64_t length, bool training_mode) {
     if (mstate->is_empty()) {
-        auto focm = hzmodels::first_order_context_model();
+        auto focm = hzmodels::FirstOrderContextModel();
         rinit(focm);
 
         focm.set_alphabet_size(0x100);
@@ -306,7 +306,7 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
             // Dispose mstate after it is interpreted.
             mstate->destroy();
 
-            auto focm = hzmodels::first_order_context_model();
+            auto focm = hzmodels::FirstOrderContextModel();
             rinit(focm);
 
             focm.set_alphabet_size(0x100);
@@ -370,9 +370,9 @@ void hzcodec::victini::gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict,
     }
 }
 
-hz_mstate *hzcodec::victini::train(hzblob_t *blob) {
+HZ_MState *hzcodec::Victini::train(HZ_Blob *blob) {
     if (blob->mstate == nullptr) {
-        blob->mstate = rxnew(hz_mstate);
+        blob->mstate = rxnew(HZ_MState);
     }
 
     auto mstate = blob->mstate;
@@ -384,12 +384,12 @@ hz_mstate *hzcodec::victini::train(hzblob_t *blob) {
         data[i] = blob->o_data[i];
     }
 
-    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, length, 0x100);
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, length, 0x100);
     rinit(bwt);
 
     bwt.transform();
 
-    auto mtf = hztrans::mtf_transformer(data, 0x100, length);
+    auto mtf = hztrans::MoveToFrontTransformer(data, 0x100, length);
     mtf.transform();
 
     auto *dict = rmalloc(uint64_t*, 256);

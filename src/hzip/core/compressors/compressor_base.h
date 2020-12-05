@@ -1,16 +1,16 @@
 #ifndef HYBRIDZIP_COMPRESSOR_BASE_H
 #define HYBRIDZIP_COMPRESSOR_BASE_H
 
-#include <hzip/core/blob/hzblob.h>
+#include <hzip/core/blob/blob.h>
 
 namespace hzcodec {
-    class abstract_codec {
+    class AbstractCodec {
     public:
-        virtual hzblob_t *compress(hzblob_t *blob) = 0;
+        virtual HZ_Blob *compress(HZ_Blob *blob) = 0;
 
-        virtual hzblob_t *decompress(hzblob_t *blob) = 0;
+        virtual HZ_Blob *decompress(HZ_Blob *blob) = 0;
 
-        virtual hz_mstate *train(hzblob_t *blob) = 0;
+        virtual HZ_MState *train(HZ_Blob *blob) = 0;
     };
 }
 

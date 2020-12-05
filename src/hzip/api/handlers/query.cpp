@@ -5,15 +5,15 @@
 
 using namespace hzapi;
 
-hz_query::hz_query(int _sock, char *_ip_addr, uint16_t _port, hzprovider::archive *_archive_provider) {
+Query::Query(int _sock, char *_ip_addr, uint16_t _port, hzprovider::ArchiveProvider *_archive_provider) {
     sock = _sock;
     ip_addr = _ip_addr;
     port = _port;
     archive_provider = _archive_provider;
 }
 
-void hz_query::start() {
-    hz_archive *archive = nullptr;
+void Query::start() {
+    HZ_Archive *archive = nullptr;
     char *archive_path = nullptr;
     uint16_t archive_path_len = 0;
     char *target = nullptr;

@@ -7,11 +7,11 @@
 #include <hzip/processor/processor.h>
 
 namespace hzapi {
-    class hz_query : public rainman::module, public hz_socket_class {
+    class Query : public rainman::module, public SocketInterface {
     private:
-        hzprovider::archive *archive_provider{};
+        hzprovider::ArchiveProvider *archive_provider{};
     public:
-        hz_query(int _sock, char *_ip_addr, uint16_t port, hzprovider::archive *_archive_provider);
+        Query(int _sock, char *_ip_addr, uint16_t port, hzprovider::ArchiveProvider *_archive_provider);
 
         void start();
     };

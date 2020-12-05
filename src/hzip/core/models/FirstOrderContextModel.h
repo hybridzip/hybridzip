@@ -1,12 +1,12 @@
-#ifndef HYBRIDZIP_FIRST_ORDER_CONTEXT_MODEL_H
-#define HYBRIDZIP_FIRST_ORDER_CONTEXT_MODEL_H
+#ifndef HYBRIDZIP_FIRSTORDERCONTEXTMODEL_H
+#define HYBRIDZIP_FIRSTORDERCONTEXTMODEL_H
 
 #include <cstdint>
 #include <cmath>
 #include <rainman/rainman.h>
 
 namespace hzmodels {
-    class first_order_context_model : public rainman::context {
+    class FirstOrderContextModel : public rainman::context {
     private:
         uint64_t **context_map;
         uint64_t prev_symbol;
@@ -14,9 +14,7 @@ namespace hzmodels {
         bool has_started = false;
     public:
 
-        first_order_context_model() {
-            // empty-constructor
-        }
+        FirstOrderContextModel() = default;
 
         void set_alphabet_size(int alphabet_size);
 
@@ -24,7 +22,7 @@ namespace hzmodels {
 
         void update(uint64_t symbol, uint64_t delta = 1);
 
-        ~first_order_context_model();
+        ~FirstOrderContextModel();
     };
 }
 

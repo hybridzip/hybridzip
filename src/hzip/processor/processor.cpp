@@ -4,29 +4,29 @@
 
 #define HZP_STUB_CALL(f, ...) if (f != nullptr) f(__VA_ARGS__)
 
-hz_processor::hz_processor(uint64_t n_threads) {
+HZ_Processor::HZ_Processor(uint64_t n_threads) {
     this->n_threads = n_threads;
     sem_init(&mutex, 0, n_threads);
 }
 
-hzcodec::abstract_codec *hz_processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
+hzcodec::AbstractCodec *HZ_Processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
     switch (alg) {
         case hzcodec::algorithms::UNDEFINED:
             return nullptr;
         case hzcodec::algorithms::VICTINI:
-            return rxnew(hzcodec::victini);
+            return rxnew(hzcodec::Victini);
         default:
             throw ProcessorErrors::InvalidOperationError("Algorithm not found");
     }
 }
 
-void hz_processor::run(hz_job *job) {
+void HZ_Processor::run(HZ_Job *job) {
     if (job == nullptr) {
         return;
     }
 
     if (job->codec != nullptr) {
-        std::thread([this](hz_job *job) {
+        std::thread([this](HZ_Job *job) {
             sem_wait(&mutex);
 
             try {
@@ -44,24 +44,24 @@ void hz_processor::run(hz_job *job) {
     }
 }
 
-void hz_processor::hzp_run_codec_job(hz_codec_job *job) {
+void HZ_Processor::hzp_run_codec_job(HZ_CodecJob *job) {
     switch (job->job_type) {
-        case hz_codec_job::ENCODE: {
+        case HZ_CodecJob::ENCODE: {
             hzp_encode(job);
             break;
         }
-        case hz_codec_job::DECODE: {
+        case HZ_CodecJob::DECODE: {
             hzp_decode(job);
             break;
         }
-        case hz_codec_job::TRAIN: {
+        case HZ_CodecJob::TRAIN: {
             hzp_train(job);
             break;
         }
     }
 }
 
-void hz_processor::hzp_encode(hz_codec_job *job) {
+void HZ_Processor::hzp_encode(HZ_CodecJob *job) {
     if (job->use_mstate_addr) {
         if (job->archive == nullptr) {
             throw ProcessorErrors::InvalidOperationError("Archive is required for mstate-injection by address");
@@ -76,7 +76,7 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    hzblob_t *blob = nullptr;
+    HZ_Blob *blob = nullptr;
     try {
         blob = codec->compress(job->blob);
         blob->mstate_id = job->blob->mstate_id;
@@ -116,7 +116,7 @@ void hz_processor::hzp_encode(hz_codec_job *job) {
     }
 }
 
-void hz_processor::hzp_decode(hz_codec_job *job) {
+void HZ_Processor::hzp_decode(HZ_CodecJob *job) {
     if (job->archive == nullptr && job->blob_callback == nullptr) {
         throw ProcessorErrors::InvalidOperationError("Piggy-back is disabled, null job execution is not allowed");
     }
@@ -139,7 +139,7 @@ void hz_processor::hzp_decode(hz_codec_job *job) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    hzblob_t *blob = nullptr;
+    HZ_Blob *blob = nullptr;
     try {
         blob = codec->decompress(job->blob);
 
@@ -163,7 +163,7 @@ void hz_processor::hzp_decode(hz_codec_job *job) {
     }
 }
 
-void hz_processor::hzp_train(hz_codec_job *job) {
+void HZ_Processor::hzp_train(HZ_CodecJob *job) {
     if (!job->use_mstate_addr) {
         throw ProcessorErrors::InvalidOperationError("Mstate address not found");
     }
@@ -183,7 +183,7 @@ void hz_processor::hzp_train(hz_codec_job *job) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    hz_mstate *mstate = nullptr;
+    HZ_MState *mstate = nullptr;
 
     try {
         mstate = codec->train(job->blob);
@@ -206,7 +206,7 @@ void hz_processor::hzp_train(hz_codec_job *job) {
 }
 
 // To avoid processor overload.
-void hz_processor::cycle() {
+void HZ_Processor::cycle() {
     sem_wait(&mutex);
     sem_post(&mutex);
 }

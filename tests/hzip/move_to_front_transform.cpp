@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <hzip/core/preprocessor/mtf_transformer.h>
+#include <hzip/core/preprocessor/MoveToFrontTransformer.h>
 
 class MoveToFrontTransformTest: public testing::Test {};
 
@@ -10,7 +10,7 @@ TEST(MoveToFrontTransformTest, hzip_core_preprocessor_mtf) {
         data[i] = i % 256;
     }
 
-    auto mtf = hztrans::mtf_transformer(data, 0x100, 1048576);
+    auto mtf = hztrans::MoveToFrontTransformer(data, 0x100, 1048576);
 
     mtf.transform();
     mtf.invert();
@@ -27,7 +27,7 @@ TEST(MoveToFrontTransformTest, hzip_core_preprocessor_mtf_const) {
         data[i] = 255;
     }
 
-    auto mtf = hztrans::mtf_transformer(data, 0x100, 1048576);
+    auto mtf = hztrans::MoveToFrontTransformer(data, 0x100, 1048576);
 
     mtf.transform();
     mtf.invert();

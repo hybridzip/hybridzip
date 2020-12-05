@@ -8,7 +8,7 @@ using namespace hzapi;
 
 #define HZ_MIN(a, b) (a) < (b) ? (a) : (b)
 
-uint64_t hz_streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
+uint64_t Streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
     switch (alg) {
         case hzcodec::algorithms::UNDEFINED:
             return 0xffffffffffffffff;
@@ -19,8 +19,8 @@ uint64_t hz_streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
     }
 }
 
-hz_streamer::hz_streamer(int _sock, char *_ip_addr, uint16_t _port, hz_processor *_proc,
-                         hzprovider::archive *_archive_provider) {
+Streamer::Streamer(int _sock, char *_ip_addr, uint16_t _port, HZ_Processor *_proc,
+                   hzprovider::ArchiveProvider *_archive_provider) {
     sock = _sock;
     ip_addr = _ip_addr;
     port = _port;
@@ -29,7 +29,7 @@ hz_streamer::hz_streamer(int _sock, char *_ip_addr, uint16_t _port, hz_processor
     sem_init(&mutex, 0, 1);
 }
 
-void hz_streamer::encode() {
+void Streamer::encode() {
     uint16_t archive_path_len{};
     uint16_t mstate_addr_len{};
     uint16_t dest_len{};
@@ -43,7 +43,7 @@ void hz_streamer::encode() {
 
     bool piggy_back{};
 
-    hz_archive *archive{};
+    HZ_Archive *archive{};
 
     while (true) {
         HZ_RECV(&word, sizeof(word));
@@ -79,7 +79,7 @@ void hz_streamer::encode() {
                     // Avoid processor overload.
                     processor->cycle();
 
-                    auto *blob = rxnew(hzblob_t);
+                    auto *blob = rxnew(HZ_Blob);
 
                     max_blob_size = HZ_MIN(max_blob_size, data_len);
 
@@ -93,8 +93,8 @@ void hz_streamer::encode() {
                     t_recv(blob->o_data, max_blob_size, false);
 
                     // Construct hz_job struct for processing.
-                    auto *job = rnew(hz_job);
-                    job->codec = rnew(hz_codec_job);
+                    auto *job = rnew(HZ_Job);
+                    job->codec = rnew(HZ_CodecJob);
 
                     job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
                     job->codec->archive = archive;
@@ -111,7 +111,7 @@ void hz_streamer::encode() {
                     }
 
                     if (piggy_back) {
-                        job->codec->blob_callback = [this](hzblob_t *cblob) {
+                        job->codec->blob_callback = [this](HZ_Blob *cblob) {
                             uint64_t alg = cblob->mstate->alg;
                             HZ_SEND(&alg, sizeof(alg));
                             HZ_SEND(&cblob->mstate->length, sizeof(cblob->mstate->length));
@@ -125,9 +125,9 @@ void hz_streamer::encode() {
                         };
                     }
 
-                    job->codec->job_type = hz_codec_job::JOBTYPE::ENCODE;
+                    job->codec->job_type = HZ_CodecJob::JOBTYPE::ENCODE;
 
-                    job->stub = rnew(hz_job_stub);
+                    job->stub = rnew(HZ_JobStub);
                     job->stub->on_completed = [this, job]() {
                         job->codec->blob->destroy();
                         rfree(job->codec->blob);
@@ -156,7 +156,7 @@ void hz_streamer::encode() {
                         blob_id_arr[i] = blob_ids[i];
                     }
 
-                    hza_file file{};
+                    HZ_ArchiveFile file{};
                     file.blob_ids = blob_id_arr;
                     file.blob_count = blob_ids.size();
 
@@ -249,7 +249,7 @@ void hz_streamer::encode() {
                     // Avoid processor overload.
                     processor->cycle();
 
-                    auto *blob = rxnew(hzblob_t);
+                    auto *blob = rxnew(HZ_Blob);
 
                     max_blob_size = HZ_MIN(max_blob_size, data_len);
 
@@ -260,8 +260,8 @@ void hz_streamer::encode() {
                     t_recv(blob->o_data, max_blob_size, false);
 
                     // Construct hz_job struct for processing.
-                    auto *job = rnew(hz_job);
-                    job->codec = rnew(hz_codec_job);
+                    auto *job = rnew(HZ_Job);
+                    job->codec = rnew(HZ_CodecJob);
 
                     job->codec->algorithm = (hzcodec::algorithms::ALGORITHM) algorithm;
                     job->codec->archive = archive;
@@ -271,9 +271,9 @@ void hz_streamer::encode() {
                     }
                     job->codec->blob = blob;
 
-                    job->codec->job_type = hz_codec_job::JOBTYPE::TRAIN;
+                    job->codec->job_type = HZ_CodecJob::JOBTYPE::TRAIN;
 
-                    job->stub = rnew(hz_job_stub);
+                    job->stub = rnew(HZ_JobStub);
                     job->stub->on_completed = [this, job]() {
                         job->codec->blob->destroy();
                         rfree(job->codec->blob);
@@ -306,15 +306,15 @@ void hz_streamer::encode() {
     }
 }
 
-void hz_streamer::decode() {
+void Streamer::decode() {
     uint16_t archive_path_len{};
     uint16_t mstate_addr_len{};
     uint16_t src_len{};
     uint8_t word{};
     uint64_t algorithm{};
 
-    hz_mstate *mstate{};
-    hzblob_t *blob{};
+    HZ_MState *mstate{};
+    HZ_Blob *blob{};
 
     char *archive_path{};
     char *mstate_addr{};
@@ -322,7 +322,7 @@ void hz_streamer::decode() {
 
     bool piggy_back{};
 
-    hz_archive *archive{};
+    HZ_Archive *archive{};
 
     while (true) {
         HZ_RECV(&word, sizeof(word));
@@ -352,17 +352,17 @@ void hz_streamer::decode() {
 
                     // Construct hz_job
 
-                    auto *job = rnew(hz_job);
-                    job->codec = rnew(hz_codec_job);
-                    job->stub = rnew(hz_job_stub);
+                    auto *job = rnew(HZ_Job);
+                    job->codec = rnew(HZ_CodecJob);
+                    job->stub = rnew(HZ_JobStub);
 
                     job->codec->archive = archive;
-                    job->codec->job_type = hz_codec_job::JOBTYPE::DECODE;
+                    job->codec->job_type = HZ_CodecJob::JOBTYPE::DECODE;
                     job->codec->blob = src_blob;
                     job->codec->use_mstate_addr = false;
                     job->codec->algorithm = src_blob->mstate->alg;
 
-                    job->codec->blob_callback = [this](hzblob_t *dblob) {
+                    job->codec->blob_callback = [this](HZ_Blob *dblob) {
                         HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
                         HZ_SEND(dblob->o_data, dblob->o_size);
                     };
@@ -455,7 +455,7 @@ void hz_streamer::decode() {
                     rfree(mstate);
                 }
 
-                mstate = rxnew(hz_mstate);
+                mstate = rxnew(HZ_MState);
 
                 HZ_RECV(&mstate->length, sizeof(mstate->length));
 
@@ -481,7 +481,7 @@ void hz_streamer::decode() {
                     rfree(blob);
                 }
 
-                blob = rxnew(hzblob_t);
+                blob = rxnew(HZ_Blob);
 
                 HZ_RECV(&blob->header.length, sizeof(blob->header.length));
                 blob->header.raw = rmalloc(uint8_t, blob->header.length);
@@ -497,9 +497,9 @@ void hz_streamer::decode() {
                     blob->mstate = mstate;
                 }
 
-                auto *job = rnew(hz_job);
-                job->codec = rnew(hz_codec_job);
-                job->stub = rnew(hz_job_stub);
+                auto *job = rnew(HZ_Job);
+                job->codec = rnew(HZ_CodecJob);
+                job->stub = rnew(HZ_JobStub);
 
                 if (mstate_addr != nullptr) {
                     job->codec->mstate_addr = mstate_addr;
@@ -508,14 +508,14 @@ void hz_streamer::decode() {
                 job->codec->archive = archive;
 
 
-                job->codec->blob_callback = [this](hzblob_t *dblob) {
+                job->codec->blob_callback = [this](HZ_Blob *dblob) {
                     HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
                     HZ_SEND(dblob->o_data, dblob->o_size);
                 };
 
 
                 job->codec->blob = blob;
-                job->codec->job_type = hz_codec_job::JOBTYPE::DECODE;
+                job->codec->job_type = HZ_CodecJob::JOBTYPE::DECODE;
 
                 job->stub->on_completed = [this, job]() {
                     rfree(job->codec);
@@ -543,7 +543,7 @@ void hz_streamer::decode() {
     }
 }
 
-void hz_streamer::start() {
+void Streamer::start() {
     uint8_t ctl_word;
 
     HZ_RECV(&ctl_word, sizeof(ctl_word));
@@ -571,7 +571,7 @@ void hz_streamer::start() {
     }
 }
 
-void hz_streamer::write_mstate() {
+void Streamer::write_mstate() {
     uint16_t archive_path_len{};
     uint16_t mstate_addr_len{};
     uint8_t word{};
@@ -579,7 +579,7 @@ void hz_streamer::write_mstate() {
     char *archive_path{};
     char *mstate_addr{};
 
-    hz_archive *archive{};
+    HZ_Archive *archive{};
 
     while (true) {
         HZ_RECV(&word, sizeof(word));
@@ -630,7 +630,7 @@ void hz_streamer::write_mstate() {
                 auto *mstate_data = rmalloc(uint8_t, mstate_data_len);
                 HZ_RECV(mstate_data, mstate_data_len);
 
-                auto *mstate = rnew(hz_mstate);
+                auto *mstate = rnew(HZ_MState);
                 mstate->length = mstate_data_len;
                 mstate->data = mstate_data;
                 mstate->alg = (hzcodec::algorithms::ALGORITHM) mstate_algorithm;
@@ -647,7 +647,7 @@ void hz_streamer::write_mstate() {
     }
 }
 
-void hz_streamer::read_mstate() {
+void Streamer::read_mstate() {
     uint16_t archive_path_len{};
     uint16_t mstate_addr_len{};
     uint8_t word{};
@@ -656,7 +656,7 @@ void hz_streamer::read_mstate() {
     char *mstate_addr{};
     bool piggyback = false;
 
-    hz_archive *archive{};
+    HZ_Archive *archive{};
 
     while (true) {
         HZ_RECV(&word, sizeof(word));

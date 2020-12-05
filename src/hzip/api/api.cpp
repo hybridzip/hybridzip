@@ -11,8 +11,8 @@
 
 using namespace hzapi;
 
-hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std::string &_passwd, sem_t *_mutex,
-                                 char *_ip_addr, uint16_t _port, hzprovider::archive *_archive_provider) {
+ApiInstance::ApiInstance(int _sock, HZ_Processor *_processor, const std::string &_passwd, sem_t *_mutex,
+                         char *_ip_addr, uint16_t _port, hzprovider::ArchiveProvider *_archive_provider) {
     processor = _processor;
     sock = _sock;
     passwd = _passwd;
@@ -22,7 +22,7 @@ hz_api_instance::hz_api_instance(int _sock, hz_processor *_processor, const std:
     archive_provider = _archive_provider;
 }
 
-void hz_api_instance::handshake() {
+void ApiInstance::handshake() {
     uint64_t token = hz_rand64();
     uint64_t xtoken = hz_enc_token(passwd, token);
 
@@ -39,14 +39,14 @@ void hz_api_instance::handshake() {
     }
 }
 
-void hz_api_instance::end() {
+void ApiInstance::end() {
     close(sock);
     HZAPI_LOG(INFO, "Closed session");
     rfree(ip_addr);
     sem_post(mutex);
 }
 
-void hz_api_instance::start() {
+void ApiInstance::start() {
     HZAPI_LOG(INFO, "Session created successfully");
 
     try {
@@ -64,12 +64,12 @@ void hz_api_instance::start() {
 
             switch ((API_CTL) ctl_word) {
                 case API_CTL_STREAM: {
-                    auto streamer = rmod(hz_streamer, sock, ip_addr, port, processor, archive_provider);
+                    auto streamer = rmod(Streamer, sock, ip_addr, port, processor, archive_provider);
                     streamer.start();
                     break;
                 }
                 case API_CTL_QUERY: {
-                    auto query = rmod(hz_query, sock, ip_addr, port, archive_provider);
+                    auto query = rmod(Query, sock, ip_addr, port, archive_provider);
                     query.start();
                     break;
                 }
@@ -97,21 +97,21 @@ void hz_api_instance::start() {
 
 }
 
-hz_api *hz_api::limit(uint64_t _max_instances) {
+Api *Api::limit(uint64_t _max_instances) {
     max_instances = _max_instances;
     return this;
 }
 
-hz_api *hz_api::process(uint64_t _n_threads) {
-    processor = rxnew(hz_processor, _n_threads);
+Api *Api::process(uint64_t _n_threads) {
+    processor = rxnew(HZ_Processor, _n_threads);
     return this;
 }
 
-[[noreturn]] void hz_api::start(const char *addr, uint16_t port) {
+[[noreturn]] void Api::start(const char *addr, uint16_t port) {
     mutex = rnew(sem_t);
     sem_init(mutex, 0, max_instances);
 
-    archive_provider = rnew(hzprovider::archive);
+    archive_provider = rnew(hzprovider::ArchiveProvider);
     archive_provider->init(rmemmgr);
 
     sockaddr_in server_addr{};
@@ -162,8 +162,8 @@ hz_api *hz_api::process(uint64_t _n_threads) {
 
         sem_wait(mutex);
         std::thread([this, client_sock, ip_addr, client_addr]() {
-            hz_api_instance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port),
-                                     archive_provider);
+            ApiInstance instance(client_sock, processor, passwd, mutex, ip_addr, (int) ntohs(client_addr.sin_port),
+                                 archive_provider);
             rinit(instance);
 
             instance.start();
@@ -175,17 +175,17 @@ hz_api *hz_api::process(uint64_t _n_threads) {
     }
 }
 
-hz_api *hz_api::protect(const std::string &_passwd) {
+Api *Api::protect(const std::string &_passwd) {
     passwd = _passwd;
     return this;
 }
 
-hz_api *hz_api::timeout(timeval _time_out) {
+Api *Api::timeout(timeval _time_out) {
     time_out = _time_out;
     return this;
 }
 
-void hz_api::shutdown() {
+void Api::shutdown() {
     archive_provider->close();
     if (::shutdown(server_sock, SHUT_RDWR) < 0) {
         LOG_F(WARNING, "hzip.api: Socket shutdown failed with error (%s)", strerror(errno));

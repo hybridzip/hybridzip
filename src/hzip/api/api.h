@@ -11,18 +11,18 @@
 #include <hzip/api/providers/archive_provider.h>
 
 namespace hzapi {
-    class hz_api_instance : public rainman::context, public hz_socket_class {
+    class ApiInstance : public rainman::context, public SocketInterface {
     private:
-        hz_processor *processor{};
+        HZ_Processor *processor{};
         std::string passwd;
         sem_t *mutex{};
 
-        hzprovider::archive *archive_provider{};
+        hzprovider::ArchiveProvider *archive_provider{};
     public:
-        hz_api_instance() = default;
+        ApiInstance() = default;
 
-        hz_api_instance(int _sock, hz_processor *_processor, const std::string &_passwd, sem_t *_mutex,
-                        char *_ip_addr, uint16_t _port, hzprovider::archive *_archive_provider);
+        ApiInstance(int _sock, HZ_Processor *_processor, const std::string &_passwd, sem_t *_mutex,
+                    char *_ip_addr, uint16_t _port, hzprovider::ArchiveProvider *_archive_provider);
 
         void start();
 
@@ -34,25 +34,25 @@ namespace hzapi {
     };
 
 // An API based on socket-communication.
-    class hz_api : public rainman::context {
+    class Api : public rainman::context {
     private:
-        hz_processor *processor{};
+        HZ_Processor *processor{};
         uint64_t max_instances = 1;
         sem_t *mutex{};
         std::string passwd = "hybridzip";
         timeval time_out{};
 
-        hzprovider::archive *archive_provider{};
+        hzprovider::ArchiveProvider *archive_provider{};
         int server_sock{};
 
     public:
-        hz_api *limit(uint64_t _max_instances);
+        Api *limit(uint64_t _max_instances);
 
-        hz_api *process(uint64_t _n_threads);
+        Api *process(uint64_t _n_threads);
 
-        hz_api *timeout(timeval _time_out);
+        Api *timeout(timeval _time_out);
 
-        hz_api *protect(const std::string &_passwd);
+        Api *protect(const std::string &_passwd);
 
         void shutdown();
 

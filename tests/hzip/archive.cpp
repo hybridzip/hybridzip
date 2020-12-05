@@ -2,7 +2,7 @@
 #include <rainman/rainman.h>
 #include <hzip/archive/archive.h>
 #include <hzip/utils/fsutils.h>
-#include <hzip/core/compressors/victini.h>
+#include <hzip/core/compressors/Victini.h>
 #include <hzip/errors/archive.h>
 
 class ArchiveTest : public testing::Test {
@@ -12,7 +12,7 @@ TEST(ArchiveTest, hzip_archive_init_test) {
     try {
         fsutils::delete_file_if_exists("test.hz");
 
-        auto *archive = new hz_archive("test.hz");
+        auto *archive = new HZ_Archive("test.hz");
         archive->close();
 
     } catch (std::exception &e) {
@@ -24,15 +24,15 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
     try {
         fsutils::delete_file_if_exists("test.hz");
 
-        auto *archive = new hz_archive("test.hz");
+        auto *archive = new HZ_Archive("test.hz");
         auto mgr = new rainman::memmgr;
-        auto victini = hzcodec::victini();
+        auto victini = hzcodec::Victini();
         rinitfrom(mgr, victini);
         rinitptrfrom(mgr, archive);
 
         archive->load();
 
-        auto blob = new hzblob_t;
+        auto blob = new HZ_Blob;
         blob->o_data = new uint8_t[20];
         blob->o_size = 20;
 
@@ -41,9 +41,9 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         }
 
         // Upcast victini codec.
-        hzcodec::abstract_codec *codec = &victini;
+        hzcodec::AbstractCodec *codec = &victini;
 
-        hz_mstate mstate;
+        HZ_MState mstate;
         blob->mstate = &mstate;
 
         auto cblob = codec->compress(blob);
@@ -96,15 +96,15 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
     try {
         fsutils::delete_file_if_exists("test.hz");
 
-        auto *archive = new hz_archive("test.hz");
+        auto *archive = new HZ_Archive("test.hz");
         auto mgr = new rainman::memmgr;
-        auto victini = hzcodec::victini();
+        auto victini = hzcodec::Victini();
         rinitfrom(mgr, victini);
         rinitptrfrom(mgr, archive);
 
         archive->load();
 
-        auto blob = new hzblob_t;
+        auto blob = new HZ_Blob;
         blob->o_data = new uint8_t[20];
         blob->o_size = 20;
 
@@ -113,9 +113,9 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         }
 
         // Upcast victini codec.
-        hzcodec::abstract_codec *codec = &victini;
+        hzcodec::AbstractCodec *codec = &victini;
 
-        hz_mstate mstate;
+        HZ_MState mstate;
         blob->mstate = &mstate;
 
         auto cblob = codec->compress(blob);
@@ -131,7 +131,7 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
 
         archive->close();
         delete archive;
-        archive = new hz_archive("test.hz");
+        archive = new HZ_Archive("test.hz");
         rinitptrfrom(mgr, archive);
 
         archive->load();
@@ -182,15 +182,15 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
     try {
         fsutils::delete_file_if_exists("test.hz");
 
-        auto *archive = new hz_archive("test.hz");
+        auto *archive = new HZ_Archive("test.hz");
         auto mgr = new rainman::memmgr;
-        auto victini = hzcodec::victini();
+        auto victini = hzcodec::Victini();
         rinitfrom(mgr, victini);
         rinitptrfrom(mgr, archive);
 
         archive->load();
 
-        auto blob = new hzblob_t;
+        auto blob = new HZ_Blob;
         blob->o_data = new uint8_t[20];
         blob->o_size = 20;
 
@@ -199,9 +199,9 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         }
 
         // Upcast victini codec.
-        hzcodec::abstract_codec *codec = &victini;
+        hzcodec::AbstractCodec *codec = &victini;
 
-        hz_mstate mstate;
+        HZ_MState mstate;
         blob->mstate = &mstate;
 
         auto cblob = codec->compress(blob);
@@ -211,7 +211,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
 
         archive->inject_mstate("/victini/dickens", cblob);
 
-        auto blobs = new hzblob_t[2];
+        auto blobs = new HZ_Blob[2];
 
         blobs[0] = *cblob;
         blobs[1] = *cblob;
@@ -219,7 +219,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
 
         archive->close();
         delete archive;
-        archive = new hz_archive("test.hz");
+        archive = new HZ_Archive("test.hz");
         rinitptrfrom(mgr, archive);
 
         archive->load();
@@ -290,7 +290,7 @@ TEST(ArchiveTest, hzip_archive_trie) {
     try {
         auto mgr = new rainman::memmgr;
 
-        hza_trie<uint8_t> trie;
+        HZ_ArchiveTrie<uint8_t> trie;
         rinitfrom(mgr, trie);
 
         trie.init();

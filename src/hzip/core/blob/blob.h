@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_HZBLOB_H
-#define HYBRIDZIP_HZBLOB_H
+#ifndef HYBRIDZIP_BLOB_H
+#define HYBRIDZIP_BLOB_H
 
 #include <cstdint>
 #include <rainman/rainman.h>
@@ -7,12 +7,12 @@
 #include <hzip/core/compressors/compressor_enums.h>
 #include <hzip/utils/common.h>
 
-struct hz_mstate : public rainman::context {
+struct HZ_MState : public rainman::context {
     uint8_t *data{};
     uint64_t length{};
     hzcodec::algorithms::ALGORITHM alg{};
 
-    hz_mstate() {
+    HZ_MState() {
         data = nullptr;
         length = 0;
         alg = hzcodec::algorithms::ALGORITHM::UNDEFINED;
@@ -27,11 +27,11 @@ struct hz_mstate : public rainman::context {
     }
 };
 
-struct hz_blob_header : public rainman::context {
+struct HZ_BlobHeader : public rainman::context {
     uint8_t *raw;
     uint64_t length;
 
-    hz_blob_header() {
+    HZ_BlobHeader() {
         raw = nullptr;
         length = 0;
     }
@@ -41,16 +41,16 @@ struct hz_blob_header : public rainman::context {
     }
 };
 
-struct hzblob_t : public rainman::context {
-    hz_blob_header header{};
-    hz_mstate *mstate;
+struct HZ_Blob : public rainman::context {
+    HZ_BlobHeader header{};
+    HZ_MState *mstate;
     uint32_t *data;
     uint64_t size;
     uint8_t *o_data;
     uint64_t o_size;
     uint64_t mstate_id{};
 
-    hzblob_t() {
+    HZ_Blob() {
         mstate = nullptr;
         data = nullptr;
         o_data = nullptr;
@@ -65,8 +65,8 @@ struct hzblob_t : public rainman::context {
     }
 };
 
-struct hzblob_set {
-    hzblob_t *blobs = nullptr;
+struct HZ_BlobSet {
+    HZ_Blob *blobs = nullptr;
     uint64_t blob_count{};
 
     void destroy() const {

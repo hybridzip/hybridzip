@@ -7,14 +7,14 @@
 #include <semaphore.h>
 #include <bitio/bitio.h>
 #include <rainman/rainman.h>
-#include <hzip/core/blob/hzblob.h>
+#include <hzip/core/blob/blob.h>
 #include <hzip/utils/common.h>
 #include <hzip/archive/archive_trie.h>
 
 
 #define HZ_ARCHIVE_VERSION 0x000100
 
-enum hza_marker {
+enum HZ_ArchiveMarker {
     EMPTY = 0x0,
     METADATA = 0x1,
     BLOB = 0x2,
@@ -22,15 +22,15 @@ enum hza_marker {
     END = 0xff
 };
 
-enum hza_metadata_entry_type {
+enum HZ_ArchiveMetadataEntryType {
     VERSION = 0x0,
     FILEINFO = 0x1,
     MSTATE_AUX = 0x2
 };
 
-struct hza_file : public rainman::context {
-    uint64_t *blob_ids;
-    uint64_t blob_count;
+struct HZ_ArchiveFile : public rainman::context {
+    uint64_t *blob_ids{};
+    uint64_t blob_count{};
     //todo: Add file information.
 
     void destroy() {
@@ -38,40 +38,40 @@ struct hza_file : public rainman::context {
     }
 };
 
-struct hza_fragment {
+struct HZ_ArchiveFragment {
     uint64_t sof;
     uint64_t length;
 };
 
 template<typename T>
-struct hza_entry {
+struct HZ_ArchiveEntry {
     T data;
     uint64_t sof{};
 
-    hza_entry() = default;
+    HZ_ArchiveEntry() = default;
 
-    hza_entry(T data, uint64_t sof) {
+    HZ_ArchiveEntry(T data, uint64_t sof) {
         this->data = data;
         this->sof = sof;
     }
 };
 
-struct hza_metadata {
+struct HZ_ArchiveMetadata {
     uint32_t version;
     uint64_t eof;
-    hza_trie<hza_entry<hza_file>> file_map;
-    hza_trie<hza_entry<uint64_t>> mstate_aux_map;
+    HZ_ArchiveTrie<HZ_ArchiveEntry<HZ_ArchiveFile>> file_map;
+    HZ_ArchiveTrie<HZ_ArchiveEntry<uint64_t>> mstate_aux_map;
     std::unordered_map<uint64_t, bool> mstate_inv_aux_map;
     std::unordered_map<uint64_t, uint64_t> blob_map;
     std::unordered_map<uint64_t, uint64_t> mstate_map;
     std::unordered_map<uint64_t, uint64_t> dep_counter;
-    std::vector<hza_fragment> fragments;
+    std::vector<HZ_ArchiveFragment> fragments;
 };
 
-class hz_archive : public rainman::context {
+class HZ_Archive : public rainman::context {
 private:
     std::string path;
-    hza_metadata metadata;
+    HZ_ArchiveMetadata metadata;
     bitio::stream *stream{};
     sem_t *archive_mutex{};
     sem_t *mutex{};
@@ -93,19 +93,19 @@ private:
 
     void hza_init();
 
-    void hza_create_metadata_file_entry(const std::string &file_path, hza_file file);
+    void hza_create_metadata_file_entry(const std::string &file_path, HZ_ArchiveFile file);
 
-    hza_file hza_read_metadata_file_entry(const std::string &file_path);
+    HZ_ArchiveFile hza_read_metadata_file_entry(const std::string &file_path);
 
-    hzblob_t *hza_read_blob(uint64_t id);
+    HZ_Blob *hza_read_blob(uint64_t id);
 
-    uint64_t hza_write_blob(hzblob_t *blob);
+    uint64_t hza_write_blob(HZ_Blob *blob);
 
     void hza_rm_blob(uint64_t id);
 
-    hz_mstate *hza_read_mstate(uint64_t id);
+    HZ_MState *hza_read_mstate(uint64_t id);
 
-    uint64_t hza_write_mstate(hz_mstate *mstate);
+    uint64_t hza_write_mstate(HZ_MState *mstate);
 
     void hza_rm_mstate(uint64_t id);
 
@@ -118,51 +118,51 @@ private:
     void hza_metadata_erase_file(const std::string &_file_path);
 
 public:
-    hz_archive() = default;
+    HZ_Archive() = default;
 
-    hz_archive(const std::string &archive_path);
+    HZ_Archive(const std::string &archive_path);
 
     void load();
 
-    void create_file(const std::string &file_path, hzblob_t *blobs, uint64_t blob_count);
+    void create_file(const std::string &file_path, HZ_Blob *blobs, uint64_t blob_count);
 
-    void create_file_entry(const std::string &file_path, hza_file file);
+    void create_file_entry(const std::string &file_path, HZ_ArchiveFile file);
 
-    hza_file read_file_entry(const std::string &file_path);
+    HZ_ArchiveFile read_file_entry(const std::string &file_path);
 
     bool check_file_exists(const std::string &file_path);
 
-    uint64_t write_blob(hzblob_t *blob);
+    uint64_t write_blob(HZ_Blob *blob);
 
-    hzblob_t *read_blob(uint64_t id);
+    HZ_Blob *read_blob(uint64_t id);
 
-    hzblob_set read_file(const std::string &file_path);
+    HZ_BlobSet read_file(const std::string &file_path);
 
-    hz_mstate *read_mstate(std::string _path);
+    HZ_MState *read_mstate(std::string _path);
 
     void remove_file(const std::string &file_path);
 
-    void install_mstate(const std::string &_path, hz_mstate *mstate);
+    void install_mstate(const std::string &_path, HZ_MState *mstate);
 
-    uint64_t install_mstate(hz_mstate *mstate);
+    uint64_t install_mstate(HZ_MState *mstate);
 
     void uninstall_mstate(const std::string &_path);
 
     void uninstall_mstate(uint64_t id);
 
     // Inject mstate by directly. This mstate cannot be reused by other blobs.
-    void inject_mstate(hz_mstate *mstate, hzblob_t *blob);
+    void inject_mstate(HZ_MState *mstate, HZ_Blob *blob);
 
     // Inject mstate by tag-reference. This mstate can be reused by other blobs.
-    void inject_mstate(const std::string &_path, hzblob_t *blob);
+    void inject_mstate(const std::string &_path, HZ_Blob *blob);
 
     bool check_mstate_exists(const std::string &_path);
 
     void close();
 
-    std::vector<hza_trie_list_elem> list_file_system(const std::string &prefix);
+    std::vector<HZ_ArchiveTrieListElement> list_file_system(const std::string &prefix);
 
-    std::vector<hza_trie_list_elem> list_mstate_system(const std::string &prefix);
+    std::vector<HZ_ArchiveTrieListElement> list_mstate_system(const std::string &prefix);
 };
 
 #endif

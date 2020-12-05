@@ -11,20 +11,20 @@
 #include "compressor_base.h"
 
 namespace hzcodec {
-    class victini : public abstract_codec, public rainman::context {
+    class Victini : public AbstractCodec, public rainman::context {
     private:
         void
-        gen_model_from_mstate(hz_mstate *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data, uint64_t length,
+        gen_model_from_mstate(HZ_MState *mstate, uint64_t **dict, uint64_t **cdict, int16_t *data, uint64_t length,
                               bool training_mode = false);
 
     public:
-        victini() = default;
+        Victini() = default;
 
-        hzblob_t *compress(hzblob_t *blob) override;
+        HZ_Blob *compress(HZ_Blob *blob) override;
 
-        hzblob_t *decompress(hzblob_t *blob) override;
+        HZ_Blob *decompress(HZ_Blob *blob) override;
 
-        hz_mstate *train(hzblob_t *blob) override;
+        HZ_MState *train(HZ_Blob *blob) override;
 
     };
 }

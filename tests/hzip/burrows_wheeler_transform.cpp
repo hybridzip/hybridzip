@@ -12,7 +12,7 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_large) {
         data[i] = i % 256;
     }
 
-    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, N, 0x100);
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, N, 0x100);
     rinitfrom(new rainman::memmgr, bwt);
 
     auto index = bwt.transform();
@@ -37,7 +37,7 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_small) {
     }
 
 
-    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, N, 0x100);
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, N, 0x100);
     rinitfrom(new rainman::memmgr, bwt);
 
     auto index = bwt.transform();
@@ -63,7 +63,7 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_const) {
     }
 
 
-    auto bwt = hztrans::bw_transformer<int16_t, int32_t>(data, N, 0x100);
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, N, 0x100);
     rinitfrom(new rainman::memmgr, bwt);
 
     auto index = bwt.transform();

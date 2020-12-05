@@ -8,26 +8,26 @@
 #include <hzip/errors/archive.h>
 
 template<typename Type>
-struct hza_trie_node {
+struct HZ_ArchiveTrieNode {
     bool is_leaf = false;
-    hza_trie_node *parent{};
-    std::unordered_map<std::string, hza_trie_node *> children;
+    HZ_ArchiveTrieNode *parent{};
+    std::unordered_map<std::string, HZ_ArchiveTrieNode *> children;
     Type value{};
     std::string key;
 };
 
-struct hza_trie_list_elem {
+struct HZ_ArchiveTrieListElement {
     std::string entry{};
     bool is_leaf{};
 };
 
 
 template<typename Type>
-class hza_trie : public rainman::context {
+class HZ_ArchiveTrie : public rainman::context {
 private:
-    hza_trie_node<Type> *root{};
+    HZ_ArchiveTrieNode<Type> *root{};
 
-    inline void erase_node(hza_trie_node<Type> *node) {
+    inline void erase_node(HZ_ArchiveTrieNode<Type> *node) {
         for (auto entry : node->children) {
             erase_node(entry.second);
         }
@@ -35,17 +35,17 @@ private:
         rfree(node);
     }
 
-    inline bool is_leaf_node(hza_trie_node<Type> *node) {
+    inline bool is_leaf_node(HZ_ArchiveTrieNode<Type> *node) {
         return node->is_leaf;
     }
 
-    inline bool is_dir_node(hza_trie_node<Type> *node) {
+    inline bool is_dir_node(HZ_ArchiveTrieNode<Type> *node) {
         return node->children.size() > 0;
     }
 
 public:
     void init() {
-        root = rnew(hza_trie_node<Type>);
+        root = rnew(HZ_ArchiveTrieNode<Type>);
     }
 
     Type get(const std::string &path) {
@@ -53,7 +53,7 @@ public:
 
         std::string token;
 
-        hza_trie_node<Type> *curr = root;
+        HZ_ArchiveTrieNode<Type> *curr = root;
         while (std::getline(ss, token, '/')) {
             if (token.empty()) {
                 continue;
@@ -78,7 +78,7 @@ public:
 
         std::string token;
 
-        hza_trie_node<Type> *curr = root;
+        HZ_ArchiveTrieNode<Type> *curr = root;
         while (std::getline(ss, token, '/')) {
             if (token.empty()) {
                 continue;
@@ -89,7 +89,7 @@ public:
                     throw ArchiveErrors::InvalidOperationException("A file exists in the path prefix");
                 }
 
-                curr->children[token] = rnew(hza_trie_node<Type>);
+                curr->children[token] = rnew(HZ_ArchiveTrieNode<Type>);
                 curr->children[token]->parent = curr;
                 curr->children[token]->key = token;
             }
@@ -110,7 +110,7 @@ public:
 
         std::string token;
 
-        hza_trie_node<Type> *curr = root;
+        HZ_ArchiveTrieNode<Type> *curr = root;
         while (std::getline(ss, token, '/')) {
             if (token.empty()) {
                 continue;
@@ -131,7 +131,7 @@ public:
 
         std::string token;
 
-        hza_trie_node<Type> *curr = root;
+        HZ_ArchiveTrieNode<Type> *curr = root;
         while (std::getline(ss, token, '/')) {
             if (token.empty()) {
                 continue;
@@ -144,7 +144,7 @@ public:
             }
         }
 
-        hza_trie_node<Type> *descendant = curr;
+        HZ_ArchiveTrieNode<Type> *descendant = curr;
         while (curr->children.size() < 2 && curr->parent != nullptr) {
             descendant = curr;
             curr = curr->parent;
@@ -159,12 +159,12 @@ public:
         erase_node(descendant);
     }
 
-    std::vector<hza_trie_list_elem> children(const std::string &prefix) {
+    std::vector<HZ_ArchiveTrieListElement> children(const std::string &prefix) {
         std::stringstream ss(prefix);
 
         std::string token;
 
-        hza_trie_node<Type> *curr = root;
+        HZ_ArchiveTrieNode<Type> *curr = root;
         while (std::getline(ss, token, '/')) {
             if (token.empty()) {
                 continue;
@@ -177,10 +177,10 @@ public:
             }
         }
 
-        std::vector<hza_trie_list_elem> keys;
+        std::vector<HZ_ArchiveTrieListElement> keys;
 
         for (auto entry : curr->children) {
-            keys.push_back(hza_trie_list_elem{
+            keys.push_back(HZ_ArchiveTrieListElement{
                     .entry=entry.first,
                     .is_leaf=entry.second->is_leaf,
             });

@@ -4,34 +4,34 @@
 #include <cstdint>
 #include <functional>
 #include <hzip/archive/archive.h>
-#include <hzip/core/blob/hzblob.h>
+#include <hzip/core/blob/blob.h>
 
-struct hz_codec_job {
+struct HZ_CodecJob {
     enum JOBTYPE {
         ENCODE = 0x0,
         DECODE = 0x1,
         TRAIN = 0x2,
     };
 
-    hzblob_t *blob;
-    hz_archive *archive;
+    HZ_Blob *blob;
+    HZ_Archive *archive;
     hzcodec::algorithms::ALGORITHM algorithm;
     JOBTYPE job_type;
     bool use_mstate_addr;
     std::string mstate_addr;
     std::function<void(uint64_t)> blob_id_callback{};
-    std::function<void(hzblob_t *)> blob_callback{};
+    std::function<void(HZ_Blob *)> blob_callback{};
 };
 
-struct hz_job_stub {
+struct HZ_JobStub {
     std::function<void()> on_completed{};
     std::function<void(const std::string &)> on_error{};
     std::function<void(const std::string &)> on_success{};
 };
 
-struct hz_job {
-    hz_codec_job *codec;
-    hz_job_stub *stub;
+struct HZ_Job {
+    HZ_CodecJob *codec;
+    HZ_JobStub *stub;
 };
 
 #endif

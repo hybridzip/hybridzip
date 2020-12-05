@@ -9,20 +9,20 @@
 
 
 namespace hzapi {
-    class hz_streamer : public rainman::module, public hz_socket_class {
+    class Streamer : public rainman::module, public SocketInterface {
     private:
-        hz_processor *processor;
+        HZ_Processor *processor;
 
         uint64_t hzes_b_size(hzcodec::algorithms::ALGORITHM alg);
 
         sem_t mutex{};
 
-        hzprovider::archive *archive_provider;
+        hzprovider::ArchiveProvider *archive_provider;
 
     public:
 
-        hz_streamer(int _sock, char *_ip_addr, uint16_t port, hz_processor *_proc,
-                    hzprovider::archive *_archive_provider);
+        Streamer(int _sock, char *_ip_addr, uint16_t port, HZ_Processor *_proc,
+                 hzprovider::ArchiveProvider *_archive_provider);
 
         void start();
 

@@ -16,7 +16,7 @@
 }()                                                             \
 
 namespace hzapi {
-    class hz_socket_class {
+    class SocketInterface {
     protected:
         int sock{};
         char *ip_addr{};

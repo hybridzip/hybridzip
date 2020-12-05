@@ -23,7 +23,7 @@ void hzrans64_encoder::set_cross_encoder(hz_cross_codec _cross_encoder) {
 }
 
 u32ptr hzrans64_encoder::encode() {
-    auto data = rnew(hz_stack<uint32_t>);
+    auto data = rnew(HZ_Stack<uint32_t>);
 
     while (index--) {
         if (cross_encoder != nullptr) {
@@ -81,7 +81,7 @@ void hzrans64_decoder::set_cross_decoder(hz_cross_codec _cross_decoder) {
 u64ptr hzrans64_decoder::decode(uint32_t *raw) {
     hzrans64_dec_load_state(state, &raw);
     auto *sym = rmalloc(uint64_t, size);
-    auto *dummy_stack = rnew(hz_stack<uint32_t>);
+    auto *dummy_stack = rnew(HZ_Stack<uint32_t>);
 
     for (int i = 0; i < size; i++) {
         if (cross_decoder != nullptr) {

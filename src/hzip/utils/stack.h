@@ -5,13 +5,13 @@
 
 // A light-weight efficient stack that maintains a stack of buffers to minimize memory allocations.
 template<typename T>
-struct hz_stack {
-    struct hz_buffer {
+struct HZ_Stack {
+    struct HZ_Buffer {
         T *data;
-        hz_buffer *next;
-        hz_buffer *prev;
+        HZ_Buffer *next;
+        HZ_Buffer *prev;
 
-        hz_buffer(uint64_t size) {
+        HZ_Buffer(uint64_t size) {
             data = new T[size];
             next = nullptr;
             prev = nullptr;
@@ -22,24 +22,24 @@ struct hz_stack {
         }
     };
 
-    hz_buffer *buffer;
+    HZ_Buffer *buffer;
     const uint64_t bufsize = 0xFFF;
     uint64_t index;
 
-    hz_stack() {
+    HZ_Stack() {
         buffer = nullptr;
         index = 0;
     }
 
     void push(T x) {
         if (buffer == nullptr) {
-            buffer = new hz_buffer(bufsize);
+            buffer = new HZ_Buffer(bufsize);
         }
 
         if (index < bufsize) {
             buffer->data[index++] = x;
         } else {
-            buffer->next = new hz_buffer(bufsize);
+            buffer->next = new HZ_Buffer(bufsize);
             buffer->next->prev = buffer;
             buffer = buffer->next;
             index = 0;

@@ -20,7 +20,7 @@ void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale) {
     state->count = 0;
 }
 
-void hzrans64_encode_s(hzrans64_t *state, hz_stack<uint32_t> *data) {
+void hzrans64_encode_s(hzrans64_t *state, HZ_Stack<uint32_t> *data) {
     uint64_t x = state->x;
     uint64_t ls = state->ls;
     uint64_t bs = state->bs;
@@ -69,7 +69,7 @@ void hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol) {
     }
 }
 
-void hzrans64_enc_flush(hzrans64_t *state, hz_stack<uint32_t> *data) {
+void hzrans64_enc_flush(hzrans64_t *state, HZ_Stack<uint32_t> *data) {
     data->push(state->x >> 32);
     data->push(state->x >> 0);
     state->count += 2;

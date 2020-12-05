@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_BW_TRANSFORMER_H
-#define HYBRIDZIP_BW_TRANSFORMER_H
+#ifndef HYBRIDZIP_BURROWSWHEELERTRANSFORMER_H
+#define HYBRIDZIP_BURROWSWHEELERTRANSFORMER_H
 
 #include <vector>
 #include <cstdint>
@@ -7,7 +7,7 @@
 
 namespace hztrans {
     template<typename itype, typename mtype>
-    class bw_transformer : public rainman::context {
+    class BurrowsWheelerTransformer : public rainman::context {
 
     private:
         static inline bool leq(mtype a1, mtype a2, mtype b1, mtype b2) {
@@ -99,7 +99,7 @@ namespace hztrans {
         itype *data;
         uint64_t len, alphabet_size;
     public:
-        bw_transformer(itype *data, uint64_t n, uint64_t K) {
+        BurrowsWheelerTransformer(itype *data, uint64_t n, uint64_t K) {
             this->data = data;
             len = n;
             alphabet_size = K;

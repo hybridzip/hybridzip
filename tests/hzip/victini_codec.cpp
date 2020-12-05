@@ -1,15 +1,15 @@
 #include <gtest/gtest.h>
 #include <rainman/rainman.h>
-#include <hzip/core/compressors/victini.h>
+#include <hzip/core/compressors/Victini.h>
 
 class VictiniCodecTest: public testing::Test {};
 
 TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
     auto mgr = new rainman::memmgr;
-    auto victini = hzcodec::victini();
+    auto victini = hzcodec::Victini();
     rinitfrom(mgr, victini);
 
-    auto blob = new hzblob_t;
+    auto blob = new HZ_Blob;
     blob->o_data = new uint8_t[20];
     blob->o_size = 20;
 
@@ -18,7 +18,7 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
     }
 
     // Upcast victini codec.
-    hzcodec::abstract_codec *codec = &victini;
+    hzcodec::AbstractCodec *codec = &victini;
 
     auto cblob = codec->compress(blob);
     auto dblob = codec->decompress(cblob);
@@ -39,10 +39,10 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
 
 TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
     auto mgr = new rainman::memmgr;
-    auto victini = hzcodec::victini();
+    auto victini = hzcodec::Victini();
     rinitfrom(mgr, victini);
 
-    auto blob = new hzblob_t;
+    auto blob = new HZ_Blob;
     blob->o_data = new uint8_t[1048576];
     blob->o_size = 1048576;
 
@@ -51,7 +51,7 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
     }
 
     // Upcast victini codec.
-    hzcodec::abstract_codec *codec = &victini;
+    hzcodec::AbstractCodec *codec = &victini;
 
     auto cblob = codec->compress(blob);
     auto dblob = codec->decompress(cblob);

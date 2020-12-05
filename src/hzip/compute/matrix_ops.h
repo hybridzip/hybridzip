@@ -8,8 +8,9 @@
 namespace hzcompute::matrix {
     // slow matmul functions:
 
-    template <typename elem_type>
-    inline void multiply_s(elem_type *A, uint32_t A_rows, uint32_t A_cols, elem_type *B, uint32_t B_cols, elem_type *C) {
+    template<typename elem_type>
+    inline void
+    multiply_s(elem_type *A, uint32_t A_rows, uint32_t A_cols, elem_type *B, uint32_t B_cols, elem_type *C) {
         uint32_t B_rows = A_cols;
 
         uint32_t ic = 0;
@@ -24,10 +25,10 @@ namespace hzcompute::matrix {
         }
     }
 
-    template <typename elem_type>
+    template<typename elem_type>
     inline void transpose_s(elem_type *A, uint32_t n_rows, uint32_t n_cols, elem_type *res) {
         for (int i = 0, ta = 0; i < n_rows; i++, ta += n_cols) {
-            for(int j = 0, tb = 0; j < n_cols; j++, tb += n_rows) {
+            for (int j = 0, tb = 0; j < n_cols; j++, tb += n_rows) {
                 res[tb + i] = A[ta + j];
             }
         }
@@ -126,7 +127,7 @@ namespace hzcompute::matrix {
     }
 
     inline void multiply_8x8(double *A, double *B, double *C) {
-        
+
     }
 }
 

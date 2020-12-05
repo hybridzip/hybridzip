@@ -75,7 +75,7 @@ void hz_query::start() {
                 uint64_t count = list.size();
                 HZ_SEND(&count, sizeof(count));
 
-                for (const auto& elem : list) {
+                for (const auto &elem : list) {
                     uint16_t len = elem.entry.length();
                     HZ_SEND(&len, sizeof(len));
                     HZ_SEND(elem.entry.c_str(), len);
@@ -102,7 +102,7 @@ void hz_query::start() {
                 uint64_t count = list.size();
                 HZ_SEND(&count, sizeof(count));
 
-                for (const auto& elem : list) {
+                for (const auto &elem : list) {
                     uint16_t len = elem.entry.length();
                     HZ_SEND(&len, sizeof(len));
                     HZ_SEND(elem.entry.c_str(), len);

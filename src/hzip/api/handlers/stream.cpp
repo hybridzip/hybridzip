@@ -380,8 +380,10 @@ void hz_streamer::decode() {
                         error(msg);
                     };
 
-                    HZAPI_LOGF(INFO, "(%s) Decompressing blob of size: %lu bytes", hzcodec::algorithms::algorithm_to_str(
-                            static_cast<hzcodec::algorithms::ALGORITHM>(job->codec->algorithm)), src_blob->size << 2);
+                    HZAPI_LOGF(INFO, "(%s) Decompressing blob of size: %lu bytes",
+                               hzcodec::algorithms::algorithm_to_str(
+                                       static_cast<hzcodec::algorithms::ALGORITHM>(job->codec->algorithm)),
+                               src_blob->size << 2);
 
                     processor->cycle();
                     processor->run(job);

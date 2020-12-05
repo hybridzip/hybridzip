@@ -19,7 +19,7 @@ hz_archive::hz_archive(const std::string &archive_path) {
     FILE *fp;
     if ((fp = fopen(path.c_str(), "rb+")) == 0) {
         throw ArchiveErrors::InvalidOperationException(std::string("fopen() failed with errno=") +
-        std::to_string(errno));
+                                                       std::to_string(errno));
     }
 
     stream = new bitio::stream(fp);

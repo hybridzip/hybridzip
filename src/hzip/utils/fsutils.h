@@ -6,7 +6,7 @@
 #include <filesystem>
 
 namespace fsutils {
-    HZ_INLINE void create_empty_file(const std::string& path) {
+    HZ_INLINE void create_empty_file(const std::string &path) {
         fclose(fopen(path.c_str(), "wb"));
     }
 
@@ -22,7 +22,7 @@ namespace fsutils {
         }
     }
 
-    HZ_INLINE void delete_file_if_exists(const std::string& filename) {
+    HZ_INLINE void delete_file_if_exists(const std::string &filename) {
         remove(filename.c_str());
     }
 }

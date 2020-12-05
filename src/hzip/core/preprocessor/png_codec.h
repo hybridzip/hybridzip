@@ -83,7 +83,7 @@ public:
             free(row_pointers[y]);
         free(row_pointers);
 
-        return Pixar {pixar, static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        return Pixar{pixar, static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
     }
 };
 

@@ -4,7 +4,7 @@
 #include <cstdint>
 
 // A light-weight efficient stack that maintains a stack of buffers to minimize memory allocations.
-template <typename T>
+template<typename T>
 struct hz_stack {
     struct hz_buffer {
         T *data;
@@ -65,7 +65,7 @@ struct hz_stack {
     }
 
     T top() {
-        return buffer->data[index-1];
+        return buffer->data[index - 1];
     }
 
     uint64_t size() {

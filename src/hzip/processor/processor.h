@@ -10,7 +10,7 @@
 // This is an abstract processor for hybridzip.
 // todo: Add CUDA co-processor
 
-class hz_processor: public rainman::context {
+class hz_processor : public rainman::context {
 private:
     uint64_t n_threads;
     uint64_t threads_in_use;

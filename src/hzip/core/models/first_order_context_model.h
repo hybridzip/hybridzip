@@ -6,7 +6,7 @@
 #include <rainman/rainman.h>
 
 namespace hzmodels {
-    class first_order_context_model: public rainman::context {
+    class first_order_context_model : public rainman::context {
     private:
         uint64_t **context_map;
         uint64_t prev_symbol;

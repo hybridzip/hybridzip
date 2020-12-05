@@ -6,7 +6,7 @@
 #include <cstdint>
 
 namespace ArchiveErrors {
-    class BlobNotFoundException: public std::exception {
+    class BlobNotFoundException : public std::exception {
     public:
         uint64_t id{};
 
@@ -20,7 +20,7 @@ namespace ArchiveErrors {
         }
     };
 
-    class FileNotFoundException: public std::exception {
+    class FileNotFoundException : public std::exception {
     public:
 
         FileNotFoundException(const std::string &path) {
@@ -32,7 +32,7 @@ namespace ArchiveErrors {
         }
     };
 
-    class MstateNotFoundException: public std::exception {
+    class MstateNotFoundException : public std::exception {
     public:
         uint64_t id{};
 
@@ -46,7 +46,7 @@ namespace ArchiveErrors {
         }
     };
 
-    class InvalidOperationException: public std::exception {
+    class InvalidOperationException : public std::exception {
     public:
         std::string msg;
 
@@ -59,7 +59,7 @@ namespace ArchiveErrors {
         }
     };
 
-    class TargetNotFoundException: public std::exception {
+    class TargetNotFoundException : public std::exception {
     public:
         std::string msg;
 

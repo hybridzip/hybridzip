@@ -7,7 +7,7 @@
 #include <hzip/core/compressors/compressor_enums.h>
 #include <hzip/utils/common.h>
 
-struct hz_mstate: public rainman::context {
+struct hz_mstate : public rainman::context {
     uint8_t *data{};
     uint64_t length{};
     hzcodec::algorithms::ALGORITHM alg{};
@@ -27,7 +27,7 @@ struct hz_mstate: public rainman::context {
     }
 };
 
-struct hz_blob_header: public rainman::context {
+struct hz_blob_header : public rainman::context {
     uint8_t *raw;
     uint64_t length;
 
@@ -41,7 +41,7 @@ struct hz_blob_header: public rainman::context {
     }
 };
 
-struct hzblob_t: public rainman::context {
+struct hzblob_t : public rainman::context {
     hz_blob_header header{};
     hz_mstate *mstate;
     uint32_t *data;

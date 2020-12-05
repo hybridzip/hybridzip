@@ -7,7 +7,7 @@
 #include "hzrans.h"
 
 
-class hzrans64_encoder: public rainman::context {
+class hzrans64_encoder : public rainman::context {
 private:
     hz_cross_codec cross_encoder;
     uint64_t *distptr{};
@@ -32,7 +32,7 @@ public:
 
 };
 
-class hzrans64_decoder: public rainman::context {
+class hzrans64_decoder : public rainman::context {
 private:
     hz_codec_callback callback;
     hz_cross_codec cross_decoder;

@@ -6,8 +6,8 @@
 #include <rainman/rainman.h>
 
 namespace hztrans {
-    template <typename itype, typename mtype>
-class bw_transformer: public rainman::context {
+    template<typename itype, typename mtype>
+    class bw_transformer : public rainman::context {
 
     private:
         static inline bool leq(mtype a1, mtype a2, mtype b1, mtype b2) {

@@ -43,7 +43,7 @@ struct hza_fragment {
     uint64_t length;
 };
 
-template <typename T>
+template<typename T>
 struct hza_entry {
     T data;
     uint64_t sof{};
@@ -68,7 +68,7 @@ struct hza_metadata {
     std::vector<hza_fragment> fragments;
 };
 
-class hz_archive: public rainman::context {
+class hz_archive : public rainman::context {
 private:
     std::string path;
     hza_metadata metadata;
@@ -81,9 +81,11 @@ private:
     void hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read,
                                    const std::function<void(uint64_t)> &seek);
 
-    void hza_scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
+    void
+    hza_scan_blob_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
-    void hza_scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
+    void
+    hza_scan_mstate_segment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
     void hza_scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
@@ -91,9 +93,9 @@ private:
 
     void hza_init();
 
-    void hza_create_metadata_file_entry(const std::string& file_path, hza_file file);
+    void hza_create_metadata_file_entry(const std::string &file_path, hza_file file);
 
-    hza_file hza_read_metadata_file_entry(const std::string& file_path);
+    hza_file hza_read_metadata_file_entry(const std::string &file_path);
 
     hzblob_t *hza_read_blob(uint64_t id);
 
@@ -118,27 +120,27 @@ private:
 public:
     hz_archive() = default;
 
-    hz_archive(const std::string& archive_path);
+    hz_archive(const std::string &archive_path);
 
     void load();
 
-    void create_file(const std::string& file_path, hzblob_t *blobs, uint64_t blob_count);
+    void create_file(const std::string &file_path, hzblob_t *blobs, uint64_t blob_count);
 
-    void create_file_entry(const std::string& file_path, hza_file file);
+    void create_file_entry(const std::string &file_path, hza_file file);
 
-    hza_file read_file_entry(const std::string& file_path);
+    hza_file read_file_entry(const std::string &file_path);
 
-    bool check_file_exists(const std::string& file_path);
+    bool check_file_exists(const std::string &file_path);
 
     uint64_t write_blob(hzblob_t *blob);
 
     hzblob_t *read_blob(uint64_t id);
 
-    hzblob_set read_file(const std::string& file_path);
+    hzblob_set read_file(const std::string &file_path);
 
     hz_mstate *read_mstate(std::string _path);
 
-    void remove_file(const std::string& file_path);
+    void remove_file(const std::string &file_path);
 
     void install_mstate(const std::string &_path, hz_mstate *mstate);
 

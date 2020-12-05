@@ -31,7 +31,7 @@ void check_env(cpp_dotenv::dotenv &dotenv) {
 
     for (auto var : required_vars) {
         if (dotenv[var].empty()) {
-            LOG_F(ERROR, "hzip: %s was not set in environment", var);
+            LOG_F(ERROR, "hzip: %s was not set in environment variables", var);
             exit(0);
         }
     }
@@ -60,7 +60,6 @@ void set_signal_handlers() {
 int main(int argc, const char **argv) {
     setup_logger();
     set_unhandled_exception_handler();
-
 
 
     cpp_dotenv::env.load_dotenv();

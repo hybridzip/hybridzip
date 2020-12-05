@@ -15,7 +15,7 @@ private:
     FILE *jpeg_file;
 
     const uint16_t dct_trans_mat[0x40] = {
-            
+
     };
 
     void dct_arr_alloc(int **&arr) {
@@ -252,15 +252,17 @@ public:
             }
         }
 
-        auto *coeff_arrays = new jvirt_barray_ptr [info->num_components];
+        auto *coeff_arrays = new jvirt_barray_ptr[info->num_components];
 
         jpeg_component_info *compptr;
         int ci;
         for (ci = 0, compptr = info->comp_info; ci < info->num_components; ci++, compptr++) {
-            compptr->width_in_blocks = (JDIMENSION) image.header.image_height * image.header.comp_specs[ci].v_samp_factor /
-                                       (8 * max_v_samp_factor);
-            compptr->height_in_blocks = (JDIMENSION) image.header.image_width * image.header.comp_specs[ci].h_samp_factor /
-                                        (8 * max_h_samp_factor);
+            compptr->width_in_blocks =
+                    (JDIMENSION) image.header.image_height * image.header.comp_specs[ci].v_samp_factor /
+                    (8 * max_v_samp_factor);
+            compptr->height_in_blocks =
+                    (JDIMENSION) image.header.image_width * image.header.comp_specs[ci].h_samp_factor /
+                    (8 * max_h_samp_factor);
 
             coeff_arrays[ci] = (*dinfo->mem->request_virt_barray)
                     ((j_common_ptr) dinfo, JPOOL_IMAGE, TRUE,
@@ -275,7 +277,7 @@ public:
 
             for (int by = 0; by < compptr->height_in_blocks; by++) {
                 JBLOCKARRAY buffer = (*dinfo->mem->access_virt_barray)((j_common_ptr) dinfo, coeff_arrays[ci], by,
-                                                                      (JDIMENSION) 1, TRUE);
+                                                                       (JDIMENSION) 1, TRUE);
                 for (int bx = 0; bx < compptr->width_in_blocks; bx++) {
                     // We are now at a 8x8 dct-block.
                     int **dct_arr = image.mcus.coeff_arrays[ci][(by * compptr->width_in_blocks) + bx];
@@ -294,7 +296,7 @@ public:
 
 
     void test() {
-        
+
     }
 };
 

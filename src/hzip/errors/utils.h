@@ -6,10 +6,10 @@
 #include <loguru/loguru.hpp>
 
 namespace UtilErrors {
-    class ValidationError: public std::exception {
+    class ValidationError : public std::exception {
     public:
 
-        ValidationError(const std::string& msg) {
+        ValidationError(const std::string &msg) {
             LOG_F(ERROR, "hzip.utils.validation: %s", msg.c_str());
         }
 

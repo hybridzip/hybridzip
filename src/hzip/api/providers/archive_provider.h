@@ -9,12 +9,14 @@
 namespace hzprovider {
     class archive {
     private:
-        std::unordered_map<std::string, hz_archive*> arch_map;
+        std::unordered_map<std::string, hz_archive *> arch_map;
         sem_t mutex;
         rainman::memmgr *mgr;
     public:
         void init(rainman::memmgr *_mgr);
+
         hz_archive *provide(const std::string &path);
+
         void close();
     };
 }

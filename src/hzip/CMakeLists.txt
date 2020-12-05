@@ -52,10 +52,10 @@ add_library(hzip STATIC
         api/api_enums.h
         api/handlers/query.h
         api/handlers/query.cpp
-        archive/archive_trie.h)
+        archive/archive_trie.h core/preprocessor/zigzag_transform.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
-target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv tensorflowlite)
+target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv)
 
 target_link_libraries(hzip PUBLIC crypto)
 

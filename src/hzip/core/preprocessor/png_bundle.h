@@ -1,25 +1,26 @@
-#ifndef HYBRIDZIP_PNG_CODEC_H
-#define HYBRIDZIP_PNG_CODEC_H
+#ifndef HYBRIDZIP_PNG_BUNDLE_H
+#define HYBRIDZIP_PNG_BUNDLE_H
 
 #include <png.h>
+#include <rainman/rainman.h>
 #include <cstdint>
 #include <string>
 #include "types.h"
 
 
-class PNGCodec {
+class PNGBundleBuilder : public rainman::context {
 private:
     FILE *png_file;
 public:
-    PNGCodec(uint8_t *buf, uint64_t len) {
+    PNGBundleBuilder(uint8_t *buf, uint64_t len) {
         png_file = fmemopen(buf, len, "rb");
     }
 
-    PNGCodec(std::string filename) {
+    PNGBundleBuilder(std::string filename) {
         png_file = fopen(filename.c_str(), "rb");
     }
 
-    Pixar read_pixels() {
+    PNGBundle read_pixels() {
         char header[8];    // 8 is the maximum size that can be checked
 
         /* open file and test for it being a png */
@@ -53,6 +54,7 @@ public:
         png_uint_32 height = png_get_image_height(png_ptr, info_ptr);
         png_byte color_type = png_get_color_type(png_ptr, info_ptr);
         png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+        png_byte nchannels = png_get_channels(png_ptr, info_ptr);
 
         int number_of_passes = png_set_interlace_handling(png_ptr);
         png_read_update_info(png_ptr, info_ptr);
@@ -68,22 +70,25 @@ public:
         png_read_image(png_ptr, row_pointers);
         fclose(fp);
 
-        uint8_t ***pixar = (uint8_t ***) malloc(sizeof(uint8_t **) * height);
+        auto ***pixar = rmalloc(uint16_t **, height);
         for (int y = 0; y < height; y++) {
-            pixar[y] = (uint8_t **) malloc(sizeof(uint8_t *) * width);
+            pixar[y] = rmalloc(uint16_t *, width);
             for (int x = 0; x < width; x++) {
-                pixar[y][x] = (uint8_t *) malloc(sizeof(uint8_t) * 3);
-                pixar[y][x][0] = row_pointers[y][3 * x];
-                pixar[y][x][1] = row_pointers[y][3 * x + 1];
-                pixar[y][x][2] = row_pointers[y][3 * x + 2];
+                pixar[y][x] = rmalloc(uint16_t, nchannels);
+                for (int z = 0; z < nchannels; z++) {
+                    pixar[y][x][z] = row_pointers[y][3 * x + z];
+                }
             }
         }
 
-        for (int y = 0; y < height; y++)
-            free(row_pointers[y]);
-        free(row_pointers);
+        for (int y = 0; y < height; y++) {
+            rfree(row_pointers[y]);
+        }
 
-        return Pixar{pixar, static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        rfree(row_pointers);
+
+        return ronew(PNGBundle, pixar, static_cast<uint32_t>(width), static_cast<uint32_t>(height), nchannels,
+                     bit_depth);
     }
 };
 

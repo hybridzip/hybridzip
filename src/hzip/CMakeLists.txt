@@ -8,7 +8,7 @@ add_library(hzip STATIC
         utils/distribution.h
         utils/fsutils.h
         core/kernel/hzrans/hzrans64_codec.h
-        core/preprocessor/png_codec.h
+        core/preprocessor/png_bundle.h
         core/preprocessor/transforms.h
         core/models/models.h
         core/compressors/compressors.h

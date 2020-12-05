@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <rainman/rainman.h>
-#include <hzip/core/compressors/Victini.h>
+#include <hzip/core/compressors/victini.h>
 
 class VictiniCodecTest: public testing::Test {};
 

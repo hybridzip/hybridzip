@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_STREAM_H
-#define HYBRIDZIP_STREAM_H
+#ifndef HYBRIDZIP_STREAMER_H
+#define HYBRIDZIP_STREAMER_H
 
 #include <rainman/rainman.h>
 #include <hzip/core/compressors/compressors.h>
@@ -17,12 +17,12 @@ namespace hzapi {
 
         sem_t mutex{};
 
-        hzprovider::ArchiveProvider *archive_provider;
+        hzapi::ArchiveProvider *archive_provider;
 
     public:
 
         Streamer(int _sock, char *_ip_addr, uint16_t port, HZ_Processor *_proc,
-                 hzprovider::ArchiveProvider *_archive_provider);
+                 hzapi::ArchiveProvider *_archive_provider);
 
         void start();
 

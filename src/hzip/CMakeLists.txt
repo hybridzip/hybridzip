@@ -15,16 +15,16 @@ add_library(hzip STATIC
         core/preprocessor/types.h
         core/preprocessor/jpeg_codec.h
         utils/utils.h
-        core/models/FirstOrderContextModel.cpp
-        core/preprocessor/DeltaTransformer.cpp
-        core/compressors/Victini.cpp
-        core/compressors/Victini.h
+        core/models/first_order_context.cpp
+        core/preprocessor/delta.cpp
+        core/compressors/victini.cpp
+        core/compressors/victini.h
         core/kernel/hzrans/hzrans64_codec.cpp
         core/kernel/hzrans/hzrans64.cpp
-        core/models/FirstOrderContextModel.h
-        core/preprocessor/BurrowsWheelerTransformer.h
-        core/preprocessor/DeltaTransformer.h
-        core/preprocessor/MoveToFrontTransformer.h
+        core/models/first_order_context.h
+        core/preprocessor/burrows_wheeler.h
+        core/preprocessor/delta.h
+        core/preprocessor/move_to_front.h
         compute/matrix_ops.h
         compute/vector_utils.h
         compute/dct.h
@@ -42,8 +42,8 @@ add_library(hzip STATIC
         errors/utils.h
         api/api.h
         api/api.cpp errors/api.h
-        api/handlers/stream.h
-        api/handlers/stream.cpp
+        api/handlers/streamer.h
+        api/handlers/streamer.cpp
         api/handlers/socket_class.h
         api/handlers/socket_class.cpp
         errors/processor.h
@@ -52,7 +52,7 @@ add_library(hzip STATIC
         api/api_enums.h
         api/handlers/query.h
         api/handlers/query.cpp
-        archive/archive_trie.h core/preprocessor/ZigZagTransformer.h)
+        archive/archive_trie.h core/preprocessor/zigzag.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv)

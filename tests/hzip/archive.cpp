@@ -2,7 +2,7 @@
 #include <rainman/rainman.h>
 #include <hzip/archive/archive.h>
 #include <hzip/utils/fsutils.h>
-#include <hzip/core/compressors/Victini.h>
+#include <hzip/core/compressors/victini.h>
 #include <hzip/errors/archive.h>
 
 class ArchiveTest : public testing::Test {

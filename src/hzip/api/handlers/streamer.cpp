@@ -1,4 +1,4 @@
-#include "stream.h"
+#include "streamer.h"
 #include <hzip/api/providers/archive_provider.h>
 #include <hzip/utils/validation.h>
 #include <hzip/api/api_enums.h>
@@ -20,7 +20,7 @@ uint64_t Streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
 }
 
 Streamer::Streamer(int _sock, char *_ip_addr, uint16_t _port, HZ_Processor *_proc,
-                   hzprovider::ArchiveProvider *_archive_provider) {
+                   hzapi::ArchiveProvider *_archive_provider) {
     sock = _sock;
     ip_addr = _ip_addr;
     port = _port;

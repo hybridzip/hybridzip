@@ -17,12 +17,12 @@ namespace hzapi {
         std::string passwd;
         sem_t *mutex{};
 
-        hzprovider::ArchiveProvider *archive_provider{};
+        hzapi::ArchiveProvider *archive_provider{};
     public:
         ApiInstance() = default;
 
         ApiInstance(int _sock, HZ_Processor *_processor, const std::string &_passwd, sem_t *_mutex,
-                    char *_ip_addr, uint16_t _port, hzprovider::ArchiveProvider *_archive_provider);
+                    char *_ip_addr, uint16_t _port, hzapi::ArchiveProvider *_archive_provider);
 
         void start();
 
@@ -42,7 +42,7 @@ namespace hzapi {
         std::string passwd = "hybridzip";
         timeval time_out{};
 
-        hzprovider::ArchiveProvider *archive_provider{};
+        hzapi::ArchiveProvider *archive_provider{};
         int server_sock{};
 
     public:

@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_DELTATRANSFORMER_H
-#define HYBRIDZIP_DELTATRANSFORMER_H
+#ifndef HYBRIDZIP_DELTA_H
+#define HYBRIDZIP_DELTA_H
 
 #include <vector>
 #include <cstdint>

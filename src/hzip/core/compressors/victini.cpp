@@ -1,4 +1,4 @@
-#include "Victini.h"
+#include "victini.h"
 #include <hzip/utils/utils.h>
 
 HZ_Blob *hzcodec::Victini::compress(HZ_Blob *blob) {

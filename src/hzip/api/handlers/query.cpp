@@ -5,7 +5,7 @@
 
 using namespace hzapi;
 
-Query::Query(int _sock, char *_ip_addr, uint16_t _port, hzprovider::ArchiveProvider *_archive_provider) {
+Query::Query(int _sock, char *_ip_addr, uint16_t _port, hzapi::ArchiveProvider *_archive_provider) {
     sock = _sock;
     ip_addr = _ip_addr;
     port = _port;

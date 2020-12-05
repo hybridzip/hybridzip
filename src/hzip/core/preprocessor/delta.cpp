@@ -1,4 +1,4 @@
-#include "DeltaTransformer.h"
+#include "delta.h"
 
 hztrans::DeltaTransformer::DeltaTransformer(int *data, uint64_t length) {
     this->data = data;

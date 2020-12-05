@@ -5,14 +5,14 @@
 #include <unistd.h>
 #include <hzip/errors/api.h>
 #include <hzip/utils/utils.h>
-#include <hzip/api/handlers/stream.h>
+#include <hzip/api/handlers/streamer.h>
 #include <hzip/api/api_enums.h>
 #include <hzip/api/handlers/query.h>
 
 using namespace hzapi;
 
 ApiInstance::ApiInstance(int _sock, HZ_Processor *_processor, const std::string &_passwd, sem_t *_mutex,
-                         char *_ip_addr, uint16_t _port, hzprovider::ArchiveProvider *_archive_provider) {
+                         char *_ip_addr, uint16_t _port, hzapi::ArchiveProvider *_archive_provider) {
     processor = _processor;
     sock = _sock;
     passwd = _passwd;
@@ -111,7 +111,7 @@ Api *Api::process(uint64_t _n_threads) {
     mutex = rnew(sem_t);
     sem_init(mutex, 0, max_instances);
 
-    archive_provider = rnew(hzprovider::ArchiveProvider);
+    archive_provider = rnew(hzapi::ArchiveProvider);
     archive_provider->init(rmemmgr);
 
     sockaddr_in server_addr{};

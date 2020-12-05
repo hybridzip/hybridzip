@@ -9,9 +9,9 @@
 namespace hzapi {
     class Query : public rainman::module, public SocketInterface {
     private:
-        hzprovider::ArchiveProvider *archive_provider{};
+        hzapi::ArchiveProvider *archive_provider{};
     public:
-        Query(int _sock, char *_ip_addr, uint16_t port, hzprovider::ArchiveProvider *_archive_provider);
+        Query(int _sock, char *_ip_addr, uint16_t port, hzapi::ArchiveProvider *_archive_provider);
 
         void start();
     };

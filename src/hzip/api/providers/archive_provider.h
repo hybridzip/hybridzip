@@ -6,7 +6,7 @@
 #include <semaphore.h>
 #include <hzip/archive/archive.h>
 
-namespace hzprovider {
+namespace hzapi {
     class ArchiveProvider {
     private:
         std::unordered_map<std::string, HZ_Archive *> arch_map;

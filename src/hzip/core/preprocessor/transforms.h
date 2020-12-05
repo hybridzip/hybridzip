@@ -4,5 +4,6 @@
 #include "burrows_wheeler.h"
 #include "delta.h"
 #include "move_to_front.h"
+#include "zigzag.h"
 
 #endif

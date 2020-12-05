@@ -52,7 +52,7 @@ add_library(hzip STATIC
         api/api_enums.h
         api/handlers/query.h
         api/handlers/query.cpp
-        archive/archive_trie.h core/preprocessor/zigzag.h)
+        archive/archive_trie.h core/preprocessor/zigzag.h core/models/paeth.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv)

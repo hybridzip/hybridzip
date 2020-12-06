@@ -10,11 +10,11 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
     rinitfrom(mgr, victini);
 
     auto blob = new HZ_Blob;
-    blob->o_data = new uint8_t[20];
+    blob->data = new uint8_t[20];
     blob->o_size = 20;
 
     for (int i = 0; i < blob->o_size; i++) {
-        blob->o_data[i] = 255;
+        blob->data[i] = 255;
     }
 
     // Upcast victini codec.
@@ -27,8 +27,8 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
 
     ASSERT_EQ(dblob->o_size, blob->o_size);
     for (int i = 0; i < 20; i++) {
-        ASSERT_EQ(dblob->o_data[i], blob->o_data[i]);
-        ASSERT_EQ(ddblob->o_data[i], blob->o_data[i]);
+        ASSERT_EQ(dblob->data[i], blob->data[i]);
+        ASSERT_EQ(ddblob->data[i], blob->data[i]);
     }
 
     cblob->destroy();
@@ -43,11 +43,11 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
     rinitfrom(mgr, victini);
 
     auto blob = new HZ_Blob;
-    blob->o_data = new uint8_t[1048576];
+    blob->data = new uint8_t[1048576];
     blob->o_size = 1048576;
 
     for (int i = 0; i < blob->o_size; i++) {
-        blob->o_data[i] = i % 256;
+        blob->data[i] = i % 256;
     }
 
     // Upcast victini codec.
@@ -60,11 +60,11 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
 
     ASSERT_EQ(dblob->o_size, blob->o_size);
     for (int i = 0; i < 20; i++) {
-        ASSERT_EQ(dblob->o_data[i], blob->o_data[i]);
+        ASSERT_EQ(dblob->data[i], blob->data[i]);
     }
 
     for (int i = 0; i < 20; i++) {
-        ASSERT_EQ(ddblob->o_data[i], blob->o_data[i]);
+        ASSERT_EQ(ddblob->data[i], blob->data[i]);
     }
 
     cblob->destroy();

@@ -44,23 +44,20 @@ struct HZ_BlobHeader : public rainman::context {
 struct HZ_Blob : public rainman::context {
     HZ_BlobHeader header{};
     HZ_MState *mstate;
-    uint32_t *data;
+    uint8_t *data;
     uint64_t size;
-    uint8_t *o_data;
     uint64_t o_size;
     uint64_t mstate_id{};
 
     HZ_Blob() {
         mstate = nullptr;
         data = nullptr;
-        o_data = nullptr;
         size = 0;
         o_size = 0;
     }
 
     void destroy() {
         rfree(data);
-        rfree(o_data);
         rfree(header.raw);
     }
 };

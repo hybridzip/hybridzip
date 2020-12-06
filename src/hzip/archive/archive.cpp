@@ -371,7 +371,7 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
     blob->mstate_id = stream->read(0x40);
 
     blob->size = stream->read(0x40);
-    blob->data = rmalloc(uint32_t, blob->size);
+    blob->data = rmalloc(uint8_t, blob->size);
 
     for (uint64_t i = 0; i < blob->size; i++) {
         blob->data[i] = stream->read(0x20);

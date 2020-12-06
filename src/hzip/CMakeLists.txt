@@ -55,7 +55,7 @@ add_library(hzip STATIC
         archive/archive_trie.h
         core/preprocessor/zigzag.h
         core/models/paeth.h
-        core/preprocessor/color.h errors/transform.h)
+        core/preprocessor/color.h errors/transform.h core/compressors/sharingan.h core/compressors/sharingan.cpp)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv)

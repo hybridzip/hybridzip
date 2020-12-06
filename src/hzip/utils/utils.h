@@ -113,4 +113,43 @@ HZ_INLINE uint64_t hz_u8buf_to_u64(uint8_t *buf) {
     return x;
 }
 
+HZ_INLINE uint32_t* u8_to_u32ptr(rainman::memmgr *mgr, uint8_t *arr, uint64_t n) {
+    uint64_t n32 = (n >> 2) + (n & 0x3 ? 1 : 0);
+
+    auto arr32 = mgr->r_malloc<uint32_t>(n32);
+
+    uint32_t tmp = 0;
+    uint64_t j = 0;
+
+    for (uint64_t i = 0; i < n; i++) {
+        tmp <<= 0x8;
+        tmp += arr[i];
+
+        if (((i + 1) & 3) == 0) {
+            arr32[j++] = tmp;
+            tmp = 0;
+        }
+    }
+
+    return arr32;
+}
+
+HZ_INLINE uint8_t* u32_to_u8ptr(rainman::memmgr *mgr, uint32_t *arr, uint64_t n) {
+    auto arr8 = mgr->r_malloc<uint8_t>(n << 2);
+
+    for (uint64_t i = 0, j = 0; i < n; i++, j += 4) {
+        uint32_t x = arr[i];
+
+        arr8[j + 3] = x & 0xff;
+        x >>= 8;
+        arr8[j + 2] = x & 0xff;
+        x >>= 8;
+        arr8[j + 1] = x & 0xff;
+        x >>= 8;
+        arr8[j] = x & 0xff;
+    }
+
+    return arr8;
+}
+
 #endif

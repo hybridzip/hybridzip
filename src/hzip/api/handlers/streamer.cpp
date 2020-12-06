@@ -87,10 +87,10 @@ void Streamer::encode() {
                             static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), max_blob_size);
 
                     blob->o_size = max_blob_size;
-                    blob->o_data = rmalloc(uint8_t, max_blob_size);
+                    blob->data = rmalloc(uint8_t, max_blob_size);
 
                     // Enable raw streaming in hzip-protocol
-                    t_recv(blob->o_data, max_blob_size, false);
+                    t_recv(blob->data, max_blob_size, false);
 
                     // Construct hz_job struct for processing.
                     auto *job = rnew(HZ_Job);
@@ -254,10 +254,10 @@ void Streamer::encode() {
                     max_blob_size = HZ_MIN(max_blob_size, data_len);
 
                     blob->o_size = max_blob_size;
-                    blob->o_data = rmalloc(uint8_t, max_blob_size);
+                    blob->data = rmalloc(uint8_t, max_blob_size);
 
                     // Enable raw streaming in hzip-protocol
-                    t_recv(blob->o_data, max_blob_size, false);
+                    t_recv(blob->data, max_blob_size, false);
 
                     // Construct hz_job struct for processing.
                     auto *job = rnew(HZ_Job);
@@ -364,7 +364,7 @@ void Streamer::decode() {
 
                     job->codec->blob_callback = [this](HZ_Blob *dblob) {
                         HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
-                        HZ_SEND(dblob->o_data, dblob->o_size);
+                        HZ_SEND(dblob->data, dblob->o_size);
                     };
 
                     job->stub->on_completed = [this, job]() {
@@ -488,7 +488,7 @@ void Streamer::decode() {
                 HZ_RECV(blob->header.raw, blob->header.length);
 
                 HZ_RECV(&blob->size, sizeof(blob->size));
-                blob->data = rmalloc(uint32_t, blob->size);
+                blob->data = rmalloc(uint8_t, blob->size);
                 HZ_RECV(blob->data, blob->size * sizeof(uint32_t));
 
                 HZ_RECV(&blob->o_size, sizeof(blob->o_size));
@@ -510,7 +510,7 @@ void Streamer::decode() {
 
                 job->codec->blob_callback = [this](HZ_Blob *dblob) {
                     HZ_SEND(&dblob->o_size, sizeof(dblob->o_size));
-                    HZ_SEND(dblob->o_data, dblob->o_size);
+                    HZ_SEND(dblob->data, dblob->o_size);
                 };
 
 

@@ -13,7 +13,7 @@ HZ_Blob *hzcodec::Victini::compress(HZ_Blob *blob) {
     auto *data = rmalloc(int16_t, length);
 
     for (uint64_t i = 0; i < length; i++) {
-        data[i] = blob->o_data[i];
+        data[i] = blob->data[i];
     }
 
     auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, length, 0x100);
@@ -75,12 +75,14 @@ HZ_Blob *hzcodec::Victini::compress(HZ_Blob *blob) {
 
     auto cblob = rxnew(HZ_Blob);
 
-    cblob->data = blob_data.data;
-    cblob->size = blob_data.n;
+    cblob->data = u32_to_u8ptr(rmemmgr, blob_data.data, blob_data.n);
+    cblob->size = blob_data.n << 2;
     cblob->o_size = length;
     cblob->mstate = mstate;
     cblob->mstate->alg = hzcodec::algorithms::VICTINI;
     cblob->header = header;
+
+    rfree(blob_data.data);
 
     return cblob;
 }
@@ -187,7 +189,9 @@ HZ_Blob *hzcodec::Victini::decompress(HZ_Blob *blob) {
     decoder.set_distribution(hzip_get_init_dist(rmemmgr, 0x100));
     decoder.override_symbol_ptr(sym_optr);
 
-    auto dataptr = decoder.decode(blob->data);
+    uint32_t *blob_data = u8_to_u32ptr(rmemmgr, blob->data, blob->size);
+
+    auto dataptr = decoder.decode(blob_data);
 
     for (int i = 0; i < 256; i++) {
         rfree(dict[i]);
@@ -197,6 +201,7 @@ HZ_Blob *hzcodec::Victini::decompress(HZ_Blob *blob) {
     rfree(dict);
     rfree(cdict);
     rfree(sym_optr);
+    rfree(blob_data);
 
     auto *sdata = rmalloc(int16_t, length);
 
@@ -216,13 +221,13 @@ HZ_Blob *hzcodec::Victini::decompress(HZ_Blob *blob) {
 
     auto dblob = rxnew(HZ_Blob);
 
-    dblob->o_data = rmalloc(uint8_t, length);
+    dblob->data = rmalloc(uint8_t, length);
     dblob->o_size = length;
     dblob->mstate = mstate;
     dblob->mstate->alg = hzcodec::algorithms::VICTINI;
 
     for (uint64_t i = 0; i < length; i++) {
-        dblob->o_data[i] = sdata[i];
+        dblob->data[i] = sdata[i];
     }
 
 
@@ -381,7 +386,7 @@ HZ_MState *hzcodec::Victini::train(HZ_Blob *blob) {
     auto *data = rmalloc(int16_t, length);
 
     for (uint64_t i = 0; i < length; i++) {
-        data[i] = blob->o_data[i];
+        data[i] = blob->data[i];
     }
 
     auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, length, 0x100);

@@ -83,7 +83,6 @@ HZ_Blob *hzcodec::Victini::compress(HZ_Blob *blob) {
     cblob->header = header;
 
     rfree(blob_data.data);
-
     return cblob;
 }
 

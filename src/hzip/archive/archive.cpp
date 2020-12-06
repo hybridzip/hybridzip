@@ -121,7 +121,7 @@ void HZ_Archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
             break;
         }
         case HZ_ArchiveMetadataEntryType::FILEINFO: {
-            uint64_t path_length = hz_elias_gamma_inv(read).obj;
+            uint64_t path_length = read(0x40);
             std::string _path;
 
             for (uint64_t i = 0; i < path_length; i++) {
@@ -149,9 +149,9 @@ void HZ_Archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
         case HZ_ArchiveMetadataEntryType::MSTATE_AUX: {
             // mstate-auxillary map assigns a string to a mstate.
             // this is used when the same mstate is used by other blobs.
-            // format: <path-length (elias-gamma)> <path (8-bit-array)> <mstate-id (64-bit)>
+            // format: <path-length (64-bit)> <path (8-bit-array)> <mstate-id (64-bit)>
 
-            uint64_t path_length = hz_elias_gamma_inv(read).obj;
+            uint64_t path_length = read(0x40);
             std::string _path;
 
             for (uint64_t i = 0; i < path_length; i++) {
@@ -277,13 +277,13 @@ void HZ_Archive::hza_create_metadata_file_entry(const std::string &file_path, HZ
 
     if (metadata.file_map.contains(file_path)) {
         sem_post(mutex);
-        throw ArchiveErrors::InvalidOperationException("file_entry_overwrite");
+        throw ArchiveErrors::InvalidOperationException("file entry cannot be overwritten");
     }
 
     uint64_t length = 0;
 
-    bin_t path_length = hz_elias_gamma(file_path.length());
-    length += path_length.n;
+    uint64_t path_length = file_path.length();
+    length += 0x40;
     length += (file_path.length() << 3);
 
     // FILEINFO-metadata-marker (8-bit) + Blob-count (n) (58-bit) + n 64-bit blob-ids
@@ -316,7 +316,7 @@ void HZ_Archive::hza_create_metadata_file_entry(const std::string &file_path, HZ
     stream->write(HZ_ArchiveMetadataEntryType::FILEINFO, 0x8);
 
     // Write file_path
-    stream->write(path_length.obj, path_length.n);
+    stream->write(path_length, 0x40);
 
     for (int i = 0; i < file_path.length(); i++) {
         stream->write(file_path[i], 0x8);
@@ -370,14 +370,17 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
     blob->o_size = stream->read(0x40);
     blob->mstate_id = stream->read(0x40);
 
+    blob->status = stream->read(0x1);
     blob->size = stream->read(0x40);
     blob->data = rmalloc(uint8_t, blob->size);
 
     for (uint64_t i = 0; i < blob->size; i++) {
-        blob->data[i] = stream->read(0x20);
+        blob->data[i] = stream->read(0x8);
     }
 
-    blob->mstate = hza_read_mstate(blob->mstate_id);
+    if (blob->status) {
+        blob->mstate = hza_read_mstate(blob->mstate_id);
+    }
 
     return blob;
 }
@@ -385,14 +388,14 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
 uint64_t HZ_Archive::hza_write_blob(HZ_Blob *blob) {
     // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)>
     // <blob-header <size (64-bit)> <raw (8-bit-arr)>> <blob-o-size (64-bit)>
-    // <mstate-id (64-bit)> <blob-data <size (64-bit)> <data (32-bit arr)>>
+    // <mstate-id (64-bit)> <blob-status (1-bit)> <blob-data <size (64-bit)> <data (8-bit arr)>>
 
     if (!metadata.mstate_map.contains(blob->mstate_id)) {
         sem_post(mutex);
         throw ArchiveErrors::MstateNotFoundException(blob->mstate_id);
     }
 
-    uint64_t length = 0x148 + (blob->header.length << 3) + (blob->size << 5);
+    uint64_t length = 0x141 + (blob->header.length << 3) + (blob->size << 3);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
     uint64_t sof;
@@ -433,10 +436,13 @@ uint64_t HZ_Archive::hza_write_blob(HZ_Blob *blob) {
     // add dependency
     hza_increment_dep(blob->mstate_id);
 
+    // Write blob status
+    stream->write(blob->status, 0x1);
+
     // Write blob-data
     stream->write(blob->size, 0x40);
     for (int i = 0; i < blob->size; i++) {
-        stream->write(blob->data[i], 0x20);
+        stream->write(blob->data[i], 0x8);
     }
 
     return blob_id;
@@ -556,11 +562,11 @@ void HZ_Archive::install_mstate(const std::string &_path, HZ_MState *mstate) {
     uint64_t id = hza_write_mstate(mstate);
 
     // Create auxillary mstate-entry.
-    uint64_t length = 0;
+    uint64_t length = 0x48;
 
-    bin_t path_length = hz_elias_gamma(_path.length());
-    length += path_length.n;
-    length += (_path.length() << 3) + 0x48;
+    uint64_t path_length = _path.length();
+    length += 0x40;
+    length += (_path.length() << 3);
 
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
@@ -589,7 +595,7 @@ void HZ_Archive::install_mstate(const std::string &_path, HZ_MState *mstate) {
     stream->write(HZ_ArchiveMetadataEntryType::MSTATE_AUX, 0x8);
 
     // Write file_path
-    stream->write(path_length.obj, path_length.n);
+    stream->write(path_length, 0x40);
 
     for (int i = 0; i < _path.length(); i++) {
         stream->write(_path[i], 0x8);
@@ -620,7 +626,7 @@ void HZ_Archive::hza_rm_mstate(uint64_t id) {
 
         metadata.mstate_map.erase(id);
     } else {
-        LOG_F(WARNING, "hzip.archive: mstate(0x%lx) was not found", id);
+        LOG_F(INFO, "hzip.archive: mstate(0x%lx) was not found, operation ignored", id);
     }
 
 }
@@ -657,7 +663,7 @@ void HZ_Archive::create_file(const std::string &file_path, HZ_Blob *blobs, uint6
     sem_wait(mutex);
     if (metadata.file_map.contains(file_path)) {
         sem_post(mutex);
-        throw ArchiveErrors::InvalidOperationException("file_already_exists");
+        throw ArchiveErrors::InvalidOperationException("file already exists");
     }
 
     HZ_ArchiveFile file{};

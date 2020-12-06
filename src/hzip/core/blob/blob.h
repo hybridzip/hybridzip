@@ -41,6 +41,8 @@ struct HZ_BlobHeader : public rainman::context {
     }
 };
 
+// status: true indicates that the blob is compressed.
+
 struct HZ_Blob : public rainman::context {
     HZ_BlobHeader header{};
     HZ_MState *mstate;
@@ -48,12 +50,21 @@ struct HZ_Blob : public rainman::context {
     uint64_t size;
     uint64_t o_size;
     uint64_t mstate_id{};
+    bool status{};
 
     HZ_Blob() {
         mstate = nullptr;
         data = nullptr;
         size = 0;
         o_size = 0;
+    }
+
+    void evaluate(uint8_t *original_data) {
+        status = size < o_size;
+        if (!status) {
+            data = original_data;
+            size = o_size;
+        }
     }
 
     void destroy() {

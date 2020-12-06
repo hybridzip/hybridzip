@@ -33,8 +33,8 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         archive->load();
 
         auto blob = new HZ_Blob;
-        blob->data = new uint8_t[20];
-        blob->o_size = 20;
+        blob->data = new uint8_t[2000];
+        blob->o_size = 2000;
 
         for (int i = 0; i < blob->o_size; i++) {
             blob->data[i] = 255;
@@ -47,6 +47,7 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         blob->mstate = &mstate;
 
         auto cblob = codec->compress(blob);
+        cblob->evaluate(blob->data);
 
         // Inject mstate into blob and add mstate to the archive.
         archive->inject_mstate(cblob->mstate, cblob);
@@ -62,11 +63,14 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
             ASSERT_EQ(cblob->header.raw[i], ccblob->header.raw[i]);
         }
 
-        ASSERT_EQ(cblob->mstate->length, ccblob->mstate->length);
-        ASSERT_EQ(cblob->mstate->alg, ccblob->mstate->alg);
-        for (uint64_t i = 0; i < cblob->mstate->length; i++) {
-            ASSERT_EQ(cblob->mstate->data[i], ccblob->mstate->data[i]);
+        if (cblob->status) {
+            ASSERT_EQ(cblob->mstate->length, ccblob->mstate->length);
+            ASSERT_EQ(cblob->mstate->alg, ccblob->mstate->alg);
+            for (uint64_t i = 0; i < cblob->mstate->length; i++) {
+                ASSERT_EQ(cblob->mstate->data[i], ccblob->mstate->data[i]);
+            }
         }
+
 
         ASSERT_EQ(cblob->o_size, ccblob->o_size);
         ASSERT_EQ(cblob->size, ccblob->size);
@@ -105,8 +109,8 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         archive->load();
 
         auto blob = new HZ_Blob;
-        blob->data = new uint8_t[20];
-        blob->o_size = 20;
+        blob->data = new uint8_t[2000];
+        blob->o_size = 2000;
 
         for (int i = 0; i < blob->o_size; i++) {
             blob->data[i] = 255;
@@ -119,6 +123,7 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         blob->mstate = &mstate;
 
         auto cblob = codec->compress(blob);
+        cblob->evaluate(blob->data);
 
         // Inject mstate into blob and add mstate to the archive.
         archive->install_mstate("/victini/dickens", cblob->mstate);
@@ -191,8 +196,8 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         archive->load();
 
         auto blob = new HZ_Blob;
-        blob->data = new uint8_t[20];
-        blob->o_size = 20;
+        blob->data = new uint8_t[2000];
+        blob->o_size = 2000;
 
         for (int i = 0; i < blob->o_size; i++) {
             blob->data[i] = 255;
@@ -205,6 +210,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         blob->mstate = &mstate;
 
         auto cblob = codec->compress(blob);
+        cblob->evaluate(blob->data);
 
         // Inject mstate into blob and add mstate to the archive.
         archive->install_mstate("/victini/dickens", cblob->mstate);

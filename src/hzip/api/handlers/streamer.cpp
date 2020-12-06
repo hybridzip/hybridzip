@@ -10,8 +10,8 @@ using namespace hzapi;
 
 uint64_t Streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
     switch (alg) {
-        case hzcodec::algorithms::UNDEFINED:
-            return 0xffffffffffffffff;
+        case hzcodec::algorithms::UNCOMPRESSED:
+            return 0x800000;
         case hzcodec::algorithms::VICTINI:
             return 0x400000;
         default:

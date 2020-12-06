@@ -1,5 +1,6 @@
 #include "victini.h"
 #include <hzip/utils/utils.h>
+#include <hzip/errors/compression.h>
 
 HZ_Blob *hzcodec::Victini::compress(HZ_Blob *blob) {
     if (blob->mstate == nullptr) {
@@ -88,6 +89,7 @@ HZ_Blob *hzcodec::Victini::compress(HZ_Blob *blob) {
 
 HZ_Blob *hzcodec::Victini::decompress(HZ_Blob *blob) {
     auto mstate = blob->mstate;
+
     uint64_t length = blob->o_size;
 
     // Parse blob_header

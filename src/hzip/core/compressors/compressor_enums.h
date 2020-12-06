@@ -3,14 +3,14 @@
 
 namespace hzcodec::algorithms {
     enum ALGORITHM {
-        UNDEFINED = 0x0,
+        UNCOMPRESSED = 0x0,
         VICTINI = 0x1
     };
 
     inline const char *algorithm_to_str(ALGORITHM alg) {
         switch (alg) {
-            case UNDEFINED:
-                return "UNDEFINED";
+            case UNCOMPRESSED:
+                return "UNCOMPRESSED";
             case VICTINI:
                 return "VICTINI";
         }

@@ -11,8 +11,8 @@ HZ_Processor::HZ_Processor(uint64_t n_threads) {
 
 hzcodec::AbstractCodec *HZ_Processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
     switch (alg) {
-        case hzcodec::algorithms::UNDEFINED:
-            return nullptr;
+        case hzcodec::algorithms::UNCOMPRESSED:
+            return rxnew(hzcodec::Uncompressed);
         case hzcodec::algorithms::VICTINI:
             return rxnew(hzcodec::Victini);
         default:
@@ -84,7 +84,7 @@ void HZ_Processor::hzp_encode(HZ_CodecJob *job) {
         blob->mstate_id = job->blob->mstate_id;
 
         if (!job->use_mstate_addr) {
-            if (job->archive != nullptr && blob->status) {
+            if (job->archive != nullptr) {
                 job->archive->inject_mstate(blob->mstate, blob);
             } else if (job->blob_callback == nullptr) {
                 throw ProcessorErrors::InvalidOperationError(
@@ -99,22 +99,26 @@ void HZ_Processor::hzp_encode(HZ_CodecJob *job) {
 
         HZP_STUB_CALL(job->blob_callback, blob);
 
-        blob->mstate->destroy();
+        if (blob->mstate != nullptr) {
+            blob->mstate->destroy();
+        }
+
         rfree(blob->mstate);
         blob->destroy();
         rfree(blob);
         rfree(codec);
 
     } catch (std::exception &e) {
-        if (blob != nullptr) {
+        if (blob->mstate != nullptr) {
             blob->mstate->destroy();
-            rfree(blob->mstate);
-            blob->destroy();
-            rfree(blob);
         }
+        rfree(blob->mstate);
+        blob->destroy();
+        rfree(blob);
 
         rfree(codec);
-        throw e;
+
+        throw ProcessorErrors::GenericError(e.what());
     }
 }
 
@@ -131,10 +135,6 @@ void HZ_Processor::hzp_decode(HZ_CodecJob *job) {
         job->archive->inject_mstate(job->mstate_addr, job->blob);
     }
 
-    if (job->blob->mstate == nullptr) {
-        throw ProcessorErrors::InvalidOperationError("Missing mstate");
-    }
-
     auto codec = hzp_get_codec(job->algorithm);
 
     if (codec == nullptr) {
@@ -143,25 +143,27 @@ void HZ_Processor::hzp_decode(HZ_CodecJob *job) {
 
     HZ_Blob *blob = nullptr;
     try {
-        blob = job->blob->status ? codec->decompress(job->blob) : job->blob;
+        blob = codec->decompress(job->blob);
 
         HZP_STUB_CALL(job->blob_callback, blob);
 
-        blob->mstate->destroy();
+        if (blob->mstate != nullptr) {
+            blob->mstate->destroy();
+        }
         rfree(blob->mstate);
         blob->destroy();
         rfree(blob);
         rfree(codec);
     } catch (std::exception &e) {
-        if (blob != nullptr) {
+        if (blob->mstate != nullptr) {
             blob->mstate->destroy();
-            rfree(blob->mstate);
-            blob->destroy();
-            rfree(blob);
         }
+        rfree(blob->mstate);
+        blob->destroy();
+        rfree(blob);
         rfree(codec);
 
-        throw e;
+        throw ProcessorErrors::GenericError(e.what());
     }
 }
 
@@ -196,13 +198,11 @@ void HZ_Processor::hzp_train(HZ_CodecJob *job) {
         rfree(mstate);
         rfree(codec);
     } catch (std::exception &e) {
-        if (mstate != nullptr) {
-            mstate->destroy();
-            rfree(mstate);
-        }
+        mstate->destroy();
+        rfree(mstate);
         rfree(codec);
 
-        throw e;
+        throw ProcessorErrors::GenericError(e.what());
     }
 
 }

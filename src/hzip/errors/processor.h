@@ -19,6 +19,19 @@ namespace ProcessorErrors {
             return _msg.c_str();
         }
     };
+
+    class GenericError : public std::exception {
+    private:
+        std::string msg;
+    public:
+        GenericError(const std::string &_msg) {
+            msg = _msg;
+        }
+
+        const char *what() const noexcept override {
+            return msg.c_str();
+        }
+    };
 }
 
 #endif

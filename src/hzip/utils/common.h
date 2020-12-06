@@ -11,9 +11,9 @@ typedef struct bin_t {
 template<typename T>
 struct option_t {
     T x;
-    bool is_valid;
+    bool is_valid{};
 
-    option_t(T x, bool v = true) {
+    explicit option_t(T x, bool v = true) {
         this->x = x;
         this->is_valid = v;
     }

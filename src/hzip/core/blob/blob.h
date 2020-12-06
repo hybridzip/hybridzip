@@ -15,7 +15,7 @@ struct HZ_MState : public rainman::context {
     HZ_MState() {
         data = nullptr;
         length = 0;
-        alg = hzcodec::algorithms::ALGORITHM::UNDEFINED;
+        alg = hzcodec::algorithms::ALGORITHM::UNCOMPRESSED;
     }
 
     [[nodiscard]] bool is_empty() const {
@@ -64,6 +64,14 @@ struct HZ_Blob : public rainman::context {
         if (!status) {
             data = original_data;
             size = o_size;
+
+            // Destroy mstate if compression fails.
+            // Replace it with a mstate with algorithm = UNCOMPRESSED
+            if (mstate != nullptr) {
+                mstate->destroy();
+                rfree(mstate);
+                mstate = rxnew(HZ_MState);
+            }
         }
     }
 

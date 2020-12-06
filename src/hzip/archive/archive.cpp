@@ -370,7 +370,6 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
     blob->o_size = stream->read(0x40);
     blob->mstate_id = stream->read(0x40);
 
-    blob->status = stream->read(0x1);
     blob->size = stream->read(0x40);
     blob->data = rmalloc(uint8_t, blob->size);
 
@@ -378,9 +377,7 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
         blob->data[i] = stream->read(0x8);
     }
 
-    if (blob->status) {
-        blob->mstate = hza_read_mstate(blob->mstate_id);
-    }
+    blob->mstate = hza_read_mstate(blob->mstate_id);
 
     return blob;
 }
@@ -388,14 +385,9 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
 uint64_t HZ_Archive::hza_write_blob(HZ_Blob *blob) {
     // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)>
     // <blob-header <size (64-bit)> <raw (8-bit-arr)>> <blob-o-size (64-bit)>
-    // <mstate-id (64-bit)> <blob-status (1-bit)> <blob-data <size (64-bit)> <data (8-bit arr)>>
+    // <mstate-id (64-bit)> <blob-data <size (64-bit)> <data (8-bit arr)>>
 
-    if (!metadata.mstate_map.contains(blob->mstate_id)) {
-        sem_post(mutex);
-        throw ArchiveErrors::MstateNotFoundException(blob->mstate_id);
-    }
-
-    uint64_t length = 0x141 + (blob->header.length << 3) + (blob->size << 3);
+    uint64_t length = 0x140 + (blob->header.length << 3) + (blob->size << 3);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
     uint64_t sof;
@@ -435,9 +427,6 @@ uint64_t HZ_Archive::hza_write_blob(HZ_Blob *blob) {
 
     // add dependency
     hza_increment_dep(blob->mstate_id);
-
-    // Write blob status
-    stream->write(blob->status, 0x1);
 
     // Write blob-data
     stream->write(blob->size, 0x40);
@@ -509,6 +498,10 @@ HZ_MState *HZ_Archive::hza_read_mstate(uint64_t id) {
 uint64_t HZ_Archive::hza_write_mstate(HZ_MState *mstate) {
     // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
     // <mstate-id (64-bit)> <algorithm (64-bit)> <data-length (64-bit)> <data (8-bit-array)>
+
+    if (mstate == nullptr) {
+        return 0;
+    }
 
     uint64_t length = 0xC0 + (mstate->length << 0x3);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
@@ -611,7 +604,7 @@ void HZ_Archive::hza_rm_mstate(uint64_t id) {
     if (metadata.mstate_map.contains(id)) {
         if (hza_check_mstate_deps(id)) {
             sem_post(mutex);
-            throw ArchiveErrors::InvalidOperationException("mstate_dependency_detected");
+            throw ArchiveErrors::InvalidOperationException("mstate dependency detected");
         }
 
         uint64_t sof = metadata.mstate_map[id];

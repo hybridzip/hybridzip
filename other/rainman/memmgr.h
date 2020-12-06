@@ -39,11 +39,14 @@ namespace rainman {
         }
 
         template<typename Type>
-        Type *r_malloc(int n_elems) {
-            lock();
+        Type *r_malloc(uint64_t n_elems) {
+            if (n_elems == 0) {
+                return nullptr;
+            }
 
             uint64_t curr_alloc_size = sizeof(Type) * n_elems;
 
+            lock();
             if (peak_size != 0 && allocation_size + curr_alloc_size > peak_size) {
                 unlock();
                 throw MemoryErrors::PeakLimitReachedException();
@@ -84,11 +87,6 @@ namespace rainman {
             if (elem != nullptr) {
                 update(allocation_size - elem->alloc_size, n_allocations - 1);
                 memmap->remove_by_type<Type>(ptr);
-            } else {
-                for (auto &entry: children) {
-                    auto child = entry.first;
-                    child->r_free(ptr);
-                }
             }
 
             unlock();

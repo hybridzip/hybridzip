@@ -12,7 +12,6 @@ add_library(hzip STATIC
         core/preprocessor/transforms.h
         core/models/models.h
         core/compressors/compressors.h
-        core/preprocessor/types.h
         core/preprocessor/jpeg_codec.h
         utils/utils.h
         core/models/first_order_context.cpp
@@ -41,7 +40,8 @@ add_library(hzip STATIC
         utils/validation.h
         errors/utils.h
         api/api.h
-        api/api.cpp errors/api.h
+        api/api.cpp
+        errors/api.h
         api/handlers/streamer.h
         api/handlers/streamer.cpp
         api/handlers/socket_class.h
@@ -52,7 +52,10 @@ add_library(hzip STATIC
         api/api_enums.h
         api/handlers/query.h
         api/handlers/query.cpp
-        archive/archive_trie.h core/preprocessor/zigzag.h core/models/paeth.h core/preprocessor/color.h)
+        archive/archive_trie.h
+        core/preprocessor/zigzag.h
+        core/models/paeth.h
+        core/preprocessor/color.h errors/transform.h)
 
 target_compile_features(hzip PUBLIC cxx_std_20)
 target_link_libraries(hzip PUBLIC bitio loguru rainman cpp_dotenv)

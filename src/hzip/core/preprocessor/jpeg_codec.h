@@ -8,7 +8,6 @@
 #include <vector>
 #include <jerror.h>
 #include <jpegint.h>
-#include "types.h"
 
 class hzj_iface {
 private:

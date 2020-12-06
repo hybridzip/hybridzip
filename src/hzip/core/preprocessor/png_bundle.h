@@ -5,8 +5,33 @@
 #include <rainman/rainman.h>
 #include <cstdint>
 #include <string>
-#include "types.h"
+#include <hzip/errors/transform.h>
 
+class PNGBundle : public rainman::context {
+public:
+    uint16_t ***buf{};
+    uint32_t width{};
+    uint32_t height{};
+    uint8_t nchannels{};
+    uint8_t depth{};
+
+    PNGBundle(uint16_t ***buf, uint32_t width, uint32_t height, uint8_t nchannels, uint8_t depth) : buf(buf),
+                                                                                                    width(width),
+                                                                                                    height(height),
+                                                                                                    nchannels(nchannels),
+                                                                                                    depth(depth) {}
+
+
+    ~PNGBundle() {
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                rfree(buf[i][j]);
+            }
+            rfree(buf[i]);
+        }
+        rfree(buf);
+    }
+};
 
 class PNGBundleBuilder : public rainman::context {
 private:
@@ -25,25 +50,31 @@ public:
 
         /* open file and test for it being a png */
         FILE *fp = png_file;
-        if (!fp)
-            fprintf(stderr, ("[read_png_file] File could not be opened for reading"));
+        if (!fp) {
+            throw TransformErrors::InvalidInputError("failed to initialize memory stream");
+        }
+
         fread(header, 1, 8, fp);
-        if (png_sig_cmp(reinterpret_cast<png_bytep>(header), 0, 8))
-            fprintf(stderr, ("[read_png_file] File could not be opened for reading"));
+        if (png_sig_cmp(reinterpret_cast<png_bytep>(header), 0, 8)) {
+            throw TransformErrors::InvalidInputError("png header check failed");
+        }
 
 
         /* initialize stuff */
         png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 
-        if (!png_ptr)
-            fprintf(stderr, "[read_png_file] png_create_read_struct failed");
+        if (!png_ptr) {
+            throw TransformErrors::InvalidOperationError("png_create_read_struct() failed");
+        }
 
         png_infop info_ptr = png_create_info_struct(png_ptr);
-        if (!info_ptr)
-            fprintf(stderr, "[read_png_file] png_create_info_struct failed");
+        if (!info_ptr) {
+            throw TransformErrors::InvalidOperationError("png_create_info_struct() failed");
+        }
 
-        if (setjmp(png_jmpbuf(png_ptr)))
-            fprintf(stderr, "[read_png_file] Error during init_io");
+        if (setjmp(png_jmpbuf(png_ptr))) {
+            throw TransformErrors::InvalidOperationError("png_init_io() failed");
+        }
 
         png_init_io(png_ptr, fp);
         png_set_sig_bytes(png_ptr, 8);
@@ -60,12 +91,14 @@ public:
         png_read_update_info(png_ptr, info_ptr);
 
         /* read file */
-        if (setjmp(png_jmpbuf(png_ptr)))
-            fprintf(stderr, "[read_png_file] Error during read_image");
+        if (setjmp(png_jmpbuf(png_ptr))) {
+            throw TransformErrors::InvalidOperationError("png_read_image() failed");
+        }
 
         auto row_pointers = (png_bytep *) malloc(sizeof(png_bytep) * height);
-        for (int y = 0; y < height; y++)
+        for (int y = 0; y < height; y++) {
             row_pointers[y] = (png_byte *) malloc(png_get_rowbytes(png_ptr, info_ptr));
+        }
 
         png_read_image(png_ptr, row_pointers);
         fclose(fp);

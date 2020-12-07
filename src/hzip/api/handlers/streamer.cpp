@@ -383,7 +383,7 @@ void Streamer::decode() {
                     HZAPI_LOGF(INFO, "(%s) Decompressing blob of size: %lu bytes",
                                hzcodec::algorithms::algorithm_to_str(
                                        static_cast<hzcodec::algorithms::ALGORITHM>(job->codec->algorithm)),
-                               src_blob->size << 2);
+                               src_blob->size);
 
                     processor->cycle();
                     processor->run(job);

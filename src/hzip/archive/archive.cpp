@@ -387,6 +387,11 @@ uint64_t HZ_Archive::hza_write_blob(HZ_Blob *blob) {
     // <blob-header <size (64-bit)> <raw (8-bit-arr)>> <blob-o-size (64-bit)>
     // <mstate-id (64-bit)> <blob-data <size (64-bit)> <data (8-bit arr)>>
 
+    if (!metadata.mstate_map.contains(blob->mstate_id)) {
+        sem_post(mutex);
+        throw ArchiveErrors::MstateNotFoundException(blob->mstate_id);
+    }
+
     uint64_t length = 0x140 + (blob->header.length << 3) + (blob->size << 3);
     option_t<uint64_t> o_frag = hza_alloc_fragment(length);
 
@@ -442,6 +447,9 @@ void HZ_Archive::hza_rm_blob(uint64_t id) {
         uint64_t sof = metadata.blob_map[id];
 
         stream->seek_to(sof);
+//        HZ_ASSERT(stream->read(0x8) == HZ_ArchiveMarker::BLOB, "Expected blob marker in archive stream");
+//        stream->seek(-0x8);
+
         stream->write(HZ_ArchiveMarker::EMPTY, 0x8);
 
         metadata.fragments.push_back(HZ_ArchiveFragment{

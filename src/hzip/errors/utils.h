@@ -17,6 +17,18 @@ namespace UtilErrors {
             return "Validation error occured";
         }
     };
+
+    class InternalError : std::exception {
+    public:
+
+        InternalError(const std::string &msg) {
+            LOG_F(ERROR, "hzip: %s", msg.c_str());
+        }
+
+        [[nodiscard]] const char *what() const noexcept override {
+            return "Internal error occured";
+        }
+    };
 }
 
 #endif

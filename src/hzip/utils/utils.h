@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <ctime>
 #include <openssl/sha.h>
+#include <hzip/errors/utils.h>
 #include "common.h"
 
 HZ_INLINE uint64_t hz_u64log2(uint64_t n) {
@@ -151,5 +152,13 @@ HZ_INLINE uint8_t* u32_to_u8ptr(rainman::memmgr *mgr, uint32_t *arr, uint64_t n)
 
     return arr8;
 }
+
+inline void hz_assert(bool exp, const std::string &msg = "Assertion failed") {
+    if (!exp) {
+        throw UtilErrors::InternalError(msg);
+    }
+}
+
+#define HZ_ASSERT(exp, msg) hz_assert(exp, msg)
 
 #endif

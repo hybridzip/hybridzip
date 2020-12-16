@@ -38,13 +38,13 @@ namespace hztrans {
         pair<T> forward_lift(pair<T> p) {
             T diff = (p.y - p.x);
             T average = (p.x + (diff >> 1));
-            return pair{.x=average, .y=diff};
+            return pair<T>{.x=average, .y=diff};
         }
 
         pair<T> reverse_lift(pair<T> p) {
             T x = (p.x - (p.y >> 1));
             T y = (x + p.y);
-            return pair{.x=x, .y=y};
+            return pair<T>{.x=x, .y=y};
         }
 
     public:
@@ -63,21 +63,22 @@ namespace hztrans {
                     auto green = pixel.y;
                     auto blue = pixel.z;
 
-                    pair temp_co = forward_lift(red, blue);
-                    pair y_cg = forward_lift(green, temp_co.x);
-                    return ColorTransformPixel{.x=y_cg.x, .y=y_cg.y, .z=temp_co.y};
+                    pair temp_co = forward_lift(pair<T>{.x=red, .y=blue});
+                    pair y_cg = forward_lift(pair<T>{.x=green, .y=temp_co.x});
+                    return ColorTransformPixel<T>{.x=y_cg.x, .y=y_cg.y, .z=temp_co.y};
                 }
                 case YCOCG_TO_RGB: {
                     auto y = pixel.x;
                     auto co = pixel.y;
                     auto cg = pixel.z;
 
-                    pair green_temp = reverse_lift(y, cg);
-                    pair red_blue = reverse_lift(green_temp.y, co);
-                    return ColorTransformPixel{.x=red_blue.x, .y=green_temp.x, .z=red_blue.y};
+                    pair green_temp = reverse_lift(pair<T>{.x=y, .y=cg});
+                    pair red_blue = reverse_lift(pair<T>{.x=green_temp.y, .y=co});
+                    return ColorTransformPixel<T>{.x=red_blue.x, .y=green_temp.x, .z=red_blue.y};
 
                 }
-                default: throw TransformErrors::InvalidInputError("Undefined transform");
+                default:
+                    throw TransformErrors::InvalidInputError("Undefined transform");
             }
         }
     };

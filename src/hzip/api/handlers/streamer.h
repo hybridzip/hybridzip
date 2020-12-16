@@ -9,7 +9,7 @@
 
 
 namespace hzapi {
-    class Streamer : public rainman::module, public SocketInterface {
+    class Streamer : public rainman::arena, public SocketInterface {
     private:
         HZ_Processor *processor;
 

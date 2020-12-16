@@ -7,7 +7,7 @@
 #include <hzip/processor/processor.h>
 
 namespace hzapi {
-    class Query : public rainman::module, public SocketInterface {
+    class Query : public rainman::arena, public SocketInterface {
     private:
         hzapi::ArchiveProvider *archive_provider{};
     public:

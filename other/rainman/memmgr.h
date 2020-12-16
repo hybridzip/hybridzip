@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <semaphore.h>
+#include <mutex>
 #include <vector>
 #include <unordered_map>
 #include <typeinfo>
@@ -13,13 +14,13 @@
 namespace rainman {
     class memmgr {
     private:
-        uint64_t allocation_size;
-        uint64_t n_allocations;
-        uint64_t peak_size;
-        memmap *memmap;
-        memmgr *parent;
-        std::unordered_map<memmgr *, bool> children;
-        sem_t mutex{};
+        uint64_t allocation_size{};
+        uint64_t n_allocations{};
+        uint64_t peak_size{};
+        memmap *memmap{};
+        memmgr *parent{};
+        std::unordered_map<memmgr *, bool> children{};
+        std::mutex mutex{};
 
         void lock();
 
@@ -31,22 +32,17 @@ namespace rainman {
         memmgr(uint64_t map_size = 0xffff);
 
         ~memmgr() {
-            sem_wait(&mutex);
-
+            lock();
             delete memmap;
-
-            sem_post(&mutex);
+            unlock();
         }
 
         template<typename Type>
-        Type *r_malloc(uint64_t n_elems) {
-            if (n_elems == 0) {
-                return nullptr;
-            }
+        Type *r_malloc(int n_elems) {
+            lock();
 
             uint64_t curr_alloc_size = sizeof(Type) * n_elems;
 
-            lock();
             if (peak_size != 0 && allocation_size + curr_alloc_size > peak_size) {
                 unlock();
                 throw MemoryErrors::PeakLimitReachedException();
@@ -87,6 +83,12 @@ namespace rainman {
             if (elem != nullptr) {
                 update(allocation_size - elem->alloc_size, n_allocations - 1);
                 memmap->remove_by_type<Type>(ptr);
+            } else {
+                unlock();
+                for (auto child : children) {
+                    child.first->r_free(ptr);
+                }
+                lock();
             }
 
             unlock();

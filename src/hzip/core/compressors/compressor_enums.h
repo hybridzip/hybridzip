@@ -4,7 +4,8 @@
 namespace hzcodec::algorithms {
     enum ALGORITHM {
         UNCOMPRESSED = 0x0,
-        VICTINI = 0x1
+        VICTINI = 0x1,
+        SHARINGAN = 0x2
     };
 
     inline const char *algorithm_to_str(ALGORITHM alg) {
@@ -13,6 +14,8 @@ namespace hzcodec::algorithms {
                 return "UNCOMPRESSED";
             case VICTINI:
                 return "VICTINI";
+            case SHARINGAN:
+                return "SHARINGAN";
         }
     }
 }

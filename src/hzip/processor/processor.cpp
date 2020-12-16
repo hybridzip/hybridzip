@@ -15,6 +15,8 @@ hzcodec::AbstractCodec *HZ_Processor::hzp_get_codec(hzcodec::algorithms::ALGORIT
             return rxnew(hzcodec::Uncompressed);
         case hzcodec::algorithms::VICTINI:
             return rxnew(hzcodec::Victini);
+        case hzcodec::algorithms::SHARINGAN:
+            return rxnew(hzcodec::Sharingan);
         default:
             throw ProcessorErrors::InvalidOperationError("Algorithm not found");
     }

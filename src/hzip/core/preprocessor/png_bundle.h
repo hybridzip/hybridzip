@@ -23,11 +23,11 @@ public:
 
 
     ~PNGBundle() {
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                rfree(buf[i][j]);
+        for (int k = 0; k < nchannels; k++) {
+            for (int i = 0; i < height; i++) {
+                rfree(buf[k][i]);
             }
-            rfree(buf[i]);
+            rfree(buf[k]);
         }
         rfree(buf);
     }
@@ -95,21 +95,21 @@ public:
             throw TransformErrors::InvalidOperationError("png_read_image() failed");
         }
 
-        auto row_pointers = (png_bytep *) malloc(sizeof(png_bytep) * height);
+        auto row_pointers = rmalloc(png_bytep, height);
         for (int y = 0; y < height; y++) {
-            row_pointers[y] = (png_byte *) malloc(png_get_rowbytes(png_ptr, info_ptr));
+            row_pointers[y] = rmalloc(png_byte, png_get_rowbytes(png_ptr, info_ptr));
         }
 
         png_read_image(png_ptr, row_pointers);
         fclose(fp);
 
-        auto ***pixar = rmalloc(uint16_t **, height);
-        for (int y = 0; y < height; y++) {
-            pixar[y] = rmalloc(uint16_t *, width);
-            for (int x = 0; x < width; x++) {
-                pixar[y][x] = rmalloc(uint16_t, nchannels);
-                for (int z = 0; z < nchannels; z++) {
-                    pixar[y][x][z] = row_pointers[y][3 * x + z];
+        auto ***pixar = rmalloc(uint16_t **, nchannels);
+        for (int z = 0; z < nchannels; z++) {
+            pixar[z] = rmalloc(uint16_t *, height);
+            for (int y = 0; y < height; y++) {
+                pixar[z][y] = rmalloc(uint16_t, width);
+                for (int x = 0; x < width; x++) {
+                    pixar[z][y][x] = row_pointers[y][3 * x + z];
                 }
             }
         }

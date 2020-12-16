@@ -3,5 +3,6 @@
 
 #include "uncompressed.h"
 #include "victini.h"
+#include "sharingan.h"
 
 #endif

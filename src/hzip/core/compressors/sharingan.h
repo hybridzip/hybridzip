@@ -1,7 +1,7 @@
 /*
  * Sharingan is a lossless/lossy PNG remuxer that leverages color spaces for compression.
  * However, it performs worse for synthetic images.
- * Scheme 1: Lossless/Lossy color space transform + Paeth Filter + First order context
+ * Scheme: Lossless/Lossy color space transform + Paeth Filter + First order context
  */
 
 #ifndef HYBRIDZIP_SHARINGAN_H

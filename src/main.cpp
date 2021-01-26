@@ -1,5 +1,5 @@
 #include <signal.h>
-#include <loguru/loguru.hpp>
+#include <loguru/include/loguru/loguru.hpp>
 #include <dotenv.h>
 #include <rainman/rainman.h>
 #include <hzip/api/api.h>

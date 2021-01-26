@@ -1,7 +1,7 @@
 #ifndef HYBRIDZIP_ERRORS_TRANSFORM_H
 #define HYBRIDZIP_ERRORS_TRANSFORM_H
 
-#include <loguru/loguru.hpp>
+#include <loguru/include/loguru/loguru.hpp>
 #include <exception>
 #include <string>
 

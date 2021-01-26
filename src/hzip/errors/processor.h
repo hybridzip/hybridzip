@@ -3,7 +3,7 @@
 
 #include <exception>
 #include <string>
-#include <loguru/loguru.hpp>
+#include <loguru/include/loguru/loguru.hpp>
 
 namespace ProcessorErrors {
     class InvalidOperationError : public std::exception {

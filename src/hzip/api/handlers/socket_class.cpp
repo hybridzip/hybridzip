@@ -1,5 +1,5 @@
 #include <cerrno>
-#include <loguru/loguru.hpp>
+#include <loguru/include/loguru/loguru.hpp>
 #include <sys/socket.h>
 #include <signal.h>
 #include <hzip/errors/api.h>

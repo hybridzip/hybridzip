@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <hzip/utils/utils.h>
 #include <hzip/utils/fsutils.h>
-#include <loguru/loguru.hpp>
+#include <loguru/include/loguru/loguru.hpp>
 #include <hzip/errors/archive.h>
 #include <hzip/utils/validation.h>
 

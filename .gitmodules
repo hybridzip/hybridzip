@@ -1,1 +1,7 @@
 
+[submodule "other/bitio"]
+	path = other/bitio
+	url = git@github.com:supercmmetry/bitio
+[submodule "other/rainman"]
+	path = other/rainman
+	url = git@github.com:supercmmetry/rainman

@@ -2,7 +2,7 @@
 #define HYBRIDZIP_ERRORS_ARCHIVE_H
 
 #include <exception>
-#include <loguru/loguru.hpp>
+#include <loguru/include/loguru/loguru.hpp>
 #include <cstdint>
 
 namespace ArchiveErrors {

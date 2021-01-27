@@ -7,7 +7,7 @@ echo "Installing dependencies for hybridzip ..."
 rm -rf /usr/lib/hzip
 mkdir /usr/lib/hzip
 
-# Install libraries at /usr/lib/hzip
+# Install libraries at /usr/lib/hzip_core
 
 # Compile tests
 

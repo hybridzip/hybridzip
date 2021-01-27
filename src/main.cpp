@@ -14,7 +14,7 @@ void setup_logger() {
 
 void set_unhandled_exception_handler() {
     std::set_terminate([]() {
-        LOG_F(ERROR, "hzip: Encountered unhandled exception");
+        LOG_F(ERROR, "hzip_core: Encountered unhandled exception");
         abort();
     });
 }
@@ -31,7 +31,7 @@ void check_env(cpp_dotenv::dotenv &dotenv) {
 
     for (auto var : required_vars) {
         if (dotenv[var].empty()) {
-            LOG_F(ERROR, "hzip: %s was not set in environment variables", var);
+            LOG_F(ERROR, "hzip_core: %s was not set in environment variables", var);
             exit(0);
         }
     }
@@ -39,14 +39,14 @@ void check_env(cpp_dotenv::dotenv &dotenv) {
 
 void set_signal_handlers() {
     auto signal_handler = [](int signum) {
-        LOG_F(ERROR, "hzip: Signal captured: %s", strsignal(signum));
+        LOG_F(ERROR, "hzip_core: Signal captured: %s", strsignal(signum));
         _hzapi_graceful_shutdown();
         exit(signum);
     };
 
     auto signal_ignore = [](int signum) {
-        LOG_F(ERROR, "hzip: Signal captured: %s", strsignal(signum));
-        LOG_F(WARNING, "hzip: Ignoring signal: %s", strsignal(signum));
+        LOG_F(ERROR, "hzip_core: Signal captured: %s", strsignal(signum));
+        LOG_F(WARNING, "hzip_core: Ignoring signal: %s", strsignal(signum));
     };
 
     signal(SIGINT, signal_handler);
@@ -69,7 +69,7 @@ int main(int argc, const char **argv) {
 
     auto mgr = new rainman::memmgr;
     mgr->set_peak(std::stoull(dotenv["HZIP_MAX_MEM_USAGE"]));
-    LOG_F(INFO, "hzip: Max memory usage set to %lu bytes", mgr->get_peak_size());
+    LOG_F(INFO, "hzip_core: Max memory usage set to %lu bytes", mgr->get_peak_size());
 
     auto api = new hzapi::Api;
     rinitptrfrom(mgr, api);

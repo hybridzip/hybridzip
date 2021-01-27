@@ -1,6 +1,7 @@
 #include "socket_class.h"
 #include <cerrno>
 #include <cstring>
+#include <utility>
 #include <sys/socket.h>
 #include <hzip_network/errors/api.h>
 #include <hzip_network/api/api_enums.h>
@@ -66,4 +67,10 @@ void SocketInterface::success(const std::string &msg) {
     HZ_SEND(&len, sizeof(len));
 
     HZ_SEND(msg.c_str(), len);
+}
+
+SocketInterface::SocketInterface(int sock, std::string ip_addr, uint16_t port) : _sock(sock),
+                                                                                 _ip_addr(std::move(ip_addr)),
+                                                                                 _port(port) {
+
 }

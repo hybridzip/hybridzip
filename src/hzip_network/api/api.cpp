@@ -11,16 +11,18 @@
 
 using namespace hzapi;
 
-ApiInstance::ApiInstance(int sock, const rainman::ptr<HZ_Processor> &processor, const std::string &password,
-                         const rainman::ptr<std::counting_semaphore<>> &semaphore,
-                         const std::string &ip_addr, uint16_t port,
-                         const rainman::ptr<hzapi::ArchiveProvider> &archive_provider) {
+ApiInstance::ApiInstance(
+        int sock,
+        const rainman::ptr<HZ_Processor> &processor,
+        const std::string &password,
+        const rainman::ptr<std::counting_semaphore<>> &semaphore,
+        const std::string &ip_addr,
+        uint16_t port,
+        const rainman::ptr<hzapi::ArchiveProvider> &archive_provider
+) : SocketInterface(sock, ip_addr, port) {
     _processor = processor;
-    _sock = sock;
     _password = password;
     _semaphore = semaphore;
-    _port = port;
-    _ip_addr = ip_addr;
     _archive_provider = archive_provider;
 }
 
@@ -65,12 +67,12 @@ void ApiInstance::start() {
 
             switch ((API_CTL) ctl_word) {
                 case API_CTL_STREAM: {
-                    auto streamer = rmod(Streamer, sock, ip_addr, port, _processor, _archive_provider);
+                    auto streamer = Streamer(_sock, _ip_addr, _port, _processor, _archive_provider);
                     streamer.start();
                     break;
                 }
                 case API_CTL_QUERY: {
-                    auto query = rmod(Query, sock, ip_addr, port, _archive_provider);
+                    auto query = Query(_sock, _ip_addr, _port, _archive_provider);
                     query.start();
                     break;
                 }

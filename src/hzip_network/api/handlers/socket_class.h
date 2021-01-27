@@ -23,6 +23,10 @@ namespace hzapi {
         std::string _ip_addr{};
         uint16_t _port{};
 
+        SocketInterface() = default;
+
+        SocketInterface(int sock, std::string ip_addr, uint16_t port);
+
         void t_send(const void *buf, size_t n) const;
 
         void t_recv(void *buf, size_t n, bool sync = true);

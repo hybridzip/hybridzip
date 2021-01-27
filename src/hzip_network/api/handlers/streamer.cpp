@@ -20,11 +20,13 @@ uint64_t Streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
     }
 }
 
-Streamer::Streamer(int sock, const std::string &ip_addr, uint16_t port, const rainman::ptr<HZ_Processor>& processor,
-                   const rainman::ptr<hzapi::ArchiveProvider>& archive_provider) {
-    _sock = sock;
-    _ip_addr = ip_addr;
-    _port = port;
+Streamer::Streamer(
+        int sock,
+        const std::string &ip_addr,
+        uint16_t port,
+        const rainman::ptr<HZ_Processor> &processor,
+        const rainman::ptr<hzapi::ArchiveProvider> &archive_provider
+) : SocketInterface(sock, ip_addr, port) {
     _processor = processor;
     _archive_provider = archive_provider;
 }
@@ -233,7 +235,8 @@ void Streamer::encode() {
                 while (data_len > 0) {
                     _mutex->lock();
                     HZAPI_LOGF(INFO, "(%s) Training: '%s' - Batch: %lu", hzcodec::algorithms::algorithm_to_str(
-                            static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), mstate_addr.inner().pointer(), ++batch_count);
+                            static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), mstate_addr.inner().pointer(),
+                               ++batch_count);
 
                     // Avoid processor overload.
                     _processor->cycle();

@@ -2,16 +2,16 @@
 #define HYBRIDZIP_API_QUERY_H
 
 #include <rainman/rainman.h>
-#include <network/api/handlers/socket_class.h>
-#include <network/api/providers/archive_provider.h>
-#include <hzip/processor/processor.h>
+#include <hzip_core/processor/processor.h>
+#include <hzip_network/api/providers/archive_provider.h>
+#include "socket_class.h"
 
 namespace hzapi {
-    class Query : public rainman::arena, public SocketInterface {
+    class Query : public SocketInterface {
     private:
-        hzapi::ArchiveProvider *archive_provider{};
+        rainman::ptr<hzapi::ArchiveProvider> _archive_provider{};
     public:
-        Query(int _sock, char *_ip_addr, uint16_t port, hzapi::ArchiveProvider *_archive_provider);
+        Query(int sock, const std::string &ip_addr, uint16_t port, const rainman::ptr<hzapi::ArchiveProvider> &archive_provider);
 
         void start();
     };

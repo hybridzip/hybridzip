@@ -1,22 +1,24 @@
 #include "query.h"
-#include <network/api/api_enums.h>
-#include <network/errors/api.h>
-#include <hzip/utils/validation.h>
+#include <hzip_core/utils/validation.h>
+#include <hzip_network/api/api_enums.h>
+#include <hzip_network/errors/api.h>
 
 using namespace hzapi;
 
-Query::Query(int _sock, char *_ip_addr, uint16_t _port, hzapi::ArchiveProvider *_archive_provider) {
-    sock = _sock;
-    ip_addr = _ip_addr;
-    port = _port;
-    archive_provider = _archive_provider;
+Query::Query(
+        int sock,
+        const std::string &ip_addr,
+        uint16_t port,
+        const rainman::ptr<hzapi::ArchiveProvider> &archive_provider
+) : SocketInterface(sock, ip_addr, port) {
+    _archive_provider = archive_provider;
 }
 
 void Query::start() {
-    HZ_Archive *archive = nullptr;
-    char *archive_path = nullptr;
+    rainman::option<rainman::ptr<HZ_Archive>> archive;
+    rainman::ptr<char> archive_path;
     uint16_t archive_path_len = 0;
-    char *target = nullptr;
+    rainman::option<rainman::ptr<char>> target;
     uint16_t target_len = 0;
     bool piggy_back = false;
 
@@ -26,17 +28,13 @@ void Query::start() {
 
         switch ((QUERY_CTL) word) {
             case QUERY_CTL_ARCHIVE: {
-                if (archive_path != nullptr) {
-                    rfree(archive_path);
-                }
-
                 HZ_RECV(&archive_path_len, sizeof(archive_path_len));
-                archive_path = rmalloc(char, archive_path_len + 1);
+                archive_path = rainman::ptr<char>(archive_path_len + 1);
                 archive_path[archive_path_len] = 0;
 
-                HZ_RECV(archive_path, archive_path_len);
+                HZ_RECV(archive_path.pointer(), archive_path_len);
 
-                archive = archive_provider->provide(archive_path);
+                archive = _archive_provider->provide(archive_path.pointer());
                 break;
             }
             case QUERY_CTL_CHECK_IF_FILE_EXISTS: {
@@ -44,15 +42,15 @@ void Query::start() {
                     throw ApiErrors::InvalidOperationError("Piggyback was disabled");
                 }
 
-                if (archive == nullptr) {
+                if (archive.is_none()) {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (target == nullptr) {
+                if (target.is_none()) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                bool found = archive->check_file_exists(target);
+                bool found = archive.inner()->check_file_exists(target.inner().pointer());
                 HZ_SEND(&found, sizeof(found));
 
                 return;
@@ -62,15 +60,15 @@ void Query::start() {
                     throw ApiErrors::InvalidOperationError("Piggyback was disabled");
                 }
 
-                if (archive == nullptr) {
+                if (archive.is_none()) {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (target == nullptr) {
+                if (target.is_none()) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                auto list = archive->list_file_system(target);
+                auto list = archive.inner()->list_file_system(target.inner().pointer());
 
                 uint64_t count = list.size();
                 HZ_SEND(&count, sizeof(count));
@@ -89,15 +87,15 @@ void Query::start() {
                     throw ApiErrors::InvalidOperationError("Piggyback was disabled");
                 }
 
-                if (archive == nullptr) {
+                if (archive.is_none()) {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (target == nullptr) {
+                if (target.is_none()) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                auto list = archive->list_mstate_system(target);
+                auto list = archive.inner()->list_mstate_system(target.inner().pointer());
 
                 uint64_t count = list.size();
                 HZ_SEND(&count, sizeof(count));
@@ -116,31 +114,31 @@ void Query::start() {
                 break;
             }
             case QUERY_CTL_DELETE_FILE: {
-                if (archive == nullptr) {
+                if (archive.is_none()) {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (target == nullptr) {
+                if (target.is_none()) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                archive->remove_file(target);
+                archive.inner()->remove_file(target.inner().pointer());
                 return;
             }
             case QUERY_CTL_DELETE_MSTATE: {
-                if (archive == nullptr) {
+                if (archive.is_none()) {
                     throw ApiErrors::InvalidOperationError("Archive not provided");
                 }
 
-                if (target == nullptr) {
+                if (target.is_none()) {
                     throw ApiErrors::InvalidOperationError("Target not provided");
                 }
 
-                archive->uninstall_mstate(target);
+                archive.inner()->uninstall_mstate(target.inner().pointer());
                 return;
             }
             case QUERY_CTL_GET_MEM_USAGE: {
-                uint64_t alloc_size = rparentmgr->get_alloc_size();
+                uint64_t alloc_size = rglobalmgr.get_alloc_size();
                 HZ_SEND(&alloc_size, sizeof(alloc_size));
 
                 return;
@@ -148,11 +146,11 @@ void Query::start() {
             case QUERY_CTL_TARGET: {
                 HZ_RECV(&target_len, sizeof(target_len));
 
-                target = rmalloc(char, target_len + 1);
-                target[target_len] = 0;
+                target = rainman::ptr<char>(target_len + 1);
+                target.inner()[target_len] = 0;
 
-                HZ_RECV(target, target_len);
-                hz_validate_path(target);
+                HZ_RECV(target.inner().pointer(), target_len);
+                hz_validate_path(target.inner().pointer());
 
                 break;
             }

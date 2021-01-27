@@ -1,11 +1,11 @@
 #include "archive.h"
 #include <filesystem>
 #include <fcntl.h>
-#include <hzip/utils/utils.h>
-#include <hzip/utils/fsutils.h>
-#include <loguru/include/loguru/loguru.hpp>
-#include <hzip/errors/archive.h>
-#include <hzip/utils/validation.h>
+#include <loguru/loguru.hpp>
+#include <hzip_core/utils/validation.h>
+#include <hzip_core/utils/utils.h>
+#include <hzip_core/utils/fsutils.h>
+#include <hzip_storage/errors/archive.h>
 
 HZ_Archive::HZ_Archive(const std::string &archive_path) {
     path = std::filesystem::absolute(archive_path);
@@ -17,12 +17,12 @@ HZ_Archive::HZ_Archive(const std::string &archive_path) {
     }
 
     FILE *fp;
-    if ((fp = fopen(path.c_str(), "rb+")) == 0) {
-        throw ArchiveErrors::InvalidOperationException(std::string("fopen() failed with errno=") +
-                                                       std::to_string(errno));
+    if ((fp = fopen(path.c_str(), "rb+")) == nullptr) {
+        throw ArchiveErrors::InvalidOperationException(std::string("fopen() failed with error: ") +
+                                                       std::strerror(errno));
     }
 
-    stream = new bitio::stream(fp);
+    stream = rainman::ptr<bitio::stream>(1, fp);
 
     auto sha512_path = "/" + hz_sha512(path);
 
@@ -31,19 +31,14 @@ HZ_Archive::HZ_Archive(const std::string &archive_path) {
     // Lock archive.
     LOG_F(INFO, "hzip_core.archive: Requesting access to archive (%s)", path.c_str());
 
-
-    if ((archive_mutex = sem_open(sname, O_CREAT, 0777, 1)) == SEM_FAILED) {
-        throw ArchiveErrors::InvalidOperationException("sem_open() failed with errno=" + std::to_string(errno));
+    archive_mutex = rainman::ptr<sem_t>(sem_open(sname, O_CREAT, 0777, 1), 1);
+    if (archive_mutex.pointer() == SEM_FAILED) {
+        throw ArchiveErrors::InvalidOperationException(std::string("sem_open() failed with error: ") + std::strerror(errno));
     }
 
-    errno = 0;
-
-    sem_wait(archive_mutex);
+    sem_wait(archive_mutex.pointer());
 
     LOG_F(INFO, "hzip_core.archive: Access granted to archive (%s)", path.c_str());
-
-    mutex = new sem_t;
-    sem_init(mutex, 0, 1);
 
     if (init_flag) {
         hza_init();
@@ -51,7 +46,7 @@ HZ_Archive::HZ_Archive(const std::string &archive_path) {
 }
 
 void HZ_Archive::hza_scan() {
-    sem_wait(mutex);
+    mutex.lock();
 
     auto readfn = [this](uint64_t n) {
         this->metadata.eof += n;
@@ -95,7 +90,7 @@ void HZ_Archive::hza_scan() {
         }
     }
 
-    sem_post(mutex);
+    mutex.unlock();
 }
 
 void HZ_Archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t)> &read,
@@ -129,18 +124,13 @@ void HZ_Archive::hza_scan_metadata_segment(const std::function<uint64_t(uint64_t
             }
 
             uint64_t blob_count = read(0x3A);
-            auto blob_ids = rmalloc(uint64_t, blob_count);
+            auto blob_ids = rainman::ptr<uint64_t>(blob_count);
 
             for (uint64_t i = 0; i < blob_count; i++) {
                 blob_ids[i] = read(0x40);
             }
 
-            auto file = HZ_ArchiveFile{
-                    .blob_ids=blob_ids,
-                    .blob_count=blob_count
-            };
-
-            rinit(file);
+            auto file = HZ_ArchiveFile(blob_ids);
 
             metadata.file_map.set(_path, HZ_ArchiveEntry(file, sof - 0x8));
 
@@ -207,7 +197,7 @@ void HZ_Archive::hza_scan_mstate_segment(const std::function<uint64_t(uint64_t)>
     metadata.mstate_map[mstate_id] = sof;
 }
 
-option_t<uint64_t> HZ_Archive::hza_alloc_fragment(uint64_t length) {
+rainman::option<uint64_t> HZ_Archive::hza_alloc_fragment(uint64_t length) {
     uint64_t fragment_index = 0;
     uint64_t fit_diff = 0xffffffffffffffff;
     bool found_fragment = false;
@@ -245,14 +235,14 @@ option_t<uint64_t> HZ_Archive::hza_alloc_fragment(uint64_t length) {
             metadata.fragments.erase(metadata.fragments.begin() + fragment_index);
         }
 
-        return option_t<uint64_t>(psof);
+        return rainman::option<uint64_t>(psof);
     } else {
-        return option_t<uint64_t>(0, false);
+        return rainman::option<uint64_t>();
     }
 }
 
 void HZ_Archive::hza_init() {
-    sem_wait(mutex);
+    mutex.lock();
 
     stream->seek_to(0);
 
@@ -269,14 +259,14 @@ void HZ_Archive::hza_init() {
 
     LOG_F(INFO, "hzip_core.archive: Initialized archive (%s)", path.c_str());
 
-    sem_post(mutex);
+    mutex.unlock();
 }
 
-void HZ_Archive::hza_create_metadata_file_entry(const std::string &file_path, HZ_ArchiveFile file) {
+void HZ_Archive::hza_create_metadata_file_entry(const std::string &file_path, const HZ_ArchiveFile& file) {
     // Evaluate length of entry to utilize fragmented-space.
 
     if (metadata.file_map.contains(file_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::InvalidOperationException("file entry cannot be overwritten");
     }
 
@@ -287,13 +277,13 @@ void HZ_Archive::hza_create_metadata_file_entry(const std::string &file_path, HZ
     length += (file_path.length() << 3);
 
     // FILEINFO-metadata-marker (8-bit) + Blob-count (n) (58-bit) + n 64-bit blob-ids
-    length += 0x42 + (file.blob_count << 0x6);
+    length += 0x42 + (file.blob_ids.size() << 0x6);
 
-    option_t<uint64_t> o_frag = hza_alloc_fragment(length);
+    rainman::option<uint64_t> o_frag = hza_alloc_fragment(length);
     uint64_t sof;
 
-    if (o_frag.is_valid) {
-        uint64_t frag_sof = o_frag.get();
+    if (o_frag.is_some()) {
+        uint64_t frag_sof = o_frag.inner();
         sof = frag_sof;
 
         // seek to allocated fragment.
@@ -318,15 +308,15 @@ void HZ_Archive::hza_create_metadata_file_entry(const std::string &file_path, HZ
     // Write file_path
     stream->write(path_length, 0x40);
 
-    for (int i = 0; i < file_path.length(); i++) {
-        stream->write(file_path[i], 0x8);
+    for (char i : file_path) {
+        stream->write(i, 0x8);
     }
 
     // Write blob_count.
-    stream->write(file.blob_count, 0x3A);
+    stream->write(file.blob_ids.size(), 0x3A);
 
     // Write 64-bit blob_ids
-    for (int i = 0; i < file.blob_count; i++) {
+    for (int i = 0; i < file.blob_ids.size(); i++) {
         stream->write(file.blob_ids[i], 0x40);
     }
 
@@ -334,19 +324,18 @@ void HZ_Archive::hza_create_metadata_file_entry(const std::string &file_path, HZ
 
 HZ_ArchiveFile HZ_Archive::hza_read_metadata_file_entry(const std::string &file_path) {
     if (!metadata.file_map.contains(file_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::FileNotFoundException(file_path);
     }
 
     return metadata.file_map.get(file_path).data;
 }
 
-HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
-    auto blob = rnew(HZ_Blob);
-    rinitptr(blob);
+rainman::ptr<HZ_Blob> HZ_Archive::hza_read_blob(uint64_t id) {
+    auto blob = rainman::ptr<HZ_Blob>();
 
     if (!metadata.blob_map.contains(id)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::BlobNotFoundException(id);
     }
 
@@ -359,11 +348,11 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
 
 
     blob->header = HZ_BlobHeader();
-    blob->header.length = stream->read(0x40);
+    auto header_len = stream->read(0x40);
 
-    blob->header.raw = rmalloc(uint8_t, blob->header.length);
+    blob->header.raw = rainman::ptr<uint8_t>(header_len);
 
-    for (uint64_t i = 0; i < blob->header.length; i++) {
+    for (uint64_t i = 0; i < header_len; i++) {
         blob->header.raw[i] = stream->read(0x8);
     }
 
@@ -371,7 +360,7 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
     blob->mstate_id = stream->read(0x40);
 
     blob->size = stream->read(0x40);
-    blob->data = rmalloc(uint8_t, blob->size);
+    blob->data = rainman::ptr<uint8_t>(blob->size);
 
     for (uint64_t i = 0; i < blob->size; i++) {
         blob->data[i] = stream->read(0x8);
@@ -382,23 +371,23 @@ HZ_Blob *HZ_Archive::hza_read_blob(uint64_t id) {
     return blob;
 }
 
-uint64_t HZ_Archive::hza_write_blob(HZ_Blob *blob) {
+uint64_t HZ_Archive::hza_write_blob(const HZ_Blob &blob) {
     // blob writing format: <hzmarker (8bit)> <block length (64bit)> <blob-id (64-bit)>
     // <blob-header <size (64-bit)> <raw (8-bit-arr)>> <blob-o-size (64-bit)>
     // <mstate-id (64-bit)> <blob-data <size (64-bit)> <data (8-bit arr)>>
 
-    if (!metadata.mstate_map.contains(blob->mstate_id)) {
-        sem_post(mutex);
-        throw ArchiveErrors::MstateNotFoundException(blob->mstate_id);
+    if (!metadata.mstate_map.contains(blob.mstate_id)) {
+        mutex.unlock();
+        throw ArchiveErrors::MstateNotFoundException(blob.mstate_id);
     }
 
-    uint64_t length = 0x140 + (blob->header.length << 3) + (blob->size << 3);
-    option_t<uint64_t> o_frag = hza_alloc_fragment(length);
+    uint64_t length = 0x140 + (blob.header.size() << 3) + (blob.size << 3);
+    rainman::option<uint64_t> o_frag = hza_alloc_fragment(length);
 
     uint64_t sof;
 
-    if (o_frag.is_valid) {
-        sof = o_frag.get();
+    if (o_frag.is_some()) {
+        sof = o_frag.inner();
         stream->seek_to(sof);
     } else {
         sof = metadata.eof;
@@ -422,21 +411,21 @@ uint64_t HZ_Archive::hza_write_blob(HZ_Blob *blob) {
     metadata.blob_map[blob_id] = sof;
 
     // Write blob metadata.
-    stream->write(blob->header.length, 0x40);
-    for (uint64_t i = 0; i < blob->header.length; i++) {
-        stream->write(blob->header.raw[i], 0x8);
+    stream->write(blob.header.size(), 0x40);
+    for (uint64_t i = 0; i < blob.header.size(); i++) {
+        stream->write(blob.header.raw[i], 0x8);
     }
 
-    stream->write(blob->o_size, 0x40);
-    stream->write(blob->mstate_id, 0x40);
+    stream->write(blob.o_size, 0x40);
+    stream->write(blob.mstate_id, 0x40);
 
     // add dependency
-    hza_increment_dep(blob->mstate_id);
+    hza_increment_dep(blob.mstate_id);
 
     // Write blob-data
-    stream->write(blob->size, 0x40);
-    for (int i = 0; i < blob->size; i++) {
-        stream->write(blob->data[i], 0x8);
+    stream->write(blob.size, 0x40);
+    for (int i = 0; i < blob.size; i++) {
+        stream->write(blob.data[i], 0x8);
     }
 
     return blob_id;
@@ -470,19 +459,19 @@ void HZ_Archive::hza_rm_blob(uint64_t id) {
         // erase entry from blob map
         metadata.blob_map.erase(id);
     } else {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::BlobNotFoundException(id);
     }
 
 }
 
-HZ_MState *HZ_Archive::hza_read_mstate(uint64_t id) {
+rainman::ptr<HZ_MState> HZ_Archive::hza_read_mstate(uint64_t id) {
     if (!metadata.mstate_map.contains(id)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::MstateNotFoundException(id);
     }
 
-    auto mstate = rxnew(HZ_MState);
+    auto mstate = rainman::ptr<HZ_MState>();
     uint64_t sof = metadata.mstate_map[id];
 
     stream->seek_to(sof);
@@ -493,8 +482,7 @@ HZ_MState *HZ_Archive::hza_read_mstate(uint64_t id) {
     mstate->alg = (hzcodec::algorithms::ALGORITHM) stream->read(0x40);
 
     auto length = stream->read(0x40);
-    mstate->length = length;
-    mstate->data = rmalloc(uint8_t, length);
+    mstate->data = rainman::ptr<uint8_t>(length);
 
     for (uint64_t i = 0; i < length; i++) {
         mstate->data[i] = stream->read(0x8);
@@ -503,21 +491,17 @@ HZ_MState *HZ_Archive::hza_read_mstate(uint64_t id) {
     return mstate;
 }
 
-uint64_t HZ_Archive::hza_write_mstate(HZ_MState *mstate) {
+uint64_t HZ_Archive::hza_write_mstate(const rainman::ptr<HZ_MState>& mstate) {
     // mstate writing format: <hzmarker (8bit)> <block length (64bit)>
     // <mstate-id (64-bit)> <algorithm (64-bit)> <data-length (64-bit)> <data (8-bit-array)>
 
-    if (mstate == nullptr) {
-        return 0;
-    }
-
-    uint64_t length = 0xC0 + (mstate->length << 0x3);
-    option_t<uint64_t> o_frag = hza_alloc_fragment(length);
+    uint64_t length = 0xC0 + (mstate->size() << 0x3);
+    rainman::option<uint64_t> o_frag = hza_alloc_fragment(length);
 
     uint64_t sof;
 
-    if (o_frag.is_valid) {
-        sof = o_frag.get();
+    if (o_frag.is_some()) {
+        sof = o_frag.inner();
         stream->seek_to(sof);
     } else {
         sof = metadata.eof;
@@ -542,21 +526,21 @@ uint64_t HZ_Archive::hza_write_mstate(HZ_MState *mstate) {
     metadata.mstate_map[mstate_id] = sof;
 
     // Write mstate-data
-    stream->write(mstate->length, 0x40);
+    stream->write(mstate->size(), 0x40);
 
-    for (int i = 0; i < mstate->length; i++) {
+    for (int i = 0; i < mstate->size(); i++) {
         stream->write(mstate->data[i], 0x8);
     }
 
     return mstate_id;
 }
 
-void HZ_Archive::install_mstate(const std::string &_path, HZ_MState *mstate) {
+void HZ_Archive::install_mstate(const std::string &_path, const rainman::ptr<HZ_MState> &mstate) {
     hz_validate_path(_path);
 
-    sem_wait(mutex);
+    mutex.lock();
     if (metadata.mstate_aux_map.contains(_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::InvalidOperationException("Mstate already exists");
     }
 
@@ -569,11 +553,11 @@ void HZ_Archive::install_mstate(const std::string &_path, HZ_MState *mstate) {
     length += 0x40;
     length += (_path.length() << 3);
 
-    option_t<uint64_t> o_frag = hza_alloc_fragment(length);
+    rainman::option<uint64_t> o_frag = hza_alloc_fragment(length);
 
     uint64_t sof;
-    if (o_frag.is_valid) {
-        sof = o_frag.get();
+    if (o_frag.is_some()) {
+        sof = o_frag.inner();
 
         // seek to allocated fragment.
         stream->seek_to(sof);
@@ -598,20 +582,20 @@ void HZ_Archive::install_mstate(const std::string &_path, HZ_MState *mstate) {
     // Write file_path
     stream->write(path_length, 0x40);
 
-    for (int i = 0; i < _path.length(); i++) {
-        stream->write(_path[i], 0x8);
+    for (char i : _path) {
+        stream->write(i, 0x8);
     }
 
     // Write mstate-id.
     stream->write(id, 0x40);
 
-    sem_post(mutex);
+    mutex.unlock();
 }
 
 void HZ_Archive::hza_rm_mstate(uint64_t id) {
     if (metadata.mstate_map.contains(id)) {
         if (hza_check_mstate_deps(id)) {
-            sem_post(mutex);
+            mutex.unlock();
             throw ArchiveErrors::InvalidOperationException("mstate dependency detected");
         }
 
@@ -661,32 +645,30 @@ void HZ_Archive::hza_decrement_dep(uint64_t id) {
 void HZ_Archive::create_file(const std::string &file_path, HZ_Blob *blobs, uint64_t blob_count) {
     hz_validate_path(file_path);
 
-    sem_wait(mutex);
+    mutex.lock();
     if (metadata.file_map.contains(file_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::InvalidOperationException("file already exists");
     }
 
     HZ_ArchiveFile file{};
-    rinit(file);
-    file.blob_count = blob_count;
-    file.blob_ids = rmalloc(uint64_t, blob_count);
+    file.blob_ids = rainman::ptr<uint64_t>(blob_count);
 
     for (uint64_t i = 0; i < blob_count; i++) {
-        file.blob_ids[i] = hza_write_blob(&blobs[i]);
+        file.blob_ids[i] = hza_write_blob(blobs[i]);
     }
 
     hza_create_metadata_file_entry(file_path, file);
 
-    sem_post(mutex);
+    mutex.unlock();
 }
 
 void HZ_Archive::remove_file(const std::string &file_path) {
     hz_validate_path(file_path);
 
-    sem_wait(mutex);
+    mutex.lock();
     if (!metadata.file_map.contains(file_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::FileNotFoundException(file_path);
     }
 
@@ -703,45 +685,44 @@ void HZ_Archive::remove_file(const std::string &file_path) {
             .length=stream->read(0x40)
     });
 
-    for (uint64_t i = 0; i < file.blob_count; i++) {
+    for (uint64_t i = 0; i < file.blob_ids.size(); i++) {
         hza_rm_blob(file.blob_ids[i]);
     }
 
     hza_metadata_erase_file(file_path);
 
-    sem_post(mutex);
+    mutex.unlock();
 }
 
-HZ_BlobSet HZ_Archive::read_file(const std::string &file_path) {
+rainman::ptr<HZ_Blob> HZ_Archive::read_file(const std::string &file_path) {
     hz_validate_path(file_path);
 
-    sem_wait(mutex);
+    mutex.lock();
     if (!metadata.file_map.contains(file_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::FileNotFoundException(file_path);
     }
 
     HZ_ArchiveFile file = hza_read_metadata_file_entry(file_path);
 
-    auto *blobs = rmalloc(HZ_Blob, file.blob_count);
+    auto blobs = rainman::ptr<HZ_Blob>(file.blob_ids.size());
 
-    for (uint64_t i = 0; i < file.blob_count; i++) {
+    for (uint64_t i = 0; i < file.blob_ids.size(); i++) {
         auto blob = hza_read_blob(file.blob_ids[i]);
         blobs[i] = *blob;
-        rfree(blob);
     }
 
-    sem_post(mutex);
+    mutex.unlock();
 
-    return HZ_BlobSet{.blobs=blobs, .blob_count=file.blob_count};
+    return blobs;
 }
 
 void HZ_Archive::uninstall_mstate(const std::string &_path) {
     hz_validate_path(_path);
 
-    sem_wait(mutex);
+    mutex.lock();
     if (!metadata.mstate_aux_map.contains(_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::MstateNotFoundException(0);
     }
 
@@ -763,25 +744,25 @@ void HZ_Archive::uninstall_mstate(const std::string &_path) {
     metadata.mstate_aux_map.erase(_path);
     metadata.mstate_inv_aux_map.erase(id);
 
-    sem_post(mutex);
+    mutex.unlock();
 }
 
-void HZ_Archive::inject_mstate(HZ_MState *mstate, HZ_Blob *blob) {
-    sem_wait(mutex);
+void HZ_Archive::inject_mstate(const rainman::ptr<HZ_MState> &mstate, const rainman::ptr<HZ_Blob> &blob) {
+    mutex.lock();
 
     blob->mstate_id = hza_write_mstate(mstate);
     blob->mstate = mstate;
 
-    sem_post(mutex);
+    mutex.unlock();
 }
 
-void HZ_Archive::inject_mstate(const std::string &_path, HZ_Blob *blob) {
+void HZ_Archive::inject_mstate(const std::string &_path, const rainman::ptr<HZ_Blob>& blob) {
     hz_validate_path(_path);
 
-    sem_wait(mutex);
+    mutex.lock();
 
     if (!metadata.mstate_aux_map.contains(_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::MstateNotFoundException(0);
     }
 
@@ -789,105 +770,94 @@ void HZ_Archive::inject_mstate(const std::string &_path, HZ_Blob *blob) {
 
     blob->mstate = hza_read_mstate(blob->mstate_id);
 
-    sem_post(mutex);
+    mutex.unlock();
 }
 
-uint64_t HZ_Archive::install_mstate(HZ_MState *mstate) {
-    sem_wait(mutex);
+uint64_t HZ_Archive::install_mstate(const rainman::ptr<HZ_MState> &mstate) {
+    mutex.lock();
     uint64_t id = hza_write_mstate(mstate);
-    sem_post(mutex);
+    mutex.unlock();
     return id;
 }
 
 void HZ_Archive::uninstall_mstate(uint64_t id) {
-    sem_wait(mutex);
+    mutex.lock();
     hza_rm_mstate(id);
-    sem_post(mutex);
+    mutex.unlock();
 }
 
 void HZ_Archive::close() {
-    sem_wait(mutex);
+    mutex.lock();
 
     stream->seek_to(metadata.eof);
     stream->write(HZ_ArchiveMarker::END, 0x8);
     stream->flush();
     stream->close();
 
-    sem_post(mutex);
-
-    delete stream;
-    delete mutex;
-
-    sem_post(archive_mutex);
+    mutex.unlock();
+    sem_post(archive_mutex.pointer());
 }
 
 void HZ_Archive::load() {
-    rinit(metadata.file_map);
-    rinit(metadata.mstate_aux_map);
-
-    metadata.file_map.init();
-    metadata.mstate_aux_map.init();
-
     hza_scan();
 }
 
-void HZ_Archive::create_file_entry(const std::string &file_path, HZ_ArchiveFile file) {
-    sem_wait(mutex);
-    rinit(file);
+void HZ_Archive::create_file_entry(const std::string &file_path, const HZ_ArchiveFile& file) {
+    mutex.lock();
     hza_create_metadata_file_entry(file_path, file);
-    sem_post(mutex);
+    mutex.unlock();
 }
 
-uint64_t HZ_Archive::write_blob(HZ_Blob *blob) {
-    sem_wait(mutex);
-    uint64_t id = hza_write_blob(blob);
-    sem_post(mutex);
+uint64_t HZ_Archive::write_blob(const rainman::ptr<HZ_Blob> &blob) {
+    mutex.lock();
+    uint64_t id = hza_write_blob(*blob);
+    mutex.unlock();
 
     return id;
 }
 
 bool HZ_Archive::check_file_exists(const std::string &file_path) {
-    sem_wait(mutex);
+    mutex.lock();
     bool v = metadata.file_map.contains(file_path);
-    sem_post(mutex);
+    mutex.unlock();
 
     return v;
 }
 
 HZ_ArchiveFile HZ_Archive::read_file_entry(const std::string &file_path) {
-    sem_wait(mutex);
+    mutex.lock();
     HZ_ArchiveFile file = hza_read_metadata_file_entry(file_path);
-    sem_post(mutex);
+    mutex.unlock();
 
     return file;
 }
 
-HZ_Blob *HZ_Archive::read_blob(uint64_t id) {
-    sem_wait(mutex);
-    auto *blob = hza_read_blob(id);
-    sem_post(mutex);
+rainman::ptr<HZ_Blob> HZ_Archive::read_blob(uint64_t id) {
+    mutex.lock();
+    auto blob = hza_read_blob(id);
+    mutex.unlock();
 
     return blob;
 }
 
-HZ_MState *HZ_Archive::read_mstate(std::string _path) {
-    sem_wait(mutex);
+rainman::ptr<HZ_MState> HZ_Archive::read_mstate(const std::string& _path) {
+    mutex.lock();
     if (!metadata.mstate_aux_map.contains(_path)) {
-        sem_post(mutex);
+        mutex.unlock();
         throw ArchiveErrors::InvalidOperationException("Mstate not found");
     }
 
     auto id = metadata.mstate_aux_map.get(_path).data;
-    auto *mstate = hza_read_mstate(id);
-    sem_post(mutex);
+    auto mstate = hza_read_mstate(id);
+    mutex.unlock();
 
     return mstate;
 }
 
 bool HZ_Archive::check_mstate_exists(const std::string &_path) {
-    sem_wait(mutex);
+    mutex.lock();
     bool exists = metadata.mstate_aux_map.contains(_path);
-    sem_post(mutex);
+    mutex.unlock();
 
     return exists;
 }
@@ -895,24 +865,22 @@ bool HZ_Archive::check_mstate_exists(const std::string &_path) {
 void HZ_Archive::hza_metadata_erase_file(const std::string &_file_path) {
     if (metadata.file_map.contains(_file_path)) {
         auto file = metadata.file_map.get(_file_path).data;
-        rfree(file.blob_ids);
-
         metadata.file_map.erase(_file_path);
     }
 }
 
 std::vector<HZ_ArchiveTrieListElement> HZ_Archive::list_file_system(const std::string &prefix) {
-    sem_wait(mutex);
+    mutex.lock();
     auto list = metadata.file_map.children(prefix);
-    sem_post(mutex);
+    mutex.unlock();
 
     return list;
 }
 
 std::vector<HZ_ArchiveTrieListElement> HZ_Archive::list_mstate_system(const std::string &prefix) {
-    sem_wait(mutex);
+    mutex.lock();
     auto list = metadata.mstate_aux_map.children(prefix);
-    sem_post(mutex);
+    mutex.unlock();
 
     return list;
 }

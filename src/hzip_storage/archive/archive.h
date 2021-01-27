@@ -7,9 +7,9 @@
 #include <semaphore.h>
 #include <bitio/bitio.h>
 #include <rainman/rainman.h>
-#include <hzip/core/blob/blob.h>
-#include <hzip/utils/common.h>
-#include <hzip/archive/archive_trie.h>
+#include <hzip_core/core/blob/blob.h>
+#include <hzip_core/utils/common.h>
+#include "archive_trie.h"
 
 
 #define HZ_ARCHIVE_VERSION 0x000100
@@ -30,8 +30,17 @@ enum HZ_ArchiveMetadataEntryType {
 
 struct HZ_ArchiveFile {
     rainman::ptr<uint64_t> blob_ids;
-    uint64_t blob_count{};
     //todo: Add file information.
+
+    HZ_ArchiveFile() = default;
+
+    HZ_ArchiveFile(const rainman::ptr<uint64_t> &blob_ids) {
+        this->blob_ids = blob_ids;
+    }
+
+    HZ_ArchiveFile(const HZ_ArchiveFile &copy) {
+        blob_ids = copy.blob_ids;
+    }
 };
 
 struct HZ_ArchiveFragment {
@@ -68,9 +77,9 @@ class HZ_Archive {
 private:
     std::string path;
     HZ_ArchiveMetadata metadata;
-    bitio::stream *stream{};
-    sem_t *archive_mutex{};
-    sem_t *mutex{};
+    rainman::ptr<bitio::stream> stream;
+    rainman::ptr<sem_t> archive_mutex{};
+    std::mutex mutex{};
 
     void hza_scan();
 
@@ -85,27 +94,27 @@ private:
 
     void hza_scan_fragment(const std::function<uint64_t(uint64_t)> &read, const std::function<void(uint64_t)> &seek);
 
-    option_t<uint64_t> hza_alloc_fragment(uint64_t length);
+    rainman::option<uint64_t> hza_alloc_fragment(uint64_t length);
 
     void hza_init();
 
-    void hza_create_metadata_file_entry(const std::string &file_path, HZ_ArchiveFile file);
+    void hza_create_metadata_file_entry(const std::string &file_path, const HZ_ArchiveFile& file);
 
     HZ_ArchiveFile hza_read_metadata_file_entry(const std::string &file_path);
 
-    HZ_Blob *hza_read_blob(uint64_t id);
+    rainman::ptr<HZ_Blob> hza_read_blob(uint64_t id);
 
-    uint64_t hza_write_blob(HZ_Blob *blob);
+    uint64_t hza_write_blob(const HZ_Blob &blob);
 
     void hza_rm_blob(uint64_t id);
 
-    HZ_MState *hza_read_mstate(uint64_t id);
+    rainman::ptr<HZ_MState> hza_read_mstate(uint64_t id);
 
-    uint64_t hza_write_mstate(HZ_MState *mstate);
+    uint64_t hza_write_mstate(const rainman::ptr<HZ_MState>& mstate);
 
     void hza_rm_mstate(uint64_t id);
 
-    bool hza_check_mstate_deps(uint64_t id) const;
+    [[nodiscard]] bool hza_check_mstate_deps(uint64_t id) const;
 
     void hza_increment_dep(uint64_t id);
 
@@ -122,35 +131,35 @@ public:
 
     void create_file(const std::string &file_path, HZ_Blob *blobs, uint64_t blob_count);
 
-    void create_file_entry(const std::string &file_path, HZ_ArchiveFile file);
+    void create_file_entry(const std::string &file_path, const HZ_ArchiveFile& file);
 
     HZ_ArchiveFile read_file_entry(const std::string &file_path);
 
     bool check_file_exists(const std::string &file_path);
 
-    uint64_t write_blob(HZ_Blob *blob);
+    uint64_t write_blob(const rainman::ptr<HZ_Blob> &blob);
 
-    HZ_Blob *read_blob(uint64_t id);
+    rainman::ptr<HZ_Blob> read_blob(uint64_t id);
 
-    HZ_BlobSet read_file(const std::string &file_path);
+    rainman::ptr<HZ_Blob> read_file(const std::string &file_path);
 
-    HZ_MState *read_mstate(std::string _path);
+    rainman::ptr<HZ_MState> read_mstate(const std::string& _path);
 
     void remove_file(const std::string &file_path);
 
-    void install_mstate(const std::string &_path, HZ_MState *mstate);
+    void install_mstate(const std::string &_path, const rainman::ptr<HZ_MState> &mstate);
 
-    uint64_t install_mstate(HZ_MState *mstate);
+    uint64_t install_mstate(const rainman::ptr<HZ_MState> &mstate);
 
     void uninstall_mstate(const std::string &_path);
 
     void uninstall_mstate(uint64_t id);
 
     // Inject mstate by directly. This mstate cannot be reused by other blobs.
-    void inject_mstate(HZ_MState *mstate, HZ_Blob *blob);
+    void inject_mstate(const rainman::ptr<HZ_MState> &mstate, const rainman::ptr<HZ_Blob> &blob);
 
     // Inject mstate by tag-reference. This mstate can be reused by other blobs.
-    void inject_mstate(const std::string &_path, HZ_Blob *blob);
+    void inject_mstate(const std::string &_path, const rainman::ptr<HZ_Blob>& blob);
 
     bool check_mstate_exists(const std::string &_path);
 

@@ -5,7 +5,7 @@
 #include <string>
 #include <sstream>
 #include <rainman/rainman.h>
-#include <hzip/errors/archive.h>
+#include <hzip_storage/errors/archive.h>
 
 template<typename Type>
 struct HZ_ArchiveTrieNode {
@@ -23,7 +23,7 @@ struct HZ_ArchiveTrieListElement {
 
 
 template<typename Type>
-class HZ_ArchiveTrie : public rainman::context {
+class HZ_ArchiveTrie : private rainman::Allocator {
 private:
     HZ_ArchiveTrieNode<Type> *root{};
 
@@ -32,6 +32,7 @@ private:
             erase_node(entry.second);
         }
 
+        node->children.clear();
         rfree(node);
     }
 
@@ -44,8 +45,12 @@ private:
     }
 
 public:
-    void init() {
-        root = rnew(HZ_ArchiveTrieNode<Type>);
+    HZ_ArchiveTrie() {
+        root = rnew<HZ_ArchiveTrieNode<Type>>(1);
+    };
+
+    ~HZ_ArchiveTrie() {
+        erase_node(root);
     }
 
     Type get(const std::string &path) {
@@ -89,7 +94,7 @@ public:
                     throw ArchiveErrors::InvalidOperationException("A file exists in the path prefix");
                 }
 
-                curr->children[token] = rnew(HZ_ArchiveTrieNode<Type>);
+                curr->children[token] = rnew<HZ_ArchiveTrieNode<Type>>(1);
                 curr->children[token]->parent = curr;
                 curr->children[token]->key = token;
             }

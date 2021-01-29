@@ -5,6 +5,7 @@
 #include <functional>
 #include <random>
 #include <string>
+#include <sstream>
 #include <iomanip>
 #include <ctime>
 #include <openssl/sha.h>
@@ -52,7 +53,7 @@ HZ_INLINE bin_t hz_elias_gamma_inv(std::function<uint64_t(uint64_t)> readfunc) {
 }
 
 
-HZ_INLINE std::string hz_sha512(std::string str) {
+HZ_INLINE std::string hz_sha512(const std::string& str) {
     unsigned char hash[SHA512_DIGEST_LENGTH];
     SHA512_CTX sha512;
     SHA512_Init(&sha512);
@@ -60,13 +61,13 @@ HZ_INLINE std::string hz_sha512(std::string str) {
     SHA512_Final(hash, &sha512);
     std::stringstream ss;
 
-    for (int i = 0; i < SHA512_DIGEST_LENGTH; i++) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int) hash[i];
+    for (unsigned char i : hash) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int) i;
     }
     return ss.str();
 }
 
-HZ_INLINE void hz_unary_write(uint64_t n, std::function<void(uint64_t, uint8_t)> writefunc) {
+HZ_INLINE void hz_unary_write(uint64_t n, const std::function<void(uint64_t, uint8_t)>& writefunc) {
     while (n > 1) {
         writefunc(1, 1);
     }
@@ -74,7 +75,7 @@ HZ_INLINE void hz_unary_write(uint64_t n, std::function<void(uint64_t, uint8_t)>
     writefunc(0, 1);
 }
 
-HZ_INLINE uint64_t hz_unary_read(std::function<uint64_t(uint8_t)> readfunc) {
+HZ_INLINE uint64_t hz_unary_read(const std::function<uint64_t(uint8_t)>& readfunc) {
     uint64_t n = 0;
     while (readfunc(1)) n++;
     return n + 1;
@@ -98,14 +99,14 @@ HZ_INLINE uint64_t hz_enc_token(std::string pwd, uint64_t x) {
     return x;
 }
 
-HZ_INLINE void hz_u64_to_u8buf(uint64_t x, uint8_t *buf) {
+HZ_INLINE void hz_u64_to_u8buf(uint64_t x, const rainman::ptr<uint8_t> &buf) {
     for (int i = 0; i < 8; i++) {
         buf[i] = x & 0xff;
         x >>= 0x8;
     }
 }
 
-HZ_INLINE uint64_t hz_u8buf_to_u64(uint8_t *buf) {
+HZ_INLINE uint64_t hz_u8buf_to_u64(const rainman::ptr<uint8_t> &buf) {
     uint64_t x = 0;
     for (int i = 7; i >= 0; i--) {
         x <<= 0x8;
@@ -115,10 +116,10 @@ HZ_INLINE uint64_t hz_u8buf_to_u64(uint8_t *buf) {
     return x;
 }
 
-HZ_INLINE uint32_t* u8_to_u32ptr(rainman::memmgr *mgr, uint8_t *arr, uint64_t n) {
+HZ_INLINE rainman::ptr<uint32_t> u8_to_u32ptr(const rainman::ptr<uint8_t> &arr, uint64_t n) {
     uint64_t n32 = (n >> 2) + (n & 0x3 ? 1 : 0);
 
-    auto arr32 = mgr->r_malloc<uint32_t>(n32);
+    auto arr32 = rainman::ptr<uint32_t>(n32);
 
     uint32_t tmp = 0;
     uint64_t j = 0;
@@ -136,8 +137,8 @@ HZ_INLINE uint32_t* u8_to_u32ptr(rainman::memmgr *mgr, uint8_t *arr, uint64_t n)
     return arr32;
 }
 
-HZ_INLINE uint8_t* u32_to_u8ptr(rainman::memmgr *mgr, uint32_t *arr, uint64_t n) {
-    auto arr8 = mgr->r_malloc<uint8_t>(n << 2);
+HZ_INLINE rainman::ptr<uint8_t> u32_to_u8ptr(const rainman::ptr<uint32_t> &arr, uint64_t n) {
+    auto arr8 = rainman::ptr<uint8_t>(n << 2);
 
     for (uint64_t i = 0, j = 0; i < n; i++, j += 4) {
         uint32_t x = arr[i];

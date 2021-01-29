@@ -8,10 +8,10 @@
 #include <cassert>
 #include <stack>
 #include <rainman/rainman.h>
-#include <hzip/utils/platform.h>
-#include <hzip/utils/stack.h>
+#include <hzip_core/utils/platform.h>
+#include <hzip_core/utils/stack.h>
 
-struct hzrans64_t : public rainman::context {
+struct hzrans64_t {
     uint64_t x{};
     uint64_t size{};
     uint64_t *ftable{};
@@ -36,9 +36,9 @@ void hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol);
 
 void hzrans64_enc_flush(hzrans64_t *state, HZ_Stack<uint32_t> *data);
 
-void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data);
+void hzrans64_dec_load_state(hzrans64_t *state, rainman::ptr<uint32_t> &data);
 
-void hzrans64_decode_s(hzrans64_t *state, uint32_t **data);
+void hzrans64_decode_s(hzrans64_t *state, rainman::ptr<uint32_t> &data);
 
 void hzrans64_destroy(hzrans64_t *state);
 

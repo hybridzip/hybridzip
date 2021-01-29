@@ -24,10 +24,6 @@ add_library(hzip_core STATIC
         core/preprocessor/burrows_wheeler.h
         core/preprocessor/delta.h
         core/preprocessor/move_to_front.h
-        compute/matrix_ops.h
-        compute/vector_utils.h
-        compute/dct.h
-        compute/dct.cpp
         utils/stack.h
         processor/job.h
         core/compressors/compressor_enums.h

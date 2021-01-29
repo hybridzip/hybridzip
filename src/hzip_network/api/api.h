@@ -48,7 +48,7 @@ namespace hzapi {
         int server_sock{};
 
     public:
-        Api *limit(uint64_t _max_instances);
+        Api(uint64_t max_instances);
 
         Api *process(uint64_t _n_threads);
 

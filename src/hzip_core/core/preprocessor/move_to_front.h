@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <rainman/rainman.h>
 
 namespace hztrans {
 
@@ -10,24 +11,22 @@ namespace hztrans {
     class MoveToFrontTransformer {
     private:
         std::vector<itype> lru_cache;
-        itype *data;
-        uint64_t length{};
-        int alphabet_size{};
+        rainman::ptr<itype> data;
+        uint64_t alphabet_size{};
     public:
-        MoveToFrontTransformer(itype *data, int alphabet_size, uint64_t length) {
+        MoveToFrontTransformer(const rainman::ptr<itype> &data, uint64_t alphabet_size) {
             this->data = data;
-            this->length = length;
             this->alphabet_size = alphabet_size;
         }
 
         void transform() {
             lru_cache.clear();
-            for (int i = 0; i < alphabet_size; i++) {
+            for (uint64_t i = 0; i < alphabet_size; i++) {
                 lru_cache.push_back(i);
             }
-            for (uint64_t i = 0; i < length; i++) {
+            for (uint64_t i = 0; i < data.size(); i++) {
                 auto symbol = data[i];
-                for (int j = 0; j < alphabet_size; j++) {
+                for (uint64_t j = 0; j < alphabet_size; j++) {
                     if (symbol == lru_cache[j]) {
                         data[i] = j;
                         lru_cache.erase(lru_cache.begin() + j);
@@ -43,7 +42,7 @@ namespace hztrans {
             for (int i = 0; i < alphabet_size; i++) {
                 lru_cache.push_back(i);
             }
-            for (uint64_t i = 0; i < length; i++) {
+            for (uint64_t i = 0; i < data.size(); i++) {
                 auto chri = data[i];
                 data[i] = lru_cache[chri];
                 lru_cache.erase(lru_cache.begin() + chri);

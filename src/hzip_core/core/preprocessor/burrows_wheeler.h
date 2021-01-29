@@ -7,7 +7,7 @@
 
 namespace hztrans {
     template<typename itype, typename mtype>
-    class BurrowsWheelerTransformer : public rainman::context {
+    class BurrowsWheelerTransformer : private rainman::Allocator {
 
     private:
         static inline bool leq(mtype a1, mtype a2, mtype b1, mtype b2) {
@@ -19,7 +19,7 @@ namespace hztrans {
         }
 
         void radix_pass(mtype *a, mtype *b, mtype *r, uint64_t n, uint64_t K) { // count occurrences
-            auto c = rmalloc(mtype, K + 1); // counter array
+            auto c = rmalloc<mtype>(K + 1); // counter array
             for (int i = 0; i <= K; i++) c[i] = 0; // reset counters
             for (int i = 0; i < n; i++) {
                 c[r[a[i]]]++; // count occurrences
@@ -36,12 +36,12 @@ namespace hztrans {
 
         void suffix_array(mtype *T, mtype *SA, uint64_t n, uint64_t K) {
             int n0 = (n + 2) / 3, n1 = (n + 1) / 3, n2 = n / 3, n02 = n0 + n2;
-            auto R = rmalloc(mtype, n02 + 3);
+            auto R = rmalloc<mtype>(n02 + 3);
             R[n02] = R[n02 + 1] = R[n02 + 2] = 0;
-            auto SA12 = rmalloc(mtype, n02 + 3);
+            auto SA12 = rmalloc<mtype>(n02 + 3);
             SA12[n02] = SA12[n02 + 1] = SA12[n02 + 2] = 0;
-            auto R0 = rmalloc(mtype, n0);
-            auto SA0 = rmalloc(mtype, n0);
+            auto R0 = rmalloc<mtype>(n0);
+            auto SA0 = rmalloc<mtype>(n0);
 
             for (int i = 0, j = 0; i < n + (n0 - n1); i++) if (i % 3 != 0) R[j++] = i;
 
@@ -96,27 +96,30 @@ namespace hztrans {
             rfree(R0);
         }
 
-        itype *data;
-        uint64_t len, alphabet_size;
+        rainman::ptr<itype> data;
+        uint64_t alphabet_size;
     public:
-        BurrowsWheelerTransformer(itype *data, uint64_t n, uint64_t K) {
+        BurrowsWheelerTransformer(
+                const rainman::ptr<itype> &data,
+                uint64_t K,
+                const rainman::Allocator &allocator = rainman::Allocator()
+        ) : rainman::Allocator(allocator) {
             this->data = data;
-            len = n;
             alphabet_size = K;
         }
 
         uint64_t transform() {
-            uint64_t data_len = len + 1;
+            uint64_t data_len = data.size() + 1;
             uint64_t bw_index = 0;
-            auto zdata = rmalloc(itype, data_len);
+            auto zdata = rmalloc<itype>(data_len);
             zdata[0] = 0;
 
-            for (int i = 0; i < len; i++) {
+            for (int i = 0; i < data.size(); i++) {
                 zdata[i + 1] = data[i] + 1;
             }
 
-            auto T = rmalloc(mtype, data_len + 3);
-            auto SA = rmalloc(mtype, data_len + 3);
+            auto T = rmalloc<mtype>(data_len + 3);
+            auto SA = rmalloc<mtype>(data_len + 3);
 
             for (uint64_t i = 0; i < data_len + 3; i++) {
                 T[i] = 0;
@@ -148,11 +151,11 @@ namespace hztrans {
         }
 
         void invert(uint64_t bw_index) {
-            int data_len = len;
-            auto zdata = rmalloc(itype, data_len);
-            auto zzdata = rmalloc(itype, data_len + 1);
+            int data_len = data.size();
+            auto zdata = rmalloc<itype>(data_len);
+            auto zzdata = rmalloc<itype>(data_len + 1);
 
-            for (int i = 0; i < len; i++) {
+            for (int i = 0; i < data.size(); i++) {
                 zdata[i] = data[i] + 1;
             }
 
@@ -170,7 +173,7 @@ namespace hztrans {
             zdata = zzdata;
 
             std::vector<int> jumpers;
-            auto base_list = rmalloc(std::vector<uint64_t>, alphabet_size + 1);
+            auto base_list = rainman::ptr<std::vector<uint64_t>>(alphabet_size + 1);
 
             for (int i = 0; i <= alphabet_size; i++) {
                 base_list[i] = std::vector<uint64_t>();
@@ -186,8 +189,6 @@ namespace hztrans {
                     jumpers.insert(jumpers.end(), elem.begin(), elem.end());
                 }
             }
-
-            rfree(base_list);
 
             uint64_t index = bw_index;
             for (uint64_t count = 0, j = 0; count <= data_len; count++) {

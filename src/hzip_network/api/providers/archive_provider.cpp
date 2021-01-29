@@ -6,7 +6,7 @@ rainman::ptr<HZ_Archive> hzapi::ArchiveProvider::provide(const std::string &path
     if (arch_map.contains(path)) {
         archive = arch_map[path];
     } else {
-        archive = HZ_Archive(path);
+        archive = rainman::ptr<HZ_Archive>(1, path);
         archive->load();
 
         arch_map[path] = archive;

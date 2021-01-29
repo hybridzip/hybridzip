@@ -4,19 +4,18 @@
 
 #define HZP_STUB_CALL(f, ...) if (f != nullptr) f(__VA_ARGS__)
 
-HZ_Processor::HZ_Processor(uint64_t n_threads) {
+HZ_Processor::HZ_Processor(uint64_t n_threads) : _semaphore(n_threads) {
     this->n_threads = n_threads;
-    sem_init(&mutex, 0, n_threads);
 }
 
 hzcodec::AbstractCodec *HZ_Processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
     switch (alg) {
         case hzcodec::algorithms::UNCOMPRESSED:
-            return rxnew(hzcodec::Uncompressed);
+            return rnew<hzcodec::Uncompressed>(1);
         case hzcodec::algorithms::VICTINI:
-            return rxnew(hzcodec::Victini);
+            return rnew<hzcodec::Victini>(1);
         case hzcodec::algorithms::SHARINGAN:
-            return rxnew(hzcodec::Sharingan);
+            return rnew<hzcodec::Sharingan>(1);
         default:
             throw ProcessorErrors::InvalidOperationError("Algorithm not found");
     }
@@ -24,11 +23,11 @@ hzcodec::AbstractCodec *HZ_Processor::hzp_get_codec(hzcodec::algorithms::ALGORIT
 
 void HZ_Processor::run(const rainman::ptr<HZ_Job> &job) {
     if (job->type == HZ_Job::CODEC) {
-        std::thread([this](const rainman::ptr<HZ_Job>& job) {
-            sem_wait(&mutex);
+        std::thread([this](const rainman::ptr<HZ_Job> &job) {
+            _semaphore.acquire();
 
             try {
-                this->hzp_run_codec_job(job->codec);
+                hzp_run_codec_job(job->codec);
                 HZP_STUB_CALL(job->stub->on_success, "Operation completed successfully");
             } catch (std::exception &e) {
                 HZP_STUB_CALL(job->stub->on_error, e.what());
@@ -36,7 +35,7 @@ void HZ_Processor::run(const rainman::ptr<HZ_Job> &job) {
 
             HZP_STUB_CALL(job->stub->on_completed);
 
-            sem_post(&mutex);
+            _semaphore.release();
 
         }, job).detach();
     }
@@ -60,12 +59,12 @@ void HZ_Processor::hzp_run_codec_job(const rainman::ptr<HZ_CodecJob> &job) {
 }
 
 void HZ_Processor::hzp_encode(const rainman::ptr<HZ_CodecJob> &job) {
-    if (job->use_mstate_addr) {
-        if (job->archive == nullptr) {
+    if (job->mstate_addr.is_some()) {
+        if (job->archive.is_none()) {
             throw ProcessorErrors::InvalidOperationError("Archive is required for mstate-injection by address");
         }
 
-        job->archive->inject_mstate(job->mstate_addr, job->blob);
+        job->archive.inner()->inject_mstate(job->mstate_addr.inner(), job->blob);
     }
 
     auto codec = hzp_get_codec(job->algorithm);
@@ -74,49 +73,44 @@ void HZ_Processor::hzp_encode(const rainman::ptr<HZ_CodecJob> &job) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    HZ_Blob *blob = nullptr;
+    rainman::ptr<HZ_Blob> blob;
     try {
         blob = codec->compress(job->blob);
         blob->evaluate(job->blob->data);
 
         blob->mstate_id = job->blob->mstate_id;
 
-        if (!job->use_mstate_addr) {
-            if (job->archive != nullptr) {
-                job->archive->inject_mstate(blob->mstate, blob);
+        if (job->mstate_addr.is_none()) {
+            if (job->archive.is_some()) {
+                job->archive.inner()->inject_mstate(blob->mstate, blob);
             } else if (job->blob_callback == nullptr) {
                 throw ProcessorErrors::InvalidOperationError(
                         "Piggy-back is disabled, null job execution is not allowed");
             }
         }
 
-        if (job->archive != nullptr) {
-            auto id = job->archive->write_blob(blob);
+        if (job->archive.is_some()) {
+            auto id = job->archive.inner()->write_blob(blob);
             HZP_STUB_CALL(job->blob_id_callback, id);
         }
 
         HZP_STUB_CALL(job->blob_callback, blob);
-
-        if (blob->mstate != nullptr) {
-            blob->mstate->destroy();
-        }
-
     } catch (std::exception &e) {
         throw ProcessorErrors::GenericError(e.what());
     }
 }
 
-void HZ_Processor::hzp_decode(HZ_CodecJob *job) {
-    if (job->archive == nullptr && job->blob_callback == nullptr) {
+void HZ_Processor::hzp_decode(const rainman::ptr<HZ_CodecJob> &job) {
+    if (job->archive.is_none() && job->blob_callback == nullptr) {
         throw ProcessorErrors::InvalidOperationError("Piggy-back is disabled, null job execution is not allowed");
     }
 
-    if (job->use_mstate_addr && job->blob->status) {
-        if (job->archive == nullptr) {
+    if (job->mstate_addr.is_some() && job->blob->status) {
+        if (job->archive.is_none()) {
             throw ProcessorErrors::InvalidOperationError("Archive is required for mstate-injection by address");
         }
 
-        job->archive->inject_mstate(job->mstate_addr, job->blob);
+        job->archive.inner()->inject_mstate(job->mstate_addr.inner(), job->blob);
     }
 
     auto codec = hzp_get_codec(job->algorithm);
@@ -125,44 +119,31 @@ void HZ_Processor::hzp_decode(HZ_CodecJob *job) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    HZ_Blob *blob = nullptr;
+    rainman::ptr<HZ_Blob> blob;
     try {
         blob = codec->decompress(job->blob);
 
         HZP_STUB_CALL(job->blob_callback, blob);
 
-        if (blob->mstate != nullptr) {
-            blob->mstate->destroy();
-        }
-        rfree(blob->mstate);
-        blob->destroy();
-        rfree(blob);
         rfree(codec);
     } catch (std::exception &e) {
-        if (blob->mstate != nullptr) {
-            blob->mstate->destroy();
-        }
-        rfree(blob->mstate);
-        blob->destroy();
-        rfree(blob);
         rfree(codec);
-
         throw ProcessorErrors::GenericError(e.what());
     }
 }
 
-void HZ_Processor::hzp_train(HZ_CodecJob *job) {
-    if (!job->use_mstate_addr) {
+void HZ_Processor::hzp_train(const rainman::ptr<HZ_CodecJob> &job) {
+    if (job->mstate_addr.is_none()) {
         throw ProcessorErrors::InvalidOperationError("Mstate address not found");
     }
 
-    if (job->archive == nullptr) {
+    if (job->archive.is_none()) {
         throw ProcessorErrors::InvalidOperationError("Archive not found");
     }
 
-    if (job->archive->check_mstate_exists(job->mstate_addr)) {
-        job->archive->inject_mstate(job->mstate_addr, job->blob);
-        job->archive->uninstall_mstate(job->mstate_addr);
+    if (job->archive.inner()->check_mstate_exists(job->mstate_addr.inner())) {
+        job->archive.inner()->inject_mstate(job->mstate_addr.inner(), job->blob);
+        job->archive.inner()->uninstall_mstate(job->mstate_addr.inner());
     }
 
     auto codec = hzp_get_codec(job->algorithm);
@@ -171,19 +152,15 @@ void HZ_Processor::hzp_train(HZ_CodecJob *job) {
         throw ProcessorErrors::InvalidOperationError("Codec not found");
     }
 
-    HZ_MState *mstate = nullptr;
+    rainman::ptr<HZ_MState> mstate;
 
     try {
         mstate = codec->train(job->blob);
 
-        job->archive->install_mstate(job->mstate_addr, mstate);
+        job->archive.inner()->install_mstate(job->mstate_addr.inner(), mstate);
 
-        mstate->destroy();
-        rfree(mstate);
         rfree(codec);
     } catch (std::exception &e) {
-        mstate->destroy();
-        rfree(mstate);
         rfree(codec);
 
         throw ProcessorErrors::GenericError(e.what());
@@ -193,7 +170,7 @@ void HZ_Processor::hzp_train(HZ_CodecJob *job) {
 
 // To avoid processor overload.
 void HZ_Processor::cycle() {
-    sem_wait(&mutex);
-    sem_post(&mutex);
+    _semaphore.acquire();
+    _semaphore.release();
 }
 

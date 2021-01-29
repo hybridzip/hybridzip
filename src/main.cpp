@@ -1,8 +1,7 @@
-#include <signal.h>
-#include <loguru/include/loguru/loguru.hpp>
-#include <dotenv.h>
+#include <csignal>
+#include <loguru/loguru.hpp>
 #include <rainman/rainman.h>
-#include <hzip/api/api.h>
+#include <hzip_network/api/api.h>
 
 std::function<void()> _hzapi_graceful_shutdown;
 
@@ -19,7 +18,7 @@ void set_unhandled_exception_handler() {
     });
 }
 
-void check_env(cpp_dotenv::dotenv &dotenv) {
+void check_env() {
     const char *required_vars[] = {
             "HZIP_API_THREADS",
             "HZIP_PROCESSOR_THREADS",
@@ -30,7 +29,7 @@ void check_env(cpp_dotenv::dotenv &dotenv) {
     };
 
     for (auto var : required_vars) {
-        if (dotenv[var].empty()) {
+        if (std::getenv(var) == nullptr) {
             LOG_F(ERROR, "hzip_core: %s was not set in environment variables", var);
             exit(0);
         }
@@ -62,17 +61,12 @@ int main(int argc, const char **argv) {
     set_unhandled_exception_handler();
 
 
-    cpp_dotenv::env.load_dotenv();
-    auto &dotenv = cpp_dotenv::env;
+    check_env();
 
-    check_env(dotenv);
+    rglobalmgr.set_peak(std::stoull(std::getenv("HZIP_MAX_MEM_USAGE")));
+    LOG_F(INFO, "hzip_core: Max memory usage set to %lu bytes", rglobalmgr.get_peak_size());
 
-    auto mgr = new rainman::memmgr;
-    mgr->set_peak(std::stoull(dotenv["HZIP_MAX_MEM_USAGE"]));
-    LOG_F(INFO, "hzip_core: Max memory usage set to %lu bytes", mgr->get_peak_size());
-
-    auto api = new hzapi::Api;
-    rinitptrfrom(mgr, api);
+    auto api = new hzapi::Api(std::stoi(std::getenv("HZIP_API_THREADS")));
 
     _hzapi_graceful_shutdown = [api]() {
         LOG_F(WARNING, "Gracefully shutting down.");
@@ -81,9 +75,8 @@ int main(int argc, const char **argv) {
 
     set_signal_handlers();
 
-    api->limit(std::stoi(dotenv["HZIP_API_THREADS"]))
-            ->process(std::stoi(dotenv["HZIP_PROCESSOR_THREADS"]))
-            ->protect(dotenv["HZIP_API_KEY"])
-            ->timeout(timeval{.tv_sec=std::stoi(dotenv["HZIP_API_TIMEOUT"])})
-            ->start("127.0.0.1", std::stoi(dotenv["HZIP_API_PORT"]));
+    api->process(std::stoi(std::getenv("HZIP_PROCESSOR_THREADS")))
+            ->protect(std::getenv("HZIP_API_KEY"))
+            ->timeout(timeval{.tv_sec=std::stoi(std::getenv("HZIP_API_TIMEOUT"))})
+            ->start("127.0.0.1", std::stoi(std::getenv("HZIP_API_PORT")));
 }

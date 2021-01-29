@@ -792,7 +792,6 @@ void HZ_Archive::close() {
     stream->seek_to(metadata.eof);
     stream->write(HZ_ArchiveMarker::END, 0x8);
     stream->flush();
-    stream->close();
 
     mutex.unlock();
     sem_post(archive_mutex.pointer());

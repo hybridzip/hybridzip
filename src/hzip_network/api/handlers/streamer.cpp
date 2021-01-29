@@ -161,7 +161,6 @@ void Streamer::encode() {
 
                     HZ_ArchiveFile file{};
                     file.blob_ids = blob_id_arr;
-                    file.blob_count = blob_ids.size();
 
                     archive.inner()->create_file_entry(dest.inner().pointer(), file);
                 }
@@ -333,10 +332,11 @@ void Streamer::decode() {
                 _mutex->lock();
 
                 auto file_entry = archive.inner()->read_file_entry(src.inner().pointer());
+                uint64_t blob_count = file_entry.blob_ids.size();
 
-                HZ_SEND(&file_entry.blob_count, sizeof(file_entry.blob_count));
+                HZ_SEND(&blob_count, sizeof(blob_count));
 
-                for (uint64_t i = 0; i < file_entry.blob_count; i++) {
+                for (uint64_t i = 0; i < blob_count; i++) {
                     auto src_blob = archive.inner()->read_blob(file_entry.blob_ids[i]);
 
                     // Construct hz_job
@@ -653,11 +653,11 @@ void Streamer::read_mstate() {
                 auto mstate = archive.inner()->read_mstate(mstate_addr.inner().pointer());
 
                 uint64_t alg = mstate->alg;
-                uint64_t mstate_len = 0;
+                uint64_t mstate_len = mstate->size();
 
                 HZ_SEND(&alg, sizeof(alg));
                 HZ_SEND(&mstate_len, sizeof(mstate_len));
-                HZ_SEND(mstate->data, mstate_len);
+                HZ_SEND(mstate->data.pointer(), mstate_len);
 
                 success("Operation completed successfully");
 

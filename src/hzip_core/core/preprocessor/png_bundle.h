@@ -5,35 +5,26 @@
 #include <rainman/rainman.h>
 #include <cstdint>
 #include <string>
-#include <hzip/errors/transform.h>
+#include <hzip_core/errors/transform.h>
 
-class PNGBundle : public rainman::context {
+class PNGBundle {
 public:
-    uint16_t ***buf{};
+    rainman::ptr3d<uint16_t> buf{};
     uint32_t width{};
     uint32_t height{};
     uint8_t nchannels{};
     uint8_t depth{};
 
-    PNGBundle(uint16_t ***buf, uint32_t width, uint32_t height, uint8_t nchannels, uint8_t depth) : buf(buf),
-                                                                                                    width(width),
-                                                                                                    height(height),
-                                                                                                    nchannels(nchannels),
-                                                                                                    depth(depth) {}
-
-
-    ~PNGBundle() {
-        for (int k = 0; k < nchannels; k++) {
-            for (int i = 0; i < height; i++) {
-                rfree(buf[k][i]);
-            }
-            rfree(buf[k]);
-        }
-        rfree(buf);
+    PNGBundle(const rainman::ptr3d<uint16_t> &buf, uint32_t width, uint32_t height, uint8_t nchannels, uint8_t depth) :
+            width(width),
+            height(height),
+            nchannels(nchannels),
+            depth(depth) {
+        this->buf = buf;
     }
 };
 
-class PNGBundleBuilder : public rainman::context {
+class PNGBundleBuilder : private rainman::Allocator {
 private:
     FILE *png_file;
 public:
@@ -95,19 +86,17 @@ public:
             throw TransformErrors::InvalidOperationError("png_read_image() failed");
         }
 
-        auto row_pointers = rmalloc(png_bytep, height);
+        auto row_pointers = rmalloc<png_bytep>(height);
         for (int y = 0; y < height; y++) {
-            row_pointers[y] = rmalloc(png_byte, png_get_rowbytes(png_ptr, info_ptr));
+            row_pointers[y] = rmalloc<png_byte>(png_get_rowbytes(png_ptr, info_ptr));
         }
 
         png_read_image(png_ptr, row_pointers);
         fclose(fp);
 
-        auto ***pixar = rmalloc(uint16_t **, nchannels);
+        auto pixar = rainman::make_ptr3d<uint16_t>(nchannels, width, height);
         for (int z = 0; z < nchannels; z++) {
-            pixar[z] = rmalloc(uint16_t *, height);
             for (int y = 0; y < height; y++) {
-                pixar[z][y] = rmalloc(uint16_t, width);
                 for (int x = 0; x < width; x++) {
                     pixar[z][y][x] = row_pointers[y][3 * x + z];
                 }
@@ -120,8 +109,13 @@ public:
 
         rfree(row_pointers);
 
-        return ronew(PNGBundle, pixar, static_cast<uint32_t>(width), static_cast<uint32_t>(height), nchannels,
-                     bit_depth);
+        return PNGBundle(
+                pixar,
+                static_cast<uint32_t>(width),
+                static_cast<uint32_t>(height),
+                nchannels,
+                bit_depth
+        );
     }
 };
 

@@ -100,19 +100,12 @@ void ApiInstance::start() {
 
 }
 
-Api *Api::limit(uint64_t _max_instances) {
-    max_instances = _max_instances;
-    return this;
-}
-
 Api *Api::process(uint64_t _n_threads) {
-    processor = HZ_Processor(_n_threads);
+    processor = rainman::ptr<HZ_Processor>(1, _n_threads);
     return this;
 }
 
 [[noreturn]] void Api::start(const char *addr, uint16_t port) {
-    _semaphore = std::counting_semaphore<>(max_instances);
-
     archive_provider = rainman::ptr<hzapi::ArchiveProvider>();
 
     sockaddr_in server_addr{};
@@ -194,4 +187,8 @@ void Api::shutdown() {
         LOG_F(WARNING, "hzip_network.api: Socket shutdown failed with error (%s)", strerror(errno));
     }
     close(server_sock);
+}
+
+Api::Api(uint64_t max_instances) : _semaphore(max_instances) {
+
 }

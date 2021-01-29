@@ -1,7 +1,7 @@
 #ifndef HYBRIDZIP_COMMON_H
 #define HYBRIDZIP_COMMON_H
 
-#include <hzip/utils/platform.h>
+#include <hzip_core/utils/platform.h>
 
 typedef struct bin_t {
     HZ_SIZE_T obj;

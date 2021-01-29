@@ -1,7 +1,3 @@
-//
-// Created by Vishaal Selvaraj on 04-12-2019.
-//
-
 #ifndef HYBRIDZIP_HZRANS_H
 #define HYBRIDZIP_HZRANS_H
 
@@ -10,8 +6,8 @@
 #endif
 
 #include "hzrans64.h"
-#include <hzip/utils/stack.h>
 #include <functional>
+#include <hzip_core/utils/stack.h>
 
 struct u64ptr {
     uint64_t *data;
@@ -23,7 +19,20 @@ struct u32ptr {
     uint64_t n;
 };
 
-typedef std::function<void(uint64_t, uint64_t *)> hz_codec_callback;
-typedef std::function<void(hzrans64_t *, HZ_Stack<uint32_t> *data)> hz_cross_codec;
+struct hzrans64_encoder_output {
+    rainman::ptr<uint32_t> data;
+    uint64_t n;
+};
+
+struct hzrans64_decoder_output {
+    rainman::ptr<uint64_t> data;
+    uint64_t n;
+};
+
+using hz_codec_callback = std::function<void(uint64_t, const rainman::ptr<uint64_t> &)>;
+using hz_cross_codec = std::function<void(
+        const rainman::ptr<hzrans64_t> &state,
+        const rainman::ptr<HZ_Stack<uint32_t>> &data
+)>;
 
 #endif

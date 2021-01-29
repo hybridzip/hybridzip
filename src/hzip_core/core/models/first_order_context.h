@@ -6,23 +6,21 @@
 #include <rainman/rainman.h>
 
 namespace hzmodels {
-    class FirstOrderContextModel : public rainman::context {
+    class FirstOrderContextModel {
     private:
-        uint64_t **context_map;
-        uint64_t prev_symbol;
-        int alphabet_size;
-        bool has_started = false;
+        rainman::ptr2d<uint64_t> _context_map;
+        uint64_t _prev_symbol{};
+        bool _has_started = false;
     public:
 
         FirstOrderContextModel() = default;
 
-        void set_alphabet_size(int alphabet_size);
+        void set_alphabet_size(uint64_t alphabet_size);
 
-        uint64_t *get_dist(uint64_t symbol);
+        rainman::ptr<uint64_t> get_dist(uint64_t symbol);
 
         void update(uint64_t symbol, uint64_t delta = 1);
 
-        ~FirstOrderContextModel();
     };
 }
 

@@ -1,4 +1,5 @@
 #include "hzrans64.h"
+#include <hzip_core/utils/stack.h>
 
 uint64_t hzrans64_inv_bs(hzrans64_t *state, uint64_t bs) {
     uint64_t i, cumsum = 0;
@@ -13,7 +14,7 @@ uint64_t hzrans64_inv_bs(hzrans64_t *state, uint64_t bs) {
 void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale) {
     state->x = state->lower_bound;
     state->size = size;
-    state->ftable = rmemmgrfrom(state)->r_malloc<uint64_t>(size);
+    state->ftable = rglobalmgr.r_malloc<uint64_t>(size);
     state->scale = scale;
     state->up_prefix = (state->lower_bound >> scale) << 32;
     state->mask = (1ull << scale) - 1;
@@ -75,29 +76,28 @@ void hzrans64_enc_flush(hzrans64_t *state, HZ_Stack<uint32_t> *data) {
     state->count += 2;
 }
 
-void hzrans64_dec_load_state(hzrans64_t *state, uint32_t **data) {
+void hzrans64_dec_load_state(hzrans64_t *state, rainman::ptr<uint32_t> &data) {
     uint64_t x;
-    x = (uint64_t) ((*data)[0]) << 0;
-    x |= (uint64_t) ((*data)[1]) << 32;
-    *data += 2;
+    x = (uint64_t) (data[0]) << 0;
+    x |= (uint64_t) (data[1]) << 32;
+    data += 2;
     state->x = x;
 }
 
-void hzrans64_decode_s(hzrans64_t *state, uint32_t **data) {
+void hzrans64_decode_s(hzrans64_t *state, rainman::ptr<uint32_t> &data) {
     uint64_t x = state->x;
     uint64_t ls = state->ls;
     uint64_t bs = state->bs;
 
     x = (ls * (x >> state->scale)) + (x & state->mask) - bs;
     if (x < state->lower_bound) {
-        x = (x << 32) | **data;
-        *data += 1;
+        x = (x << 32) | *data;
+        data += 1;
     }
 
     state->x = x;
 }
 
 void hzrans64_destroy(hzrans64_t *state) {
-    rmemmgrfrom(state)->r_free(state->ftable);
-    rmemmgrfrom(state)->r_free(state);
+    rglobalmgr.r_free(state->ftable);
 }

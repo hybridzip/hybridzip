@@ -2,7 +2,7 @@
 #define HYBRIDZIP_COLOR_TRANSFORM_H
 
 #include <cstdint>
-#include <hzip/errors/transform.h>
+#include <hzip_core/errors/transform.h>
 
 namespace hztrans {
     enum HZ_COLOR_SPACE {

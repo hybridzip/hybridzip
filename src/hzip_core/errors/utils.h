@@ -3,7 +3,7 @@
 
 #include <exception>
 #include <string>
-#include <loguru/include/loguru/loguru.hpp>
+#include <loguru/loguru.hpp>
 
 namespace UtilErrors {
     class ValidationError : public std::exception {

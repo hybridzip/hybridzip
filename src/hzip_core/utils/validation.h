@@ -2,7 +2,7 @@
 #define HYBRIDZIP_VALIDATION_H
 
 #include <string>
-#include <hzip/errors/utils.h>
+#include <hzip_core/errors/utils.h>
 
 inline void hz_validate_path(const std::string &path) {
     if (!path.starts_with('/')) {

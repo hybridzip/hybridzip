@@ -2,23 +2,27 @@
 #define HYBRIDZIP_STACK_H
 
 #include <cstdint>
+#include <rainman/rainman.h>
 
 // A light-weight efficient stack that maintains a stack of buffers to minimize memory allocations.
-template<typename T>
-struct HZ_Stack {
-    struct HZ_Buffer {
-        T *data;
+template<typename Type>
+struct HZ_Stack : public rainman::Allocator {
+    struct HZ_Buffer : private rainman::Allocator {
+        Type *data;
         HZ_Buffer *next;
         HZ_Buffer *prev;
 
-        HZ_Buffer(uint64_t size) {
-            data = new T[size];
+        HZ_Buffer(
+                uint64_t size,
+                const rainman::Allocator &allocator = rainman::Allocator()
+        ) : rainman::Allocator(allocator) {
+            data = rnew<Type>(size);
             next = nullptr;
             prev = nullptr;
         }
 
         void destroy() {
-            delete[] data;
+            rfree(data);
         }
     };
 
@@ -26,20 +30,20 @@ struct HZ_Stack {
     const uint64_t bufsize = 0xFFF;
     uint64_t index;
 
-    HZ_Stack() {
+    HZ_Stack(const rainman::Allocator &allocator = rainman::Allocator()) : rainman::Allocator(allocator) {
         buffer = nullptr;
         index = 0;
     }
 
-    void push(T x) {
+    void push(Type x) {
         if (buffer == nullptr) {
-            buffer = new HZ_Buffer(bufsize);
+            buffer = rnew<HZ_Buffer>(1, bufsize, *this);
         }
 
         if (index < bufsize) {
             buffer->data[index++] = x;
         } else {
-            buffer->next = new HZ_Buffer(bufsize);
+            buffer->next = rnew<HZ_Buffer>(1, bufsize, *this);
             buffer->next->prev = buffer;
             buffer = buffer->next;
             index = 0;
@@ -64,7 +68,7 @@ struct HZ_Stack {
         }
     }
 
-    T top() {
+    Type top() {
         return buffer->data[index - 1];
     }
 
@@ -87,13 +91,13 @@ struct HZ_Stack {
         return buffer == nullptr;
     }
 
-    void destroy() {
+    ~HZ_Stack() {
         while (buffer != nullptr) {
-            auto *tmp = buffer;
+            auto tmp = buffer;
             buffer = buffer->prev;
 
             tmp->destroy();
-            delete tmp;
+            rfree(tmp);
         }
     }
 };

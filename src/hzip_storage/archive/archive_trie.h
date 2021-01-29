@@ -45,7 +45,7 @@ private:
     }
 
 public:
-    HZ_ArchiveTrie() {
+    HZ_ArchiveTrie() : Allocator() {
         root = rnew<HZ_ArchiveTrieNode<Type>>(1);
     };
 

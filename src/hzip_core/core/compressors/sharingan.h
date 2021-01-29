@@ -11,15 +11,15 @@
 #include "compressor_base.h"
 
 namespace hzcodec {
-    class Sharingan : public AbstractCodec, public rainman::context {
+    class Sharingan : public AbstractCodec {
     public:
         Sharingan() = default;
 
-        HZ_Blob *compress(HZ_Blob *blob) override;
+        rainman::ptr<HZ_Blob> compress(const rainman::ptr<HZ_Blob> &blob) override;
 
-        HZ_Blob *decompress(HZ_Blob *blob) override;
+        rainman::ptr<HZ_Blob> decompress(const rainman::ptr<HZ_Blob> &blob) override;
 
-        HZ_MState *train(HZ_Blob *blob) override;
+        rainman::ptr<HZ_MState> train(const rainman::ptr<HZ_Blob> &blob) override;
     };
 }
 #endif

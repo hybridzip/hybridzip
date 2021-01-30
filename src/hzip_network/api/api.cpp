@@ -184,11 +184,9 @@ Api *Api::timeout(timeval _time_out) {
 void Api::shutdown() {
     archive_provider->close();
     if (::shutdown(server_sock, SHUT_RDWR) < 0) {
-        LOG_F(WARNING, "hzip_network.api: Socket shutdown failed with error (%s)", strerror(errno));
+        LOG_F(WARNING, "hzip_network.api: Socket shutdown failed with error: %s", strerror(errno));
     }
     close(server_sock);
 }
 
-Api::Api(uint64_t max_instances) : _semaphore(max_instances) {
-
-}
+Api::Api(uint64_t max_instances) : _semaphore(1, max_instances) {}

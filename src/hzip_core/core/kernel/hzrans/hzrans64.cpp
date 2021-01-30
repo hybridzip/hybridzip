@@ -80,7 +80,7 @@ void hzrans64_dec_load_state(hzrans64_t *state, rainman::ptr<uint32_t> &data) {
     uint64_t x;
     x = (uint64_t) (data[0]) << 0;
     x |= (uint64_t) (data[1]) << 32;
-    data += 2;
+    state->count = 2;
     state->x = x;
 }
 
@@ -91,8 +91,7 @@ void hzrans64_decode_s(hzrans64_t *state, rainman::ptr<uint32_t> &data) {
 
     x = (ls * (x >> state->scale)) + (x & state->mask) - bs;
     if (x < state->lower_bound) {
-        x = (x << 32) | *data;
-        data += 1;
+        x = (x << 32) | data[state->count++];
     }
 
     state->x = x;

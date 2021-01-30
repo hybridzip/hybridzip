@@ -25,6 +25,7 @@ namespace ProcessorErrors {
         std::string msg;
     public:
         GenericError(const std::string &_msg) {
+            LOG_F(ERROR, "hzip_core.processor: %s", _msg.c_str());
             msg = _msg;
         }
 

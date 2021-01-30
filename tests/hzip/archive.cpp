@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <rainman/rainman.h>
-#include <hzip/archive/archive.h>
-#include <hzip/utils/fsutils.h>
-#include <hzip/core/compressors/victini.h>
-#include <hzip/errors/archive.h>
+#include <hzip_storage/archive/archive.h>
+#include <hzip_core/utils/fsutils.h>
+#include <hzip_core/core/compressors/victini.h>
+#include <hzip_storage/errors/archive.h>
 
 class ArchiveTest : public testing::Test {
 };
@@ -27,13 +27,11 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         auto *archive = new HZ_Archive("test.hz");
         auto mgr = new rainman::memmgr;
         auto victini = hzcodec::Victini();
-        rinitfrom(mgr, victini);
-        rinitptrfrom(mgr, archive);
 
         archive->load();
 
-        auto blob = new HZ_Blob;
-        blob->data = new uint8_t[2000];
+        auto blob = rainman::ptr<HZ_Blob>();
+        blob->data = rainman::ptr<uint8_t>(2000);
         blob->o_size = 2000;
 
         for (int i = 0; i < blob->o_size; i++) {
@@ -43,8 +41,8 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         // Upcast victini codec.
         hzcodec::AbstractCodec *codec = &victini;
 
-        HZ_MState mstate;
-        blob->mstate = &mstate;
+        auto mstate = rainman::ptr<HZ_MState>();
+        blob->mstate = mstate;
 
         auto cblob = codec->compress(blob);
         cblob->evaluate(blob->data);
@@ -54,40 +52,39 @@ TEST(ArchiveTest, hzip_archive_rw_file) {
         archive->create_file("/dir1/dir2/data.txt", cblob, 1);
 
 
-        auto ccblob = &archive->read_file("/dir1/dir2/data.txt").blobs[0];
+        auto ccblob = archive->read_file("/dir1/dir2/data.txt")[0];
 
         // compare cblob and ccblob
 
-        ASSERT_EQ(cblob->header.length, ccblob->header.length);
-        for (uint64_t i = 0; i < cblob->header.length; i++) {
-            ASSERT_EQ(cblob->header.raw[i], ccblob->header.raw[i]);
+        ASSERT_EQ(cblob->header.size(), ccblob.header.size());
+        for (uint64_t i = 0; i < cblob->header.size(); i++) {
+            ASSERT_EQ(cblob->header.raw[i], ccblob.header.raw[i]);
         }
 
         if (cblob->status) {
-            ASSERT_EQ(cblob->mstate->length, ccblob->mstate->length);
-            ASSERT_EQ(cblob->mstate->alg, ccblob->mstate->alg);
-            for (uint64_t i = 0; i < cblob->mstate->length; i++) {
-                ASSERT_EQ(cblob->mstate->data[i], ccblob->mstate->data[i]);
+            ASSERT_EQ(cblob->mstate->size(), ccblob.mstate->size());
+            ASSERT_EQ(cblob->mstate->alg, ccblob.mstate->alg);
+            for (uint64_t i = 0; i < cblob->mstate->size(); i++) {
+                ASSERT_EQ(cblob->mstate->data[i], ccblob.mstate->data[i]);
             }
         }
 
 
-        ASSERT_EQ(cblob->o_size, ccblob->o_size);
-        ASSERT_EQ(cblob->size, ccblob->size);
+        ASSERT_EQ(cblob->o_size, ccblob.o_size);
+        ASSERT_EQ(cblob->size, ccblob.size);
         for (uint64_t i = 0; i < cblob->size; i++) {
-            ASSERT_EQ(cblob->data[i], ccblob->data[i]);
+            ASSERT_EQ(cblob->data[i], ccblob.data[i]);
         }
 
+        auto ccblobptr = rainman::ptr<HZ_Blob>();
+        *ccblobptr = ccblob;
 
-        auto dblob = codec->decompress(ccblob);
+        auto dblob = codec->decompress(ccblobptr);
 
         ASSERT_EQ(dblob->o_size, blob->o_size);
         for (int i = 0; i < 20; i++) {
             ASSERT_EQ(dblob->data[i], blob->data[i]);
         }
-
-        cblob->destroy();
-        dblob->destroy();
 
         archive->close();
 
@@ -100,16 +97,12 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
     try {
         fsutils::delete_file_if_exists("test.hz");
 
-        auto *archive = new HZ_Archive("test.hz");
-        auto mgr = new rainman::memmgr;
+        auto archive = new HZ_Archive("test.hz");
         auto victini = hzcodec::Victini();
-        rinitfrom(mgr, victini);
-        rinitptrfrom(mgr, archive);
-
         archive->load();
 
-        auto blob = new HZ_Blob;
-        blob->data = new uint8_t[2000];
+        auto blob = rainman::ptr<HZ_Blob>();
+        blob->data = rainman::ptr<uint8_t>(2000);
         blob->o_size = 2000;
 
         for (int i = 0; i < blob->o_size; i++) {
@@ -119,8 +112,8 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         // Upcast victini codec.
         hzcodec::AbstractCodec *codec = &victini;
 
-        HZ_MState mstate;
-        blob->mstate = &mstate;
+        auto mstate = rainman::ptr<HZ_MState>();
+        blob->mstate = mstate;
 
         auto cblob = codec->compress(blob);
         cblob->evaluate(blob->data);
@@ -137,7 +130,6 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
         archive->close();
         delete archive;
         archive = new HZ_Archive("test.hz");
-        rinitptrfrom(mgr, archive);
 
         archive->load();
 
@@ -152,18 +144,19 @@ TEST(ArchiveTest, hzip_archive_rm_fragment_file) {
                      ArchiveErrors::InvalidOperationException);
 
 
-        auto ccblob = &archive->read_file("/data.txt").blobs[0];
+        auto blobs = archive->read_file("/data.txt");
+        auto ccblob = &blobs[0];
 
         // compare cblob and ccblob
 
-        ASSERT_EQ(cblob->header.length, ccblob->header.length);
-        for (uint64_t i = 0; i < cblob->header.length; i++) {
+        ASSERT_EQ(cblob->header.size(), ccblob->header.size());
+        for (uint64_t i = 0; i < cblob->header.size(); i++) {
             ASSERT_EQ(cblob->header.raw[i], ccblob->header.raw[i]);
         }
 
-        ASSERT_EQ(cblob->mstate->length, ccblob->mstate->length);
+        ASSERT_EQ(cblob->mstate->size(), ccblob->mstate->size());
         ASSERT_EQ(cblob->mstate->alg, ccblob->mstate->alg);
-        for (uint64_t i = 0; i < cblob->mstate->length; i++) {
+        for (uint64_t i = 0; i < cblob->mstate->size(); i++) {
             ASSERT_EQ(cblob->mstate->data[i], ccblob->mstate->data[i]);
         }
 
@@ -190,13 +183,11 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         auto *archive = new HZ_Archive("test.hz");
         auto mgr = new rainman::memmgr;
         auto victini = hzcodec::Victini();
-        rinitfrom(mgr, victini);
-        rinitptrfrom(mgr, archive);
 
         archive->load();
 
-        auto blob = new HZ_Blob;
-        blob->data = new uint8_t[2000];
+        auto blob = rainman::ptr<HZ_Blob>();
+        blob->data = rainman::ptr<uint8_t>(2000);
         blob->o_size = 2000;
 
         for (int i = 0; i < blob->o_size; i++) {
@@ -206,8 +197,8 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         // Upcast victini codec.
         hzcodec::AbstractCodec *codec = &victini;
 
-        HZ_MState mstate;
-        blob->mstate = &mstate;
+        auto mstate = rainman::ptr<HZ_MState>();
+        blob->mstate = mstate;
 
         auto cblob = codec->compress(blob);
         cblob->evaluate(blob->data);
@@ -217,7 +208,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
 
         archive->inject_mstate("/victini/dickens", cblob);
 
-        auto blobs = new HZ_Blob[2];
+        auto blobs = rainman::ptr<HZ_Blob>(2);
 
         blobs[0] = *cblob;
         blobs[1] = *cblob;
@@ -226,22 +217,22 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
         archive->close();
         delete archive;
         archive = new HZ_Archive("test.hz");
-        rinitptrfrom(mgr, archive);
 
         archive->load();
 
-        auto ccblob = &archive->read_file("/data.txt").blobs[0];
+        auto cblobs = archive->read_file("/data.txt");
+        auto ccblob = &cblobs[0];
 
         // compare cblob and ccblob
 
-        ASSERT_EQ(cblob->header.length, ccblob->header.length);
-        for (uint64_t i = 0; i < cblob->header.length; i++) {
+        ASSERT_EQ(cblob->header.size(), ccblob->header.size());
+        for (uint64_t i = 0; i < cblob->header.size(); i++) {
             ASSERT_EQ(cblob->header.raw[i], ccblob->header.raw[i]);
         }
 
-        ASSERT_EQ(cblob->mstate->length, ccblob->mstate->length);
+        ASSERT_EQ(cblob->mstate->size(), ccblob->mstate->size());
         ASSERT_EQ(cblob->mstate->alg, ccblob->mstate->alg);
-        for (uint64_t i = 0; i < cblob->mstate->length; i++) {
+        for (uint64_t i = 0; i < cblob->mstate->size(); i++) {
             ASSERT_EQ(cblob->mstate->data[i], ccblob->mstate->data[i]);
         }
 
@@ -251,18 +242,18 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
             ASSERT_EQ(cblob->data[i], ccblob->data[i]);
         }
 
-        ccblob = &archive->read_file("/data.txt").blobs[1];
+        ccblob = &cblobs[1];
 
         // compare cblob and ccblob
 
-        ASSERT_EQ(cblob->header.length, ccblob->header.length);
-        for (uint64_t i = 0; i < cblob->header.length; i++) {
+        ASSERT_EQ(cblob->header.size(), ccblob->header.size());
+        for (uint64_t i = 0; i < cblob->header.size(); i++) {
             ASSERT_EQ(cblob->header.raw[i], ccblob->header.raw[i]);
         }
 
-        ASSERT_EQ(cblob->mstate->length, ccblob->mstate->length);
+        ASSERT_EQ(cblob->mstate->size(), ccblob->mstate->size());
         ASSERT_EQ(cblob->mstate->alg, ccblob->mstate->alg);
-        for (uint64_t i = 0; i < cblob->mstate->length; i++) {
+        for (uint64_t i = 0; i < cblob->mstate->size(); i++) {
             ASSERT_EQ(cblob->mstate->data[i], ccblob->mstate->data[i]);
         }
 
@@ -272,7 +263,9 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
             ASSERT_EQ(cblob->data[i], ccblob->data[i]);
         }
 
-        auto dblob = codec->decompress(ccblob);
+        auto ccblobptr = rainman::ptr<HZ_Blob>();
+        *ccblobptr = *ccblob;
+        auto dblob = codec->decompress(ccblobptr);
 
         ASSERT_EQ(dblob->o_size, blob->o_size);
         for (int i = 0; i < 20; i++) {
@@ -281,9 +274,6 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
 
         archive->remove_file("/data.txt");
         archive->uninstall_mstate("/victini/dickens");
-
-        cblob->destroy();
-        dblob->destroy();
 
         archive->close();
 
@@ -294,13 +284,7 @@ TEST(ArchiveTest, hzip_archive_rw_file_multiblob) {
 
 TEST(ArchiveTest, hzip_archive_trie) {
     try {
-        auto mgr = new rainman::memmgr;
-
         HZ_ArchiveTrie<uint8_t> trie;
-        rinitfrom(mgr, trie);
-
-        trie.init();
-
         trie.set("/c/x1", 100);
         trie.set("/c/x2", 101);
         trie.set("/c/x3", 102);

@@ -18,9 +18,9 @@ void SocketInterface::t_send(const void *buf, size_t n) const {
         throw ApiErrors::ConnectionError("Insufficient data sent");
     }
 
-    if (errno != 0) {
-        throw ApiErrors::ConnectionError(std::string("Send operation failed: ") + strerror(errno));
-    }
+//    if (errno != 0) {
+//        throw ApiErrors::ConnectionError(std::string("Send operation failed: ") + strerror(errno));
+//    }
 }
 
 void SocketInterface::t_recv(void *buf, size_t n, bool sync) {
@@ -32,9 +32,9 @@ void SocketInterface::t_recv(void *buf, size_t n, bool sync) {
         throw ApiErrors::ConnectionError("Insufficient data received");
     }
 
-    if (errno != 0) {
-        throw ApiErrors::ConnectionError(std::string("Receive operation failed: ") + strerror(errno));
-    }
+//    if (errno != 0) {
+//        throw ApiErrors::ConnectionError(std::string("Receive operation failed: ") + strerror(errno));
+//    }
 }
 
 void SocketInterface::t_recv_sync() const {
@@ -43,9 +43,9 @@ void SocketInterface::t_recv_sync() const {
         throw ApiErrors::ConnectionError("Insufficient data sent");
     }
 
-    if (errno != 0) {
-        throw ApiErrors::ConnectionError(std::string("Send operation failed: ") + strerror(errno));
-    }
+//    if (errno != 0) {
+//        throw ApiErrors::ConnectionError(std::string("Send operation failed: ") + strerror(errno));
+//    }
 }
 
 void SocketInterface::error(const std::string &msg) const {

@@ -35,8 +35,10 @@ rainman::ptr<HZ_Blob> hzcodec::Victini::compress(const rainman::ptr<HZ_Blob> &bl
     // Perform cross-encoding.
     uint64_t index = length;
 
-    auto cross_encoder = [dict, cdict, &index, data](const rainman::ptr<hzrans64_t> &state,
-                                                     const rainman::ptr<HZ_Stack<uint32_t>> &_data) {
+    auto cross_encoder = [dict, cdict, &index, data](
+            const rainman::ptr<hzrans64_t> &state,
+            const rainman::ptr<HZ_Stack<uint32_t>> &_data
+    ) {
         index--;
         if (index != 0) {
             state->ls = dict[data[index - 1]][data[index]];
@@ -70,71 +72,38 @@ rainman::ptr<HZ_Blob> hzcodec::Victini::compress(const rainman::ptr<HZ_Blob> &bl
 
 rainman::ptr<HZ_Blob> hzcodec::Victini::decompress(const rainman::ptr<HZ_Blob> &blob) {
     auto mstate = blob->mstate;
-
     uint64_t length = blob->o_size;
 
     // Parse blob_header
     uint64_t bwt_index = hz_u8buf_to_u64(blob->header.raw);
 
-    auto m_stream = new bitio::stream(mstate->data.pointer(), mstate->size());
+    auto m_stream = bitio::stream(mstate->data.pointer(), mstate->size());
 
-    auto dict = rainman::make_ptr2d<uint64_t>(256, 256);
-    auto cdict = rainman::make_ptr2d<uint64_t>(256, 256);
+    auto dict = rainman::make_ptr2d<uint64_t>(0x100, 0x100);
+    auto cdict = rainman::make_ptr2d<uint64_t>(0x100, 0x100);
 
     // populate the dictionary.
     for (int i = 0; i < 0x100; i++) {
         for (int j = 0; j < 0x100; j++) {
-            dict[i][j] = m_stream->read(0x40);
+            dict[i][j] = m_stream.read(0x40);
         }
     }
-
-    delete m_stream;
 
     // Normalize dictionary.
-    for (int i = 0; i < 0x100; i++) {
-        auto row = dict[i];
-        uint64_t sum = 0;
-        for (int k = 0; k < 0x100; k++) {
-            sum += row[k];
-        }
-
-        if (sum == 0) {
-            sum = 1;
-        }
-
-        uint64_t dsum = 0;
-        for (int k = 0; k < 0x100; k++) {
-            dict[i][k] = 1 + (row[k] * 16776960 / sum);
-            dsum += dict[i][k];
-        }
-        dsum = 16777216 - dsum;
-        for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
-            dict[i][k]++;
-        }
-    }
-
-
-    // populate cumulative values.
-    for (int i = 0; i < 0x100; i++) {
-        uint64_t sum = 0;
-        for (int k = 0; k < 0x100; k++) {
-            cdict[i][k] = sum;
-            sum += dict[i][k];
-        }
-    }
+    _normalize(dict, cdict);
 
     // create a cross-decoder.
     // a cross-decoder usually handles add_to_seq for the core entropy codec.
     int prev_symbol = -1;
     auto sym_optr = rainman::ptr<uint64_t>();
 
-    auto cross_decoder = [dict, cdict, &prev_symbol, sym_optr](
+    auto cross_decoder = [&dict, &cdict, &prev_symbol, &sym_optr](
             const rainman::ptr<hzrans64_t> &state,
             const rainman::ptr<HZ_Stack<uint32_t>> &data
     ) {
         uint64_t x = state->x;
         uint64_t bs = x & state->mask;
-        uint8_t symbol = 0;
+        uint8_t symbol = 0xff;
 
         if (prev_symbol == -1) {
             for (int i = 0; i < 0x100; i++) {
@@ -217,54 +186,28 @@ void hzcodec::Victini::_model_transform(
 
         // Now we perform a one-time normalization for all possible contexts to increase speed.
         // Populate p-values and cumulative values.
-        uint64_t dict_f[256][256];
+
+        // Generate mstate object (without normalization).
+        mstate->data = rainman::ptr<uint8_t>(65537 << 3);
+        auto m_stream = bitio::stream(mstate->data.pointer(), mstate->data.size());
 
         for (int i = 0; i < 0x100; i++) {
             auto row = focm.get_dist(i);
-            uint64_t sum = 0;
-            for (int k = 0; k < 0x100; k++) {
-                sum += row[k];
-                dict_f[i][k] = row[k];
-            }
-
-            if (sum == 0) {
-                sum = 0x1;
-            }
-
-            uint64_t dsum = 0;
-            for (int k = 0; k < 0x100; k++) {
-                dict[i][k] = 1 + (row[k] * 16776960 / sum);
-                dsum += dict[i][k];
-            }
-            dsum = 16777216 - dsum;
-            for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
-                dict[i][k]++;
-            }
-
-            sum = 0;
-            for (int k = 0; k < 0x100; k++) {
-                cdict[i][k] = sum;
-                sum += dict[i][k];
+            auto target = dict[i];
+            for (int j = 0; j < 0x100; j++) {
+                auto v = row[j];
+                target[j] = v;
+                m_stream.write(v, 0x40);
             }
         }
 
-
-        // Generate mstate object.
-        mstate->data = rainman::ptr<uint8_t>(65537 << 3);
-
-        auto m_stream = rainman::ptr<bitio::stream>(1, mstate->data.pointer(), mstate->data.size());
-
-        for (auto &i : dict_f) {
-            for (unsigned long k : i) {
-                m_stream->write(k, 0x40);
-            }
-        }
+        _normalize(dict, cdict);
     } else {
-        auto m_stream = rainman::ptr<bitio::stream>(1, mstate->data.pointer(), mstate->data.size());
+        auto m_stream = bitio::stream(mstate->data.pointer(), mstate->data.size());
 
         for (int i = 0; i < 0x100; i++) {
             for (int j = 0; j < 0x100; j++) {
-                dict[i][j] = m_stream->read(0x40);
+                dict[i][j] = m_stream.read(0x40);
             }
         }
 
@@ -289,43 +232,16 @@ void hzcodec::Victini::_model_transform(
             // Generate mstate object.
             mstate->data = rainman::ptr<uint8_t>(65537 << 3);
 
-            m_stream = rainman::ptr<bitio::stream>(1, mstate->data.pointer(), mstate->data.size());
+            auto n_stream = bitio::stream(mstate->data.pointer(), mstate->data.size());
 
             for (int i = 0; i < 0x100; i++) {
                 for (int k = 0; k < 0x100; k++) {
-                    m_stream->write(dict[i][k], 0x40);
+                    n_stream.write(dict[i][k], 0x40);
                 }
             }
         }
 
-
-        for (int i = 0; i < 0x100; i++) {
-            auto row = dict[i];
-            uint64_t sum = 0;
-            for (int k = 0; k < 0x100; k++) {
-                sum += row[k];
-            }
-
-            if (sum == 0) {
-                sum = 0x1;
-            }
-
-            uint64_t dsum = 0;
-            for (int k = 0; k < 0x100; k++) {
-                dict[i][k] = 1 + (row[k] * 16776960 / sum);
-                dsum += dict[i][k];
-            }
-            dsum = 16777216 - dsum;
-            for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
-                dict[i][k]++;
-            }
-
-            sum = 0;
-            for (int k = 0; k < 0x100; k++) {
-                cdict[i][k] = sum;
-                sum += dict[i][k];
-            }
-        }
+        _normalize(dict, cdict);
     }
 }
 
@@ -353,4 +269,35 @@ rainman::ptr<HZ_MState> hzcodec::Victini::train(const rainman::ptr<HZ_Blob> &blo
     mstate->alg = hzcodec::algorithms::VICTINI;
 
     return mstate;
+}
+
+void hzcodec::Victini::_normalize(const rainman::ptr2d<uint64_t> &dict, const rainman::ptr2d<uint64_t> &cdict) {
+    for (int i = 0; i < 0x100; i++) {
+        auto row = dict[i];
+        uint64_t sum = 0;
+        for (int k = 0; k < 0x100; k++) {
+            sum += row[k];
+        }
+
+        if (sum == 0) {
+            sum = 1;
+        }
+
+        uint64_t dsum = 0;
+        for (int k = 0; k < 0x100; k++) {
+            row[k] = 1 + (row[k] * 16776960 / sum);
+            dsum += row[k];
+        }
+        dsum = 16777216 - dsum;
+        for (int k = 0; dsum > 0; k = (k + 1) & 0xff, dsum--) {
+            row[k]++;
+        }
+
+        sum = 0;
+        auto crow = cdict[i];
+        for (int k = 0; k < 0x100; k++) {
+            crow[k] = sum;
+            sum += row[k];
+        }
+    }
 }

@@ -1,16 +1,14 @@
 #include <gtest/gtest.h>
 #include <rainman/rainman.h>
-#include <hzip/core/compressors/victini.h>
+#include <hzip_core/core/compressors/victini.h>
 
 class VictiniCodecTest: public testing::Test {};
 
 TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
-    auto mgr = new rainman::memmgr;
     auto victini = hzcodec::Victini();
-    rinitfrom(mgr, victini);
 
-    auto blob = new HZ_Blob;
-    blob->data = new uint8_t[20];
+    auto blob = rainman::ptr<HZ_Blob>();
+    blob->data = rainman::ptr<uint8_t>(20);
     blob->o_size = 20;
 
     for (int i = 0; i < blob->o_size; i++) {
@@ -30,20 +28,13 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
         ASSERT_EQ(dblob->data[i], blob->data[i]);
         ASSERT_EQ(ddblob->data[i], blob->data[i]);
     }
-
-    cblob->destroy();
-    ccblob->destroy();
-    dblob->destroy();
-    ddblob->destroy();
 }
 
 TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
-    auto mgr = new rainman::memmgr;
     auto victini = hzcodec::Victini();
-    rinitfrom(mgr, victini);
 
-    auto blob = new HZ_Blob;
-    blob->data = new uint8_t[1048576];
+    auto blob = rainman::ptr<HZ_Blob>();
+    blob->data = rainman::ptr<uint8_t>(1048576);
     blob->o_size = 1048576;
 
     for (int i = 0; i < blob->o_size; i++) {
@@ -59,16 +50,11 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
     auto ddblob = codec->decompress(ccblob);
 
     ASSERT_EQ(dblob->o_size, blob->o_size);
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 2000; i++) {
         ASSERT_EQ(dblob->data[i], blob->data[i]);
     }
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 2000; i++) {
         ASSERT_EQ(ddblob->data[i], blob->data[i]);
     }
-
-    cblob->destroy();
-    ccblob->destroy();
-    dblob->destroy();
-    ddblob->destroy();
 }

@@ -1,20 +1,18 @@
 #include <gtest/gtest.h>
 #include <rainman/rainman.h>
-#include <hzip/core/preprocessor/transforms.h>
+#include <hzip_core/core/preprocessor/transforms.h>
 
 class BurrowsWheelerTransformTest: public testing::Test {};
 
 TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_large) {
     auto N = 1048576;
-    auto data = new int16_t[N];
+    auto data = rainman::ptr<int16_t>(N);
 
     for (int i = 0; i < N; i++) {
         data[i] = i % 256;
     }
 
-    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, N, 0x100);
-    rinitfrom(new rainman::memmgr, bwt);
-
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, 0x100);
     auto index = bwt.transform();
 
     for (int i = 0; i < N; i++) {
@@ -30,16 +28,14 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_large) {
 
 TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_small) {
     int N = 64;
-    auto data = new int16_t[N];
+    auto data = rainman::ptr<int16_t>(N);
 
     for (int i = 0; i < 64; i++) {
         data[i] = (255 + i) % 256;
     }
 
 
-    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, N, 0x100);
-    rinitfrom(new rainman::memmgr, bwt);
-
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, 0x100);
     auto index = bwt.transform();
 
     for (int i = 0; i < N; i++) {
@@ -56,16 +52,14 @@ TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_small) {
 
 TEST(BurrowsWheelerTransformTest, hzip_core_preprocessor_bwt_const) {
     int N = 1024;
-    auto data = new int16_t[N];
+    auto data = rainman::ptr<int16_t>(N);
 
     for (int i = 0; i < N; i++) {
         data[i] = 255;
     }
 
 
-    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, N, 0x100);
-    rinitfrom(new rainman::memmgr, bwt);
-
+    auto bwt = hztrans::BurrowsWheelerTransformer<int16_t, int32_t>(data, 0x100);
     auto index = bwt.transform();
 
     for (int i = 0; i < N; i++) {

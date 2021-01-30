@@ -36,6 +36,8 @@ HZ_Archive::HZ_Archive(const std::string &archive_path) {
         throw ArchiveErrors::InvalidOperationException(std::string("sem_open() failed with error: ") + std::strerror(errno));
     }
 
+    auto dbg = errno;
+
     sem_wait(archive_mutex.pointer());
 
     LOG_F(INFO, "hzip_core.archive: Access granted to archive (%s)", path.c_str());
@@ -642,7 +644,7 @@ void HZ_Archive::hza_decrement_dep(uint64_t id) {
     }
 }
 
-void HZ_Archive::create_file(const std::string &file_path, HZ_Blob *blobs, uint64_t blob_count) {
+void HZ_Archive::create_file(const std::string &file_path, const rainman::ptr<HZ_Blob> &blobs, uint64_t blob_count) {
     hz_validate_path(file_path);
 
     mutex.lock();

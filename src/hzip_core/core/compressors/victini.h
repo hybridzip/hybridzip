@@ -22,6 +22,8 @@ namespace hzcodec {
                 bool training_mode = false
         );
 
+        static void _normalize(const rainman::ptr2d<uint64_t> &dict, const rainman::ptr2d<uint64_t> &cdict);
+
     public:
         Victini() = default;
 

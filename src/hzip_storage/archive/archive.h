@@ -129,7 +129,7 @@ public:
 
     void load();
 
-    void create_file(const std::string &file_path, HZ_Blob *blobs, uint64_t blob_count);
+    void create_file(const std::string &file_path, const rainman::ptr<HZ_Blob> &blobs, uint64_t blob_count);
 
     void create_file_entry(const std::string &file_path, const HZ_ArchiveFile& file);
 

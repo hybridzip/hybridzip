@@ -138,7 +138,7 @@ void Query::start() {
                 return;
             }
             case QUERY_CTL_GET_MEM_USAGE: {
-                uint64_t alloc_size = rglobalmgr.get_alloc_size();
+                uint64_t alloc_size = rainman::Allocator().alloc_size();
                 HZ_SEND(&alloc_size, sizeof(alloc_size));
 
                 return;

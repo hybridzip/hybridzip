@@ -63,8 +63,8 @@ int main(int argc, const char **argv) {
 
     check_env();
 
-    rglobalmgr.set_peak(std::stoull(std::getenv("HZIP_MAX_MEM_USAGE")));
-    LOG_F(INFO, "hybridzip: Max memory usage set to %lu bytes", rglobalmgr.get_peak_size());
+    rainman::Allocator().peak_size(std::stoull(std::getenv("HZIP_MAX_MEM_USAGE")));
+    LOG_F(INFO, "hybridzip: Max memory usage set to %lu bytes", rainman::Allocator().peak_size());
 
     auto api = new hzapi::Api(std::stoi(std::getenv("HZIP_API_THREADS")));
 

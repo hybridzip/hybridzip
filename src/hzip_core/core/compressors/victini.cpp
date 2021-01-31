@@ -206,8 +206,9 @@ void hzcodec::Victini::_model_transform(
         auto m_stream = bitio::stream(mstate->data.pointer(), mstate->data.size());
 
         for (int i = 0; i < 0x100; i++) {
+            auto row = dict[i];
             for (int j = 0; j < 0x100; j++) {
-                dict[i][j] = m_stream.read(0x40);
+                row[j] = m_stream.read(0x40);
             }
         }
 
@@ -224,8 +225,9 @@ void hzcodec::Victini::_model_transform(
             // Incremental training on FOCM
             for (int i = 0; i < 0x100; i++) {
                 auto row = focm.get_dist(i);
+                auto target = dict[i];
                 for (int k = 0; k < 0x100; k++) {
-                    dict[i][k] += row[k];
+                    target[k] += row[k];
                 }
             }
 
@@ -235,8 +237,9 @@ void hzcodec::Victini::_model_transform(
             auto n_stream = bitio::stream(mstate->data.pointer(), mstate->data.size());
 
             for (int i = 0; i < 0x100; i++) {
+                auto row = dict[i];
                 for (int k = 0; k < 0x100; k++) {
-                    n_stream.write(dict[i][k], 0x40);
+                    n_stream.write(row[k], 0x40);
                 }
             }
         }

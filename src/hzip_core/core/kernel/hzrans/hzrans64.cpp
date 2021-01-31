@@ -14,7 +14,7 @@ uint64_t hzrans64_inv_bs(hzrans64_t *state, uint64_t bs) {
 void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale) {
     state->x = state->lower_bound;
     state->size = size;
-    state->ftable = rglobalmgr.r_malloc<uint64_t>(size);
+    state->ftable = rainman::Allocator().rmalloc<uint64_t>(size);
     state->scale = scale;
     state->up_prefix = (state->lower_bound >> scale) << 32;
     state->mask = (1ull << scale) - 1;
@@ -98,5 +98,5 @@ void hzrans64_decode_s(hzrans64_t *state, rainman::ptr<uint32_t> &data) {
 }
 
 void hzrans64_destroy(hzrans64_t *state) {
-    rglobalmgr.r_free(state->ftable);
+    rainman::Allocator().rfree(state->ftable);
 }

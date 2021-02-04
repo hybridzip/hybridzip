@@ -7,7 +7,7 @@
 #include <semaphore.h>
 #include <bitio/bitio.h>
 #include <rainman/rainman.h>
-#include <hzip_core/core/blob/blob.h>
+#include <hzip_core/blob/blob.h>
 #include <hzip_core/utils/common.h>
 #include "archive_trie.h"
 

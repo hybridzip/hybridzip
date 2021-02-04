@@ -1,9 +1,9 @@
 #include "sharingan.h"
-#include <hzip_core/core/preprocessor/transforms.h>
-#include <hzip_core/core/preprocessor/png_bundle.h>
-#include <hzip_core/errors/compression.h>
-#include <hzip_core/core/models/paeth.h>
-#include <hzip_core/core/models/first_order_context.h>
+#include <hzip_core/preprocessor/transforms.h>
+#include <hzip_core/preprocessor/png_bundle.h>
+#include <hzip_codec/errors/codec.h>
+#include <hzip_core/models/paeth.h>
+#include <hzip_core/models/first_order_context.h>
 
 rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &blob) {
 //    auto mstate = blob->mstate;
@@ -24,7 +24,7 @@ rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &
 //    auto bundle = bundle_builder.read_pixels();
 //
 //    if (bundle.nchannels < 3) {
-//        throw CompressionErrors::InvalidOperationException("Unsupported channel count");
+//        throw CodecErrors::InvalidOperationException("Unsupported channel count");
 //    }
 //
 //    // Apply color space transforms on bundle.
@@ -67,7 +67,7 @@ rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &
 //            }
 //            break;
 //        }
-//        default: throw CompressionErrors::InvalidOperationException("Unsupported bit depth");
+//        default: throw CodecErrors::InvalidOperationException("Unsupported bit depth");
 //    }
 //
 //

@@ -2,9 +2,9 @@
 #define HYBRIDZIP_STREAMER_H
 
 #include <rainman/rainman.h>
-#include <hzip_core/core/compressors/compressor_enums.h>
-#include <hzip_core/core/compressors/compressors.h>
-#include <hzip_core/processor/processor.h>
+#include <hzip_codec/compressor_enums.h>
+#include <hzip_codec/compressors.h>
+#include <hzip_codec/processor/processor.h>
 #include <hzip_network/api/providers/archive_provider.h>
 #include "socket_class.h"
 

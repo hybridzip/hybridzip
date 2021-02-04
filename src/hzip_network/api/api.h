@@ -6,7 +6,7 @@
 #include <semaphore>
 #include <netinet/in.h>
 #include <rainman/rainman.h>
-#include <hzip_core/processor/processor.h>
+#include <hzip_codec/processor/processor.h>
 #include "handlers/socket_class.h"
 #include "providers/archive_provider.h"
 

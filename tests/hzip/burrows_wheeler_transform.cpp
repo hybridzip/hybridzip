@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <rainman/rainman.h>
-#include <hzip_core/core/preprocessor/transforms.h>
+#include <hzip_core/preprocessor/transforms.h>
 
 class BurrowsWheelerTransformTest: public testing::Test {};
 

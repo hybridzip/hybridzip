@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <hzip_core/core/preprocessor/zigzag.h>
+#include <hzip_core/preprocessor/zigzag.h>
 
 class ZigZagTransformTest: public testing::Test {};
 

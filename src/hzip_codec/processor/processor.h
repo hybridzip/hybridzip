@@ -4,7 +4,7 @@
 #include <thread>
 #include <semaphore>
 #include <rainman/rainman.h>
-#include <hzip_core/core/compressors/compressor_base.h>
+#include <hzip_codec/compressors.h>
 #include "job.h"
 
 // This is an abstract processor for hybridzip.

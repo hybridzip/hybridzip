@@ -2,7 +2,7 @@
 #define HYBRIDZIP_API_QUERY_H
 
 #include <rainman/rainman.h>
-#include <hzip_core/processor/processor.h>
+#include <hzip_codec/processor/processor.h>
 #include <hzip_network/api/providers/archive_provider.h>
 #include "socket_class.h"
 

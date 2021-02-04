@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <hzip_storage/archive/archive.h>
-#include <hzip_core/core/blob/blob.h>
+#include <hzip_core/blob/blob.h>
 
 struct HZ_CodecJob {
     enum CodecJobType {

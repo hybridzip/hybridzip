@@ -8,7 +8,7 @@
 #define HYBRIDZIP_SHARINGAN_H
 
 #include <rainman/rainman.h>
-#include "compressor_base.h"
+#include "hzip_codec/compressor_base.h"
 
 namespace hzcodec {
     class Sharingan : public AbstractCodec {

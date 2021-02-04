@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <hzip_core/core/preprocessor/move_to_front.h>
+#include <hzip_core/preprocessor/move_to_front.h>
 
 class MoveToFrontTransformTest: public testing::Test {};
 

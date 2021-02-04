@@ -1,7 +1,8 @@
 #ifndef HYBRIDZIP_COMPRESSOR_BASE_H
 #define HYBRIDZIP_COMPRESSOR_BASE_H
 
-#include <hzip_core/core/blob/blob.h>
+#include <unordered_map>
+#include <hzip_core/blob/blob.h>
 
 namespace hzcodec {
     class AbstractCodec {

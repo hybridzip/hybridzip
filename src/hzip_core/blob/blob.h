@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <rainman/rainman.h>
 #include <hzip_core/utils/platform.h>
-#include <hzip_core/core/compressors/compressor_enums.h>
+#include <hzip_codec/compressor_enums.h>
 #include <hzip_core/utils/common.h>
 
 struct HZ_MState {

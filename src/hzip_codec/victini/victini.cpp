@@ -1,7 +1,7 @@
 #include "victini.h"
 #include <hzip_core/utils/utils.h>
 #include <hzip_core/utils/stack.h>
-#include <hzip_core/errors/compression.h>
+#include <hzip_codec/errors/codec.h>
 
 rainman::ptr<HZ_Blob> hzcodec::Victini::compress(const rainman::ptr<HZ_Blob> &blob) {
     auto mstate = blob->mstate;

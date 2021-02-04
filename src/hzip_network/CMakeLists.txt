@@ -17,7 +17,7 @@ add_library(hzip_network STATIC
 
 set_target_properties(hzip_network PROPERTIES CXX_STANDARD 20)
 
-target_link_libraries(hzip_network PUBLIC hzip_core hzip_storage)
+target_link_libraries(hzip_network PUBLIC hzip_core hzip_storage hzip_codec)
 target_link_libraries(hzip_network PUBLIC loguru rainman)
 target_link_libraries(hzip_network PUBLIC crypto png)
 

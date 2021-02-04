@@ -3,12 +3,12 @@
 
 #include <bitio/bitio.h>
 #include <rainman/rainman.h>
-#include <hzip_core/core/kernel/hzrans/hzrans64_codec.h>
+#include <hzip_core/kernel/hzrans/hzrans64_codec.h>
 #include <hzip_core/utils/distribution.h>
-#include <hzip_core/core/preprocessor/transforms.h>
-#include <hzip_core/core/models/models.h>
+#include <hzip_core/preprocessor/transforms.h>
+#include <hzip_core/models/models.h>
 
-#include "compressor_base.h"
+#include "hzip_codec/compressor_base.h"
 
 namespace hzcodec {
     class Victini : public AbstractCodec {

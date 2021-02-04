@@ -1,23 +1,17 @@
 #include "streamer.h"
-#include <hzip_core/core/blob/blob.h>
+#include <hzip_core/blob/blob.h>
 #include <hzip_core/utils/validation.h>
 #include <hzip_network/api/providers/archive_provider.h>
 #include <hzip_network/api/api_enums.h>
 #include <hzip_network/errors/api.h>
+#include <hzip_codec/codec_provider.h>
 
 using namespace hzapi;
 
 #define HZ_MIN(a, b) (a) < (b) ? (a) : (b)
 
 uint64_t Streamer::hzes_b_size(hzcodec::algorithms::ALGORITHM alg) {
-    switch (alg) {
-        case hzcodec::algorithms::UNCOMPRESSED:
-            return 0x800000;
-        case hzcodec::algorithms::VICTINI:
-            return 0x400000;
-        default:
-            return 0xffffffffffffffff;
-    }
+    return hzcodec::CodecProvider::algorithm_to_bsize(alg);
 }
 
 Streamer::Streamer(
@@ -85,7 +79,7 @@ void Streamer::encode() {
 
                     max_blob_size = HZ_MIN(max_blob_size, data_len);
 
-                    HZAPI_LOGF(INFO, "(%s) Compressing blob of size: %lu bytes", hzcodec::algorithms::algorithm_to_str(
+                    HZAPI_LOGF(INFO, "(%s) Compressing blob of size: %lu bytes", hzcodec::CodecProvider::algorithm_to_str(
                             static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), max_blob_size);
 
                     blob->o_size = max_blob_size;
@@ -233,7 +227,7 @@ void Streamer::encode() {
 
                 while (data_len > 0) {
                     _mutex->lock();
-                    HZAPI_LOGF(INFO, "(%s) Training: '%s' - Batch: %lu", hzcodec::algorithms::algorithm_to_str(
+                    HZAPI_LOGF(INFO, "(%s) Training: '%s' - Batch: %lu", hzcodec::CodecProvider::algorithm_to_str(
                             static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), mstate_addr.inner().pointer(),
                                ++batch_count);
 
@@ -364,7 +358,7 @@ void Streamer::decode() {
                     };
 
                     HZAPI_LOGF(INFO, "(%s) Decompressing blob of size: %lu bytes",
-                               hzcodec::algorithms::algorithm_to_str(
+                               hzcodec::CodecProvider::algorithm_to_str(
                                        static_cast<hzcodec::algorithms::ALGORITHM>(codec->algorithm)),
                                src_blob->size);
 

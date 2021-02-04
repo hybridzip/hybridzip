@@ -1,6 +1,6 @@
 #include "processor.h"
-#include <hzip_core/errors/processor.h>
-#include <hzip_core/core/compressors/compressors.h>
+#include <hzip_codec/errors/processor.h>
+#include <hzip_codec/codec_provider.h>
 
 #define HZP_STUB_CALL(f, ...) if (f != nullptr) f(__VA_ARGS__)
 
@@ -9,16 +9,7 @@ HZ_Processor::HZ_Processor(uint64_t n_threads) : _semaphore(n_threads) {
 }
 
 hzcodec::AbstractCodec *HZ_Processor::hzp_get_codec(hzcodec::algorithms::ALGORITHM alg) {
-    switch (alg) {
-        case hzcodec::algorithms::UNCOMPRESSED:
-            return rnew<hzcodec::Uncompressed>(1);
-        case hzcodec::algorithms::VICTINI:
-            return rnew<hzcodec::Victini>(1);
-        case hzcodec::algorithms::SHARINGAN:
-            return rnew<hzcodec::Sharingan>(1);
-        default:
-            throw ProcessorErrors::InvalidOperationError("Algorithm not found");
-    }
+    return hzcodec::CodecProvider::algorithm_to_codec(alg);
 }
 
 void HZ_Processor::run(const rainman::ptr<HZ_Job> &job) {
@@ -69,10 +60,6 @@ void HZ_Processor::hzp_encode(const rainman::ptr<HZ_CodecJob> &job) {
 
     auto codec = hzp_get_codec(job->algorithm);
 
-    if (codec == nullptr) {
-        throw ProcessorErrors::InvalidOperationError("Codec not found");
-    }
-
     rainman::ptr<HZ_Blob> blob;
     try {
         blob = codec->compress(job->blob);
@@ -114,20 +101,11 @@ void HZ_Processor::hzp_decode(const rainman::ptr<HZ_CodecJob> &job) {
     }
 
     auto codec = hzp_get_codec(job->algorithm);
-
-    if (codec == nullptr) {
-        throw ProcessorErrors::InvalidOperationError("Codec not found");
-    }
-
     rainman::ptr<HZ_Blob> blob;
     try {
         blob = codec->decompress(job->blob);
-
         HZP_STUB_CALL(job->blob_callback, blob);
-
-        rfree(codec);
     } catch (std::exception &e) {
-        rfree(codec);
         throw ProcessorErrors::GenericError(e.what());
     }
 }
@@ -148,21 +126,13 @@ void HZ_Processor::hzp_train(const rainman::ptr<HZ_CodecJob> &job) {
 
     auto codec = hzp_get_codec(job->algorithm);
 
-    if (codec == nullptr) {
-        throw ProcessorErrors::InvalidOperationError("Codec not found");
-    }
-
     rainman::ptr<HZ_MState> mstate;
 
     try {
         mstate = codec->train(job->blob);
 
         job->archive.inner()->install_mstate(job->mstate_addr.inner(), mstate);
-
-        rfree(codec);
     } catch (std::exception &e) {
-        rfree(codec);
-
         throw ProcessorErrors::GenericError(e.what());
     }
 

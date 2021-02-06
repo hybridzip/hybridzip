@@ -7,7 +7,7 @@ namespace hzmodels {
     template<typename T>
     class PaethModel {
     private:
-        T **arr;
+        rainman::ptr2d<T> arr;
         uint32_t width;
         uint32_t height;
 
@@ -25,7 +25,7 @@ namespace hzmodels {
          * The standard Paeth Filter used in PNG compression.
          * This should only be used in conjunction with a zigzag transform.
          */
-        PaethModel(T **arr, uint32_t width, uint32_t height) {
+        PaethModel(const rainman::ptr2d<T> &arr, uint32_t width, uint32_t height) {
             this->arr = arr;
             this->width = width;
             this->height = height;

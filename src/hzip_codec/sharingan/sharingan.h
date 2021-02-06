@@ -1,5 +1,5 @@
 /*
- * Sharingan is a lossless/lossy PNG remuxer that leverages color spaces for compression.
+ * LosslessSharingan is a lossless/lossy PNG remuxer that leverages color spaces for compression.
  * However, it performs worse for synthetic images.
  * Scheme: Lossless/Lossy color space transform + Paeth Filter + First order context
  */
@@ -11,9 +11,9 @@
 #include "hzip_codec/compressor_base.h"
 
 namespace hzcodec {
-    class Sharingan : public AbstractCodec {
+    class LosslessSharingan : public AbstractCodec {
     public:
-        Sharingan() = default;
+        LosslessSharingan() = default;
 
         rainman::ptr<HZ_Blob> compress(const rainman::ptr<HZ_Blob> &blob) override;
 

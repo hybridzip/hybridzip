@@ -35,13 +35,13 @@ namespace hztrans {
             PairType y;
         };
 
-        pair<T> forward_lift(pair<T> p) {
+        inline pair<T> forward_lift(pair<T> p) {
             T diff = (p.y - p.x);
             T average = (p.x + (diff >> 1));
             return pair<T>{.x=average, .y=diff};
         }
 
-        pair<T> reverse_lift(pair<T> p) {
+        inline pair<T> reverse_lift(pair<T> p) {
             T x = (p.x - (p.y >> 1));
             T y = (x + p.y);
             return pair<T>{.x=x, .y=y};

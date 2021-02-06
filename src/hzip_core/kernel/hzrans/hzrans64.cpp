@@ -43,10 +43,10 @@ void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
     for (int i = 0; i < state->size; i++) {
         sum += freq[i];
     }
+
     // use three-layered normalization.
     uint64_t ssum = 0;
     uint64_t mul_factor = (1ull << state->scale) - state->size;
-
 
     for (int i = 0; i < state->size; i++) {
         uint64_t value = 1 + (freq[i] + 1) * mul_factor / sum;

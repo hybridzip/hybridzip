@@ -22,4 +22,12 @@ void hzmodels::FirstOrderContextModel::set_alphabet_size(uint64_t alphabet_size)
     _prev_symbol = 0;
 }
 
+void hzmodels::FirstOrderContextModel::revert(uint64_t prev_symbol, uint64_t next_symbol, uint64_t delta) {
+    _context_map[prev_symbol][next_symbol] -= delta;
+}
+
+void hzmodels::FirstOrderContextModel::update(uint64_t prev_symbol, uint64_t next_symbol, uint64_t delta) {
+    _context_map[prev_symbol][next_symbol] += delta;
+}
+
 

@@ -9,5 +9,5 @@ add_executable(hybridzip_test
         hzip/victini_codec.cpp
         hzip/archive.cpp
         hzip/zigzag_transform.cpp)
-target_link_libraries(hybridzip_test gtest gtest_main hzip_core hzip_storage hzip_network)
+target_link_libraries(hybridzip_test gtest gtest_main hzip_core hzip_storage hzip_network hzip_codec)
 

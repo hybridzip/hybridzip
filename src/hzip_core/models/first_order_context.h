@@ -21,6 +21,9 @@ namespace hzmodels {
 
         void update(uint64_t symbol, uint64_t delta = 1);
 
+        void update(uint64_t prev_symbol, uint64_t next_symbol, uint64_t delta);
+
+        void revert(uint64_t prev_symbol, uint64_t next_symbol, uint64_t delta);
     };
 }
 

@@ -1,5 +1,5 @@
-#ifndef HYBRIDZIP_CODEC_H
-#define HYBRIDZIP_CODEC_H
+#ifndef HZIP_CODEC_ERRORS_CODEC_H
+#define HZIP_CODEC_ERRORS_CODEC_H
 
 #include <exception>
 #include <string>

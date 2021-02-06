@@ -17,6 +17,10 @@ add_library(hzip_codec STATIC
         processor/processor.cpp
         codec_provider.h
         codec_provider.cpp
+        opencl/cl_helper.h
+        opencl/cl_helper.cpp
+        errors/opencl.h
+        executor.h
         )
 
 target_link_libraries(hzip_codec PUBLIC
@@ -26,3 +30,8 @@ target_link_libraries(hzip_codec PUBLIC
         )
 
 target_link_libraries(hzip_codec PUBLIC hzip_core)
+
+if (${HZIP_ENABLE_OPENCL})
+    target_link_libraries(hzip_codec PUBLIC OpenCL)
+    target_compile_definitions(hzip_codec PRIVATE HZIP_ENABLE_OPENCL)
+endif ()

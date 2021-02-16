@@ -136,8 +136,8 @@ rainman::ptr<HZ_Blob> hzcodec::LosslessSharingan::compress(const rainman::ptr<HZ
 
         auto encoder = hzrans64_encoder();
 
-        encoder.set_header(0x100, 24, per_channel_length);
-        encoder.set_distribution(hzip_get_init_dist(0x100));
+        encoder.set_header(1ull << depth, 24, per_channel_length);
+        encoder.set_distribution(hzip_get_init_dist(1ull << depth));
         encoder.set_cross_encoder(cross_encoder);
         encoder.set_size(per_channel_length);
 
@@ -145,7 +145,7 @@ rainman::ptr<HZ_Blob> hzcodec::LosslessSharingan::compress(const rainman::ptr<HZ
     }
 
     cblob->header = HZ_BlobHeader();
-    auto raw_header = rainman::ptr<uint8_t>(28);
+    auto raw_header = rainman::ptr<uint8_t>(6 + (0x40 * bundle.nchannels));
 
     auto hstream = bitio::stream(raw_header.pointer(), raw_header.size());
 
@@ -154,6 +154,10 @@ rainman::ptr<HZ_Blob> hzcodec::LosslessSharingan::compress(const rainman::ptr<HZ
     // Encode width and height.
     hstream.write(bundle.width, 0x10);
     hstream.write(bundle.height, 0x10);
+
+    // Encode bit-depth and nchannels
+    hstream.write(bundle.depth, 0x8);
+    hstream.write(bundle.nchannels, 0x8);
 
     uint64_t total_size = 0;
     // Encode per-channel encoding length.

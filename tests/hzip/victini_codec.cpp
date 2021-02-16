@@ -4,7 +4,7 @@
 
 class VictiniCodecTest: public testing::Test {};
 
-TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
+TEST(VictiniCodecTest, victini_small) {
     auto victini = hzcodec::Victini();
 
     auto blob = rainman::ptr<HZ_Blob>();
@@ -30,7 +30,7 @@ TEST(VictiniCodecTest, hzip_core_compressors_victini_small) {
     }
 }
 
-TEST(VictiniCodecTest, hzip_core_compressors_victini_large) {
+TEST(VictiniCodecTest, victini_large) {
     auto victini = hzcodec::Victini();
 
     auto blob = rainman::ptr<HZ_Blob>();

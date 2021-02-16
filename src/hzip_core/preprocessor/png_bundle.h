@@ -9,13 +9,13 @@
 
 class PNGBundle {
 public:
-    rainman::ptr3d<uint16_t> buf{};
+    rainman::ptr<uint16_t> buf{};
     uint32_t width{};
     uint32_t height{};
     uint8_t nchannels{};
     uint8_t depth{};
 
-    PNGBundle(const rainman::ptr3d<uint16_t> &buf, uint32_t width, uint32_t height, uint8_t nchannels, uint8_t depth) :
+    PNGBundle(const rainman::ptr<uint16_t> &buf, uint32_t width, uint32_t height, uint8_t nchannels, uint8_t depth) :
             width(width),
             height(height),
             nchannels(nchannels),
@@ -94,11 +94,14 @@ public:
         png_read_image(png_ptr, row_pointers);
         fclose(fp);
 
-        auto pixar = rainman::make_ptr3d<uint16_t>(nchannels, width, height);
-        for (int z = 0; z < nchannels; z++) {
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    pixar[z][y][x] = row_pointers[y][3 * x + z];
+        auto pixar = rainman::ptr<uint16_t>(nchannels * height * width);
+        uint64_t sz = height * width;
+        uint64_t sy = width;
+
+        for (uint64_t y = 0, ly = 0; y < height; y++, ly += sy) {
+            for (uint64_t x = 0; x < width; x++) {
+                for (uint64_t z = 0, lz = 0; z < nchannels; z++, lz += sz) {
+                    pixar[lz + ly + x] = row_pointers[y][nchannels * x + z];
                 }
             }
         }
@@ -108,6 +111,7 @@ public:
         }
 
         rfree(row_pointers);
+
 
         return PNGBundle(
                 pixar,

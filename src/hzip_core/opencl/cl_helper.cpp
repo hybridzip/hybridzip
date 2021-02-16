@@ -1,5 +1,5 @@
 #include "cl_helper.h"
-#include <hzip_codec/errors/opencl.h>
+#include <hzip_core/errors/opencl.h>
 
 #ifdef HZIP_ENABLE_OPENCL
 #ifndef HZIP_OPENCL_BUILD_OPTIONS

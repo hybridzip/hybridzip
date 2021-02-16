@@ -17,10 +17,6 @@ add_library(hzip_codec STATIC
         processor/processor.cpp
         codec_provider.h
         codec_provider.cpp
-        opencl/cl_helper.h
-        opencl/cl_helper.cpp
-        errors/opencl.h
-        executor.h
         )
 
 target_link_libraries(hzip_codec PUBLIC

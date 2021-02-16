@@ -7,8 +7,8 @@
 #include <string>
 #include <unordered_map>
 #include <mutex>
-#include <CL/cl2.hpp>
-#include <hzip_codec/errors/opencl.h>
+#include <CL/opencl.hpp>
+#include <hzip_core/errors/opencl.h>
 
 namespace hzcodec::opencl {
     class ProgramProvider {

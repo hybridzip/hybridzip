@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <hzip_core/errors/transform.h>
+#include <hzip_core/executor.h>
+#include <rainman/rainman.h>
 
 namespace hztrans {
     enum HZ_COLOR_SPACE {
@@ -82,6 +84,29 @@ namespace hztrans {
             }
         }
     };
+
+    class LinearU8ColorTransformer {
+    private:
+        Executor _executor;
+        uint64_t _width;
+        uint64_t _height;
+
+        rainman::ptr<uint8_t> cpu_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) const;
+
+        rainman::ptr<uint8_t> opencl_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer);
+
+    public:
+        LinearU8ColorTransformer(
+                uint64_t width,
+                uint64_t height,
+                Executor executor = get_best_executor()
+        ) : _width(width), _height(height), _executor(executor) {}
+
+        rainman::ptr<uint8_t> rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer);
+
+        rainman::ptr<uint8_t> ycocg_to_rgb(const rainman::ptr<uint8_t> &buffer);
+    };
+
 }
 
 #endif

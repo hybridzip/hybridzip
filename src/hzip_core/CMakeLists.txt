@@ -28,6 +28,11 @@ add_library(hzip_core STATIC
         models/paeth.h
         preprocessor/color.h
         errors/transform.h
+        preprocessor/color.cpp
+        opencl/cl_helper.h
+        opencl/cl_helper.cpp
+        executor.h
+        errors/opencl.h
         )
 
 target_compile_features(hzip_core PUBLIC cxx_std_20)

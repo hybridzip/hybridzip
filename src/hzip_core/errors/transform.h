@@ -10,7 +10,7 @@ namespace TransformErrors {
     public:
 
         InvalidInputError(const std::string &msg) {
-            LOG_F(ERROR, "hzip_core.core: %s", msg.c_str());
+            LOG_F(ERROR, "hzip_core.preprocessor: %s", msg.c_str());
         }
 
         [[nodiscard]] const char *what() const noexcept override {
@@ -22,7 +22,7 @@ namespace TransformErrors {
     public:
 
         InvalidOperationError(const std::string &msg) {
-            LOG_F(ERROR, "hzip_core.core: %s", msg.c_str());
+            LOG_F(ERROR, "hzip_core.preprocessor: %s", msg.c_str());
         }
 
         [[nodiscard]] const char *what() const noexcept override {

@@ -31,12 +31,17 @@ namespace hzopencl {
         static std::vector<cl::Device> _devices;
         static std::mutex _mutex;
         static uint64_t _device_index;
+        static std::string _preferred_device_name;
     public:
         static void load_devices(uint32_t device_type = CL_DEVICE_TYPE_ALL);
+
+        static void list_available_devices();
 
         static cl::Device get();
 
         static bool empty();
+
+        static void set_preferred_device(const std::string &dev_name);
     };
 
     class KernelProvider {

@@ -2,6 +2,7 @@
 #include <chrono>
 #include <gtest/gtest.h>
 #include <hzip_core/preprocessor/transforms.h>
+#include <hzip_core/config.h>
 
 
 class ColorTransformTest : public testing::Test {
@@ -10,8 +11,7 @@ class ColorTransformTest : public testing::Test {
 #ifdef HZIP_ENABLE_OPENCL
 
 TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg) {
-    // OPENCL Implementation is faster than CPU when width * height > 1000000
-    hzopencl::DeviceProvider::load_devices();
+    Config::configure();
 
     uint64_t width = 1024;
     uint64_t height = 1024;

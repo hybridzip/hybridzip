@@ -1,5 +1,6 @@
 #include "color.h"
 #include <hzip_core/opencl/cl_helper.h>
+#include <hzip_core/config.h>
 
 rainman::ptr<uint8_t> hztrans::LinearU8ColorTransformer::rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) {
     if (_executor == OPENCL) {
@@ -44,9 +45,8 @@ hztrans::LinearU8ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint8_
 
     uint64_t local_size = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
 
-    // Stride size: 64
-    uint64_t stride_size = 64;
     uint64_t n = _width * _height;
+    uint64_t stride_size = n / Config::opencl_kernels;
     uint64_t true_size = (n / stride_size) + (n % stride_size != 0);
     uint64_t global_size = (true_size / local_size + (true_size % local_size != 0)) * local_size;
 

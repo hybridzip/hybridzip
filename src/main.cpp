@@ -2,7 +2,7 @@
 #include <loguru/loguru.hpp>
 #include <rainman/rainman.h>
 #include <hzip_network/api/api.h>
-#include <hzip_core/opencl/cl_helper.h>
+#include <hzip_core/config.h>
 
 std::function<void()> _hzapi_graceful_shutdown;
 
@@ -17,24 +17,6 @@ void set_unhandled_exception_handler() {
         LOG_F(ERROR, "hybridzip: Encountered unhandled exception");
         abort();
     });
-}
-
-void check_env() {
-    const char *required_vars[] = {
-            "HZIP_API_THREADS",
-            "HZIP_PROCESSOR_THREADS",
-            "HZIP_API_KEY",
-            "HZIP_API_TIMEOUT",
-            "HZIP_API_PORT",
-            "HZIP_MAX_MEM_USAGE",
-    };
-
-    for (auto var : required_vars) {
-        if (std::getenv(var) == nullptr) {
-            LOG_F(ERROR, "hybridzip: %s was not set in environment variables", var);
-            exit(0);
-        }
-    }
 }
 
 void set_signal_handlers() {
@@ -58,19 +40,15 @@ void set_signal_handlers() {
 }
 
 int main(int argc, const char **argv) {
-#ifdef HZIP_ENABLE_OPENCL
-    hzopencl::DeviceProvider::load_devices();
-#endif
-
     setup_logger();
     set_unhandled_exception_handler();
 
-    check_env();
+    Config::configure();
 
-    rainman::Allocator().peak_size(std::stoull(std::getenv("HZIP_MAX_MEM_USAGE")));
+    rainman::Allocator().peak_size(Config::host_max_memory);
     LOG_F(INFO, "hybridzip: Max memory usage set to %lu bytes", rainman::Allocator().peak_size());
 
-    auto api = new hzapi::Api(std::stoi(std::getenv("HZIP_API_THREADS")));
+    auto api = new hzapi::Api(Config::api_threads);
 
     _hzapi_graceful_shutdown = [api]() {
         LOG_F(WARNING, "Gracefully shutting down.");
@@ -79,8 +57,8 @@ int main(int argc, const char **argv) {
 
     set_signal_handlers();
 
-    api->process(std::stoi(std::getenv("HZIP_PROCESSOR_THREADS")))
-            ->protect(std::getenv("HZIP_API_KEY"))
-            ->timeout(timeval{.tv_sec=std::stoi(std::getenv("HZIP_API_TIMEOUT"))})
-            ->start("127.0.0.1", std::stoi(std::getenv("HZIP_API_PORT")));
+    api->process(Config::processor_threads)
+            ->protect(Config::api_key)
+            ->timeout(timeval{.tv_sec=Config::api_timeout})
+            ->start("127.0.0.1", Config::api_port);
 }

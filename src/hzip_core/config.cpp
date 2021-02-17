@@ -12,6 +12,7 @@ uint64_t Config::processor_threads = 1;
 
 uint64_t Config::host_max_memory = 1073741824;
 
+bool Config::opencl_support_enabled = false;
 uint64_t Config::opencl_kernels = 32;
 std::string Config::opencl_preferred_device = "";
 
@@ -49,6 +50,10 @@ void Config::configure() {
 
 #ifdef HZIP_ENABLE_OPENCL
     hzopencl::DeviceProvider::load_devices();
+
+    if (!hzopencl::DeviceProvider::empty()) {
+        opencl_support_enabled = true;
+    }
 
     const char *_opencl_kernels = std::getenv("HZIP_OPENCL_KERNELS");
     const char *_opencl_preferred_device = std::getenv("HZIP_OPENCL_PREFERRED_DEVICE");

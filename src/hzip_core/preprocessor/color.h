@@ -95,15 +95,18 @@ namespace hztrans {
         static void register_kernel();
 
         [[nodiscard]] rainman::ptr<uint8_t> opencl_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) const;
+
+        [[nodiscard]] rainman::ptr<uint8_t> opencl_ycocg_to_rgb(const rainman::ptr<uint8_t> &buffer) const;
 #endif
 
         [[nodiscard]] rainman::ptr<uint8_t> cpu_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) const;
+
+        [[nodiscard]] rainman::ptr<uint8_t> cpu_ycocg_to_rgb(const rainman::ptr<uint8_t> &buffer) const;
     public:
         LinearU8ColorTransformer(
                 uint64_t width,
-                uint64_t height,
-                Executor executor = get_best_executor()
-        ) : _width(width), _height(height), _executor(executor) {}
+                uint64_t height
+        );
 
         rainman::ptr<uint8_t> rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer);
 

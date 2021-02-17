@@ -1,5 +1,3 @@
-#include <iostream>
-#include <chrono>
 #include <gtest/gtest.h>
 #include <hzip_core/preprocessor/transforms.h>
 #include <hzip_core/config.h>
@@ -22,26 +20,35 @@ TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg) {
         data[i] = i & 0xff;
     }
 
-    auto cpu_transformer = hztrans::LinearU8ColorTransformer(width, height, CPU);
-    auto opencl_transformer = hztrans::LinearU8ColorTransformer(width, height, OPENCL);
-
-    auto clock = std::chrono::high_resolution_clock();
-    auto start = clock.now();
-
-    auto output1 = cpu_transformer.rgb_to_ycocg(data);
-
-    std::cout << "CPU: " << (double) (clock.now() - start).count() / 1000000000.0 << "s" << std::endl;
-
-    start = clock.now();
-
-    auto output2 = opencl_transformer.rgb_to_ycocg(data);
-
-    std::cout << "OPENCL: " << (double) (clock.now() - start).count() / 1000000000.0 << "s" << std::endl;
+    auto transformer = hztrans::LinearU8ColorTransformer(width, height);
+    auto output = transformer.rgb_to_ycocg(data);
+    auto data_d = transformer.ycocg_to_rgb(output);
 
     for (int i = 0; i < data.size(); i++) {
-        ASSERT_EQ(output1[i], output2[i]);
+        ASSERT_EQ(data_d[i], data[i]);
     }
-
 }
 
 #endif
+
+TEST(ColorTransformTest, hzip_color_cpu_rgb_to_ycocg_test) {
+    Config::configure();
+
+    uint64_t width = 128;
+    uint64_t height = 128;
+
+    auto data = rainman::ptr<uint8_t>(width * height * 3);
+
+    for (int i = 0; i < width * height; i++) {
+        data[i] = i & 0xff;
+    }
+
+    auto transformer = hztrans::LinearU8ColorTransformer(width, height);
+
+    auto output = transformer.rgb_to_ycocg(data);
+    auto data_d = transformer.ycocg_to_rgb(output);
+
+    for (int i = 0; i < data.size(); i++) {
+        ASSERT_EQ(data_d[i], data[i]);
+    }
+}

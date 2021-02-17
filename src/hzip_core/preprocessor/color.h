@@ -113,6 +113,35 @@ namespace hztrans {
         rainman::ptr<uint8_t> ycocg_to_rgb(const rainman::ptr<uint8_t> &buffer);
     };
 
+    class LinearU16ColorTransformer {
+    private:
+        Executor _executor;
+        uint64_t _width;
+        uint64_t _height;
+
+#ifdef HZIP_ENABLE_OPENCL
+        static void register_kernel();
+
+        [[nodiscard]] rainman::ptr<uint16_t> opencl_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer) const;
+
+        [[nodiscard]] rainman::ptr<uint16_t> opencl_ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer) const;
+#endif
+
+        [[nodiscard]] rainman::ptr<uint16_t> cpu_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer) const;
+
+        [[nodiscard]] rainman::ptr<uint16_t> cpu_ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer) const;
+    public:
+        LinearU16ColorTransformer(
+                uint64_t width,
+                uint64_t height
+        );
+
+        rainman::ptr<uint16_t> rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer);
+
+        rainman::ptr<uint16_t> ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer);
+    };
+
 }
+
 
 #endif

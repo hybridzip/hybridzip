@@ -19,9 +19,9 @@ namespace hzopencl {
     public:
         static cl::Program get(const std::string &kernel);
 
-        static void register_kernel(const std::string &kernel, const std::string &src);
+        static void register_program(const std::string &program_name, const std::string &src);
 
-        static void compile(const std::string &kernel, const cl::Device &device);
+        static void compile(const std::string &program_name, const cl::Device &device);
 
         static void clear();
     };
@@ -46,9 +46,9 @@ namespace hzopencl {
 
     class KernelProvider {
     public:
-        static cl::Kernel get(const std::string &kernel);
+        static cl::Kernel get(const std::string &program_name);
 
-        static cl::Kernel get(const std::string &kernel, const std::string &name);
+        static cl::Kernel get(const std::string &program_name, const std::string &kernel);
     };
 }
 

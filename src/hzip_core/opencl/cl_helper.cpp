@@ -121,39 +121,39 @@ void ProgramProvider::clear() {
     _mutex.unlock();
 }
 
-void ProgramProvider::register_kernel(const std::string &kernel, const std::string &src) {
+void ProgramProvider::register_program(const std::string &program_name, const std::string &src) {
     _mutex.lock();
-    if (!_program_map.contains(kernel)) {
+    if (!_program_map.contains(program_name)) {
         cl::Context context(DeviceProvider::get());
         auto program = cl::Program(context, src);
         program.build(HZIP_OPENCL_BUILD_OPTIONS);
-        _program_map[kernel] = program;
-        _src_map[kernel] = src;
+        _program_map[program_name] = program;
+        _src_map[program_name] = src;
     }
     _mutex.unlock();
 }
 
-void ProgramProvider::compile(const std::string &kernel, const cl::Device &device) {
+void ProgramProvider::compile(const std::string &program_name, const cl::Device &device) {
     _mutex.lock();
-    if (!_program_map.contains(kernel)) {
-        throw OpenCLErrors::InvalidOperationException("Cannot set device for unregistered OpenCL kernel");
+    if (!_program_map.contains(program_name)) {
+        throw OpenCLErrors::InvalidOperationException("Cannot set device for unregistered OpenCL program");
     } else {
         cl::Context context(device);
-        auto program = cl::Program(context, _src_map[kernel]);
+        auto program = cl::Program(context, _src_map[program_name]);
         program.build(HZIP_OPENCL_BUILD_OPTIONS);
-        _program_map[kernel] = program;
+        _program_map[program_name] = program;
     }
     _mutex.unlock();
 }
 
-cl::Kernel KernelProvider::get(const std::string &kernel) {
-    cl::Program program = ProgramProvider::get(kernel);
+cl::Kernel KernelProvider::get(const std::string &program_name) {
+    cl::Program program = ProgramProvider::get(program_name);
     return cl::Kernel(program, "run");
 }
 
-cl::Kernel KernelProvider::get(const std::string &kernel, const std::string &name) {
-    cl::Program program = ProgramProvider::get(kernel);
-    return cl::Kernel(program, name.c_str());
+cl::Kernel KernelProvider::get(const std::string &program_name, const std::string &kernel) {
+    cl::Program program = ProgramProvider::get(program_name);
+    return cl::Kernel(program, kernel.c_str());
 }
 
 #endif

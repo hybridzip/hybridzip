@@ -1,6 +1,7 @@
 #include "color.h"
+#include <hzip_core/opencl/cl_helper.h>
 
-rainman::ptr <uint8_t> hztrans::LinearU8ColorTransformer::rgb_to_ycocg(const rainman::ptr <uint8_t> &buffer) {
+rainman::ptr<uint8_t> hztrans::LinearU8ColorTransformer::rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) {
     if (_executor == OPENCL) {
         return opencl_rgb_to_ycocg(buffer);
     } else {
@@ -31,6 +32,51 @@ rainman::ptr<uint8_t> hztrans::LinearU8ColorTransformer::cpu_rgb_to_ycocg(const 
     return output;
 }
 
-rainman::ptr<uint8_t> hztrans::LinearU8ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) {
-    return rainman::ptr<uint8_t>();
+#ifdef HZIP_ENABLE_OPENCL
+
+rainman::ptr<uint8_t>
+hztrans::LinearU8ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) const {
+    register_kernel();
+
+    auto kernel = hzopencl::KernelProvider::get("rgb_ycocg", "rgb_to_ycocg");
+    auto context = kernel.getInfo<CL_KERNEL_CONTEXT>();
+    auto device = context.getInfo<CL_CONTEXT_DEVICES>().front();
+
+    uint64_t local_size = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
+
+    // Stride size: 64
+    uint64_t stride_size = 64;
+    uint64_t n = _width * _height;
+    uint64_t true_size = (n / stride_size) + (n % stride_size != 0);
+    uint64_t global_size = (true_size / local_size + (true_size % local_size != 0)) * local_size;
+
+    cl::Buffer buf(context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                   buffer.size() * sizeof(uint8_t), buffer.pointer());
+
+    kernel.setArg(0, buf);
+    kernel.setArg(1, n);
+    kernel.setArg(2, stride_size);
+
+    auto output = rainman::ptr<uint8_t>(buffer.size());
+
+    auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+    queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));
+    queue.enqueueBarrierWithWaitList();
+
+    queue.enqueueReadBuffer(buf, CL_FALSE, 0, buffer.size() * sizeof(uint8_t), output.pointer());
+
+    queue.finish();
+
+    return output;
 }
+
+
+void hztrans::LinearU8ColorTransformer::register_kernel() {
+    hzopencl::ProgramProvider::register_kernel("rgb_ycocg",
+
+#include "rgb_ycocg.cl"
+
+    );
+}
+
+#endif

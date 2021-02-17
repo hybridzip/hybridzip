@@ -2,9 +2,9 @@
 #define HYBRIDZIP_PROCESSOR_H
 
 #include <thread>
-#include <semaphore>
 #include <rainman/rainman.h>
 #include <hzip_codec/compressors.h>
+#include <hzip_core/utils/semaphore.h>
 #include "job.h"
 
 // This is an abstract processor for hybridzip.
@@ -14,7 +14,7 @@ class HZ_Processor : private rainman::Allocator {
 private:
     uint64_t n_threads{};
     uint64_t threads_in_use{};
-    std::counting_semaphore<> _semaphore{};
+    Semaphore _semaphore{};
 
     hzcodec::AbstractCodec *hzp_get_codec(hzcodec::algorithms::ALGORITHM alg);
 

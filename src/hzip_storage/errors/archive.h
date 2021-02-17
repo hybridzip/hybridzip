@@ -12,7 +12,7 @@ namespace ArchiveErrors {
         uint64_t id{};
 
         BlobNotFoundException(uint64_t id) {
-            LOG_F(ERROR, "hzip_core.archive: Blob(0x%lx) was not found", id);
+            LOG_F(ERROR, "hzip_core.archive: Blob[0x%lx] was not found", id);
             this->id = id;
         }
 
@@ -25,7 +25,7 @@ namespace ArchiveErrors {
     public:
 
         FileNotFoundException(const std::string &path) {
-            LOG_F(ERROR, "hzip_core.archive: File (%s) was not found", path.c_str());
+            LOG_F(ERROR, "hzip_core.archive: File[%s] was not found", path.c_str());
         }
 
         [[nodiscard]] const char *what() const noexcept override {
@@ -38,7 +38,7 @@ namespace ArchiveErrors {
         uint64_t id{};
 
         MstateNotFoundException(uint64_t id) {
-            LOG_F(ERROR, "hzip_core.archive: Mstate(0x%lx) was not found", id);
+            LOG_F(ERROR, "hzip_core.archive: Mstate[0x%lx] was not found", id);
             this->id = id;
         }
 

@@ -29,18 +29,16 @@ HZ_Archive::HZ_Archive(const std::string &archive_path) {
     const char *sname = sha512_path.c_str();
 
     // Lock archive.
-    LOG_F(INFO, "hzip_core.archive: Requesting access to archive (%s)", path.c_str());
+    LOG_F(INFO, "hzip_core.archive: Requesting access to archive [%s]", path.c_str());
 
     archive_mutex = rainman::ptr<sem_t>(sem_open(sname, O_CREAT, 0777, 1), 1);
     if (archive_mutex.pointer() == SEM_FAILED) {
         throw ArchiveErrors::InvalidOperationException(std::string("sem_open() failed with error: ") + std::strerror(errno));
     }
 
-    auto dbg = errno;
-
     sem_wait(archive_mutex.pointer());
 
-    LOG_F(INFO, "hzip_core.archive: Access granted to archive (%s)", path.c_str());
+    LOG_F(INFO, "hzip_core.archive: Access granted to archive [%s]", path.c_str());
 
     if (init_flag) {
         hza_init();
@@ -259,7 +257,7 @@ void HZ_Archive::hza_init() {
 
     stream->seek_to(0);
 
-    LOG_F(INFO, "hzip_core.archive: Initialized archive (%s)", path.c_str());
+    LOG_F(INFO, "hzip_core.archive: Initialized archive [%s]", path.c_str());
 
     mutex.unlock();
 }

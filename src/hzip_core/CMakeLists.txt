@@ -33,7 +33,7 @@ add_library(hzip_core STATIC
         opencl/cl_helper.cpp
         executor.h
         errors/opencl.h
-        )
+        utils/semaphore.h utils/semaphore.cpp)
 
 target_compile_features(hzip_core PUBLIC cxx_std_20)
 target_link_libraries(hzip_core PUBLIC bitio loguru rainman)
@@ -41,5 +41,10 @@ target_link_libraries(hzip_core PUBLIC bitio loguru rainman)
 target_link_libraries(hzip_core PUBLIC crypto png)
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
-    add_compile_definitions(hzip_core DEBUG)
+    target_compile_definitions(hzip_core PRIVATE DEBUG)
+endif ()
+
+if (${HZIP_ENABLE_OPENCL})
+    target_link_libraries(hzip_core PUBLIC OpenCL)
+    target_compile_definitions(hzip_core PRIVATE HZIP_ENABLE_OPENCL CL_HPP_ENABLE_EXCEPTIONS)
 endif ()

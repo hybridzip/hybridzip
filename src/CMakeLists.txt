@@ -16,3 +16,7 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     target_link_libraries(hybridzip PRIVATE profiler)
     message(STATUS "linked to profiler")
 endif ()
+
+if (${HZIP_ENABLE_OPENCL})
+    target_compile_definitions(hybridzip PRIVATE HZIP_ENABLE_OPENCL)
+endif ()

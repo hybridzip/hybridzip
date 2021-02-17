@@ -5,7 +5,7 @@
 class SharinganCodecTest : public testing::Test {};
 
 TEST(SharinganCodecTest, lossless_sharingan) {
-    const char *filename = "/home/supercmmetry/Projects/hzip-research/datasets/png/1.png";
+    const char *filename = "/home/supercmmetry/Projects/hzip_codec-research/datasets/png/1.png";
 
     FILE *fp = fopen(filename, "rb");
     auto size = std::filesystem::file_size(filename);

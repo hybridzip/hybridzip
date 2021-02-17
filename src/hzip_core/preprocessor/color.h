@@ -91,10 +91,13 @@ namespace hztrans {
         uint64_t _width;
         uint64_t _height;
 
-        rainman::ptr<uint8_t> cpu_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) const;
+#ifdef HZIP_ENABLE_OPENCL
+        static void register_kernel();
 
-        rainman::ptr<uint8_t> opencl_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer);
+        [[nodiscard]] rainman::ptr<uint8_t> opencl_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) const;
+#endif
 
+        [[nodiscard]] rainman::ptr<uint8_t> cpu_rgb_to_ycocg(const rainman::ptr<uint8_t> &buffer) const;
     public:
         LinearU8ColorTransformer(
                 uint64_t width,

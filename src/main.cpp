@@ -2,6 +2,7 @@
 #include <loguru/loguru.hpp>
 #include <rainman/rainman.h>
 #include <hzip_network/api/api.h>
+#include <hzip_core/opencl/cl_helper.h>
 
 std::function<void()> _hzapi_graceful_shutdown;
 
@@ -57,9 +58,12 @@ void set_signal_handlers() {
 }
 
 int main(int argc, const char **argv) {
+#ifdef HZIP_ENABLE_OPENCL
+    hzopencl::DeviceProvider::load_devices();
+#endif
+
     setup_logger();
     set_unhandled_exception_handler();
-
 
     check_env();
 

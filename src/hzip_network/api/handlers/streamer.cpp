@@ -79,7 +79,7 @@ void Streamer::encode() {
 
                     max_blob_size = HZ_MIN(max_blob_size, data_len);
 
-                    HZAPI_LOGF(INFO, "(%s) Compressing blob of size: %lu bytes", hzcodec::CodecProvider::algorithm_to_str(
+                    HZAPI_LOGF(INFO, "[%s] Compressing blob of size: %lu bytes", hzcodec::CodecProvider::algorithm_to_str(
                             static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), max_blob_size);
 
                     blob->o_size = max_blob_size;
@@ -141,13 +141,15 @@ void Streamer::encode() {
                     // Dispatch hz_job to hz_processor.
                     _processor->run(job);
                     data_len -= max_blob_size;
+
+                    _mutex->lock();
+                    _mutex->unlock();
                 }
 
 
                 _mutex->lock();
 
                 if (archive.is_some() && dest.is_some()) {
-                    // Allocate outside the scope of the rainman module for persistence.
                     auto blob_id_arr = rainman::ptr<uint64_t>(blob_ids.size());
                     for (int i = 0; i < blob_ids.size(); i++) {
                         blob_id_arr[i] = blob_ids[i];
@@ -227,7 +229,7 @@ void Streamer::encode() {
 
                 while (data_len > 0) {
                     _mutex->lock();
-                    HZAPI_LOGF(INFO, "(%s) Training: '%s' - Batch: %lu", hzcodec::CodecProvider::algorithm_to_str(
+                    HZAPI_LOGF(INFO, "[%s] Training [%s] batch: %lu", hzcodec::CodecProvider::algorithm_to_str(
                             static_cast<hzcodec::algorithms::ALGORITHM>(algorithm)), mstate_addr.inner().pointer(),
                                ++batch_count);
 
@@ -273,10 +275,10 @@ void Streamer::encode() {
                     _processor->run(job);
 
                     data_len -= max_blob_size;
-                }
 
-                _mutex->lock();
-                _mutex->unlock();
+                    _mutex->lock();
+                    _mutex->unlock();
+                }
 
                 success("Operation completed successfully");
                 return;
@@ -323,14 +325,13 @@ void Streamer::decode() {
                     throw ApiErrors::InvalidOperationError("Source not provided");
                 }
 
-                _mutex->lock();
-
                 auto file_entry = archive.inner()->read_file_entry(src.inner().pointer());
                 uint64_t blob_count = file_entry.blob_ids.size();
 
                 HZ_SEND(&blob_count, sizeof(blob_count));
 
                 for (uint64_t i = 0; i < blob_count; i++) {
+                    _mutex->lock();
                     auto src_blob = archive.inner()->read_blob(file_entry.blob_ids[i]);
 
                     // Construct hz_job
@@ -357,7 +358,7 @@ void Streamer::decode() {
                         error(msg);
                     };
 
-                    HZAPI_LOGF(INFO, "(%s) Decompressing blob of size: %lu bytes",
+                    HZAPI_LOGF(INFO, "[%s] Decompressing blob of size: %lu bytes",
                                hzcodec::CodecProvider::algorithm_to_str(
                                        static_cast<hzcodec::algorithms::ALGORITHM>(codec->algorithm)),
                                src_blob->size);
@@ -368,10 +369,11 @@ void Streamer::decode() {
                     _processor->cycle();
                     _processor->run(job);
 
+                    // Cycle the mutex
                     _mutex->lock();
+                    _mutex->unlock();
                 }
 
-                _mutex->unlock();
                 success("Operation completed successfully");
 
                 return;

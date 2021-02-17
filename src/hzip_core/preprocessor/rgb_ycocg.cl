@@ -3,10 +3,10 @@ R"(
 #define u8 unsigned char
 #define u64 unsigned long int
 
-struct pair {
+typedef struct __attribute__ ((packed)) _pair {
 	u8 x;
 	u8 y;
-}
+} pair;
 
 pair forward_lift(pair p) {
 	pair out;

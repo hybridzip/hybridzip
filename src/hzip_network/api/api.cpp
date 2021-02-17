@@ -15,7 +15,7 @@ ApiInstance::ApiInstance(
         int sock,
         const rainman::ptr<HZ_Processor> &processor,
         const std::string &password,
-        const rainman::ptr<std::counting_semaphore<>> &semaphore,
+        const rainman::ptr<Semaphore> &semaphore,
         const std::string &ip_addr,
         uint16_t port,
         const rainman::ptr<hzapi::ArchiveProvider> &archive_provider

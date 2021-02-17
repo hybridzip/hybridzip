@@ -1,8 +1,7 @@
-#ifndef HZIP_CODEC_EXECUTOR_H
-#define HZIP_CODEC_EXECUTOR_H
+#ifndef HZIP_CORE_EXECUTOR_H
+#define HZIP_CORE_EXECUTOR_H
 
-#include <hzip_codec/opencl/cl_helper.h>
-#include "executor.h"
+#include <hzip_core/opencl/cl_helper.h>
 
 enum Executor {
     CPU,
@@ -11,7 +10,7 @@ enum Executor {
 
 inline Executor get_best_executor() {
 #ifdef HZIP_ENABLE_OPENCL
-    if (hzcodec::opencl::DeviceProvider::empty()) {
+    if (hzopencl::DeviceProvider::empty()) {
         return Executor::CPU;
     } else {
         return Executor::OPENCL;

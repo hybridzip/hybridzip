@@ -1,12 +1,11 @@
 #include "cl_helper.h"
-#include <hzip_core/errors/opencl.h>
 
 #ifdef HZIP_ENABLE_OPENCL
+
 #ifndef HZIP_OPENCL_BUILD_OPTIONS
 #define HZIP_OPENCL_BUILD_OPTIONS "-cl-std=CL2.0"
-#endif
 
-using namespace hzcodec::opencl;
+using namespace hzopencl;
 
 std::unordered_map<std::string, cl::Program> ProgramProvider::_program_map;
 std::unordered_map<std::string, std::string> ProgramProvider::_src_map;
@@ -16,6 +15,41 @@ std::vector<cl::Device> DeviceProvider::_devices;
 std::mutex DeviceProvider::_mutex;
 uint64_t DeviceProvider::_device_index = 0;
 
+void DeviceProvider::load_devices(uint32_t device_type)  {
+    _mutex.lock();
+    _devices.clear();
+    _device_index = 0;
+    std::vector<cl::Platform> platforms;
+    cl::Platform::get(&platforms);
+
+    for (const auto &platform: platforms) {
+        std::vector<cl::Device> platform_devices;
+        platform.getDevices(device_type, &platform_devices);
+        _devices.insert(_devices.end(), platform_devices.begin(), platform_devices.end());
+    }
+
+    ProgramProvider::clear();
+    _mutex.unlock();
+}
+
+cl::Device DeviceProvider::get() {
+    _mutex.lock();
+    if (_devices.empty()) {
+        _mutex.unlock();
+        throw OpenCLErrors::InvalidOperationException("No devices were loaded");
+    }
+    cl::Device device = _devices[_device_index];
+    _device_index = (_device_index + 1) % _devices.size();
+    _mutex.unlock();
+    return device;
+}
+
+bool DeviceProvider::empty()  {
+    _mutex.lock();
+    bool v = _devices.empty();
+    _mutex.unlock();
+    return v;
+}
 
 cl::Program ProgramProvider::get(const std::string &kernel) {
     _mutex.lock();
@@ -68,4 +102,5 @@ cl::Kernel KernelProvider::get(const std::string &kernel, const std::string &nam
     return cl::Kernel(program, name.c_str());
 }
 
+#endif
 #endif

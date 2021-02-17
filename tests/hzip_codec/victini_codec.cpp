@@ -30,6 +30,34 @@ TEST(VictiniCodecTest, victini_small) {
     }
 }
 
+TEST(VictiniCodecTest, victini_mixed) {
+    auto victini = hzcodec::Victini();
+
+    auto blob = rainman::ptr<HZ_Blob>();
+    blob->data = rainman::ptr<uint8_t>(28);
+    blob->o_size = 28;
+
+    const char *text = "Some data to write to a file";
+
+    for (int i = 0; i < blob->o_size; i++) {
+        blob->data[i] = text[i];
+    }
+
+    // Upcast victini codec.
+    hzcodec::AbstractCodec *codec = &victini;
+
+    auto cblob = codec->compress(blob);
+    auto dblob = codec->decompress(cblob);
+    auto ccblob = codec->compress(dblob);
+    auto ddblob = codec->decompress(ccblob);
+
+    ASSERT_EQ(dblob->o_size, blob->o_size);
+    for (int i = 0; i < 28; i++) {
+        ASSERT_EQ(dblob->data[i], blob->data[i]);
+        ASSERT_EQ(ddblob->data[i], blob->data[i]);
+    }
+}
+
 TEST(VictiniCodecTest, victini_large) {
     auto victini = hzcodec::Victini();
 

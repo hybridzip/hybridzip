@@ -30,4 +30,8 @@ void hzmodels::FirstOrderContextModel::update(uint64_t prev_symbol, uint64_t nex
     _context_map[prev_symbol][next_symbol] += delta;
 }
 
+void hzmodels::FirstOrderContextModel::set(uint64_t prev_symbol, uint64_t next_symbol, uint64_t value) {
+    _context_map[prev_symbol][next_symbol] = value;
+}
+
 

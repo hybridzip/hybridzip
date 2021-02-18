@@ -5,7 +5,7 @@ namespace hzcodec::algorithms {
     enum ALGORITHM {
         UNCOMPRESSED = 0x0,
         VICTINI = 0x1,
-        LOSSLESS_SHARINGAN = 0x2
+        SHARINGAN = 0x2
     };
 }
 

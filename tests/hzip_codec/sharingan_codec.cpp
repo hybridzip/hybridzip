@@ -4,17 +4,17 @@
 
 class SharinganCodecTest : public testing::Test {};
 
-TEST(SharinganCodecTest, lossless_sharingan) {
-    const char *filename = "/home/supercmmetry/Projects/hzip_codec-research/datasets/png/1.png";
+TEST(SharinganCodecTest, sharingan_test_1) {
+    const char *filename = "/home/supercmmetry/Projects/hzip-research/datasets/png/7.png";
 
-    FILE *fp = fopen(filename, "rb");
+    FILE *fp = std::fopen(filename, "rb");
     auto size = std::filesystem::file_size(filename);
 
     auto data = rainman::ptr<uint8_t>(size);
     std::fread(data.pointer(), 1, size, fp);
     fclose(fp);
 
-    auto codec = hzcodec::LosslessSharingan();
+    auto codec = hzcodec::Sharingan();
 
     auto blob = rainman::ptr<HZ_Blob>();
     blob->o_size = data.size();

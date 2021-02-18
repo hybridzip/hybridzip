@@ -7,9 +7,10 @@ namespace hzmodels {
     template<typename T>
     class PaethModel {
     private:
-        rainman::ptr2d<T> arr;
+        rainman::ptr<T> arr;
         uint32_t width;
         uint32_t height;
+        uint64_t channel_shift;
 
         inline T absdiff(T x, T y) {
             return x > y ? x - y : y - x;
@@ -23,12 +24,12 @@ namespace hzmodels {
     public:
         /*
          * The standard Paeth Filter used in PNG compression.
-         * This should only be used in conjunction with a zigzag transform.
          */
-        PaethModel(const rainman::ptr2d<T> &arr, uint32_t width, uint32_t height) {
+        PaethModel(const rainman::ptr<T> &arr, uint32_t width, uint32_t height, uint64_t channel_index) {
             this->arr = arr;
             this->width = width;
             this->height = height;
+            this->channel_shift = channel_index * width * height;
         }
 
         T predict(uint32_t x, uint32_t y) {
@@ -37,16 +38,16 @@ namespace hzmodels {
             }
 
             if (x == 0) {
-                return arr[y - 1][x];
+                return arr[channel_shift + (y - 1) * width + x];
             }
 
             if (y == 0) {
-                return arr[y][x - 1];
+                return arr[channel_shift + y * width + x - 1];
             }
 
-            T a = arr[y - 1][x];
-            T b = arr[y][x - 1];
-            T c = arr[y - 1][x - 1];
+            T a = arr[channel_shift + (y - 1) * width + x];
+            T b = arr[channel_shift + y * width + x - 1];
+            T c = arr[channel_shift + (y - 1) * width + x - 1];
 
             T d = a + b - c;
             T da = absdiff(a, d);

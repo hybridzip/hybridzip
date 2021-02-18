@@ -17,6 +17,8 @@ namespace hzmodels {
 
         void set_alphabet_size(uint64_t alphabet_size);
 
+        void set(uint64_t prev_symbol, uint64_t next_symbol, uint64_t value);
+
         rainman::ptr<uint64_t> get_dist(uint64_t symbol);
 
         void update(uint64_t symbol, uint64_t delta = 1);

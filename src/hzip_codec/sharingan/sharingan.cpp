@@ -13,42 +13,48 @@ bool hzcodec::Sharingan::validate_model(const rainman::ptr<uint8_t> &raw) {
     return raw.size() == sizeof(uint64_t) * 65536 * 3;
 }
 
-void hzcodec::Sharingan::load_models(const rainman::ptr<uint8_t> &raw) {
+void hzcodec::Sharingan::load_models(
+        rainman::ptr<hzmodels::FirstOrderContextModel> &models,
+        const rainman::ptr<uint8_t> &raw
+) {
     // The mstate model only stores the FOCM for the first 8-bits of a pixel per channel.
     auto stream = bitio::stream(raw.pointer(), raw.size());
 
-    _models = rainman::ptr<hzmodels::FirstOrderContextModel>(3);
+    models = rainman::ptr<hzmodels::FirstOrderContextModel>(3);
 
     for (int i = 0; i < 3; i++) {
-        _models[i].set_alphabet_size(256);
+        models[i].set_alphabet_size(256);
         for (int j = 0; j < 256; j++) {
             for (int k = 0; k < 256; k++) {
-                _models[i].set(j, k, stream.read(0x40));
+                models[i].set(j, k, stream.read(0x40));
             }
         }
     }
 }
 
-void hzcodec::Sharingan::init_models() {
-    _models = rainman::ptr<hzmodels::FirstOrderContextModel>(3);
+void hzcodec::Sharingan::init_models(rainman::ptr<hzmodels::FirstOrderContextModel> &models) {
+    models = rainman::ptr<hzmodels::FirstOrderContextModel>(3);
     for (int i = 0; i < 3; i++) {
-        _models[i].set_alphabet_size(256);
+        models[i].set_alphabet_size(256);
     }
 }
 
 void hzcodec::Sharingan::train_models(
+        rainman::ptr<hzmodels::FirstOrderContextModel> &models,
         uint64_t width,
         uint64_t height,
         uint8_t depth,
+        uint8_t nchannels,
         const rainman::ptr<uint16_t> &buffer
 ) {
     uint64_t channel_offset_1 = width * height;
-    uint64_t channel_offset_2 = channel_offset_1 << 1;
-    uint8_t shift = depth - 8;
-    for (uint64_t i = 0; i < channel_offset_1; i++) {
-        _models[0].update((buffer[i] >> shift) & 0xff, 32);
-        _models[1].update((buffer[channel_offset_1 + i] >> shift) & 0xff, 32);
-        _models[2].update((buffer[channel_offset_2 + i] >> shift) & 0xff, 32);
+    uint8_t shift = depth >= 8 ? depth - 8 : 0;
+
+    for (uint8_t channel = 0; channel < nchannels; channel++) {
+        uint64_t offset = channel_offset_1 * channel;
+        for (uint64_t i = 0; i < channel_offset_1; i++) {
+            models[channel].update((buffer[offset + i] >> shift) & 0xff, 32);
+        }
     }
 }
 
@@ -71,127 +77,100 @@ rainman::ptr<uint64_t> hzcodec::Sharingan::freq_dist_residues(
     return output;
 }
 
-rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &blob) {
-    init_models();
-
-    auto mstate = blob->mstate;
-    if (mstate->is_empty()) {
-        mstate->alg = hzcodec::algorithms::SHARINGAN;
-        mstate->data = rainman::ptr<uint8_t>();
-    } else {
-        if (validate_model(mstate->data)) {
-            load_models(mstate->data);
-        }
-    }
-
-    auto cblob = rainman::ptr<HZ_Blob>();
-
-    // Decode PNG
-    auto bundle_builder = PNGBundleBuilder(blob->data.pointer(), blob->o_size);
-    auto bundle = bundle_builder.read_pixels();
-
-    if (bundle.nchannels < 3) {
-        throw CodecErrors::InvalidOperationException("Unsupported channel count");
-    }
-
-    uint8_t depth = bundle.depth;
-    // Apply color space transforms on bundle.
-    if (depth == 8 || depth == 16) {
-        auto transformer = hztrans::LinearU16ColorTransformer(bundle.width, bundle.height);
-        bundle.buf = transformer.rgb_to_ycocg(bundle.buf);
-    } else {
-        throw CodecErrors::InvalidOperationException("Unsupported bit depth");
-    }
-
-    auto leading_outputs = rainman::ptr<hzrans64_encoder_output>(bundle.nchannels);
-    auto residual_outputs = rainman::ptr<hzrans64_encoder_output>(bundle.nchannels);
-
+void hzcodec::Sharingan::apply_data_transforms(const PNGBundle &bundle, const rainman::ptr<uint16_t> &output) {
+    auto color_type = bundle.ihdr.color_type;
     uint64_t per_channel_length = bundle.width * bundle.height;
-    auto encoded_buffer = rainman::ptr<uint16_t>(bundle.buf.size());
 
-    // Populate encoded_buffer with error-values.
-    //todo: OpenCL implementation
-    for (int i = 0; i < bundle.nchannels; i++) {
-        auto channel_offset = i * per_channel_length;
-        auto paeth = hzmodels::PaethModel(bundle.buf, bundle.width, bundle.height, i);
-        for (uint64_t y = 0; y < bundle.height; y++) {
-            auto y_offset = y * bundle.width;
-            for (uint64_t x = 0; x < bundle.width; x++) {
-                uint64_t index = channel_offset + y_offset + x;
-                uint16_t pred = paeth.predict(x, y);
-                uint16_t val = bundle.buf[index];
-                uint16_t diff = val | pred;
-                encoded_buffer[index] = diff;
+    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGBA) {
+        for (int i = 0; i < bundle.nchannels; i++) {
+            auto channel_offset = i * per_channel_length;
+            auto paeth = hzmodels::PaethModel(bundle.buf, bundle.width, bundle.height, i);
+            for (uint64_t y = 0; y < bundle.height; y++) {
+                auto y_offset = y * bundle.width;
+                for (uint64_t x = 0; x < bundle.width; x++) {
+                    uint64_t index = channel_offset + y_offset + x;
+                    uint16_t pred = paeth.predict(x, y);
+                    uint16_t val = bundle.buf[index];
+                    uint16_t diff = val | pred;
+                    output[index] = diff;
+                }
             }
         }
-    }
-
-    train_models(bundle.width, bundle.height, depth, encoded_buffer);
-
-    // Encode leading 8-bits per pixel for all channels.
-    for (uint64_t i = 0; i < bundle.nchannels; i++) {
-        uint64_t index = per_channel_length * (i + 1);
-        auto focm = _models[i];
-
-        auto cross_encoder = [&index, &focm, &encoded_buffer, depth](
-                const rainman::ptr<hzrans64_t> &state,
-                const rainman::ptr<HZ_Stack<uint32_t>> &_data
-        ) {
-            index--;
-            uint8_t shift = depth - 8;
-            uint16_t curr_symbol = (encoded_buffer[index] >> shift) & 0xff;
-            if (index == 0) {
-                state->ls = 65536;
-                state->bs = (uint64_t) curr_symbol << 16;
-            } else {
-                uint16_t prev_symbol = (encoded_buffer[index - 1] >> shift) & 0xff;
-                auto dist = focm.get_dist(prev_symbol);
-
-                // Dynamic-normalization (Costly operation)
-                // Encode symbol
-
-                hzrans64_create_ftable_nf(state.pointer(), dist.pointer());
-                hzrans64_add_to_seq(state.pointer(), curr_symbol);
-
-                // revert model to previous state.
-                focm.revert(prev_symbol, curr_symbol, 32);
+    } else if (color_type == PNG_COLOR_TYPE_PALETTE) {
+        for (int i = 0; i < bundle.nchannels; i++) {
+            auto channel_offset = i * per_channel_length;
+            for (uint64_t y = 0; y < bundle.height; y++) {
+                auto y_offset = y * bundle.width;
+                for (uint64_t x = 0; x < bundle.width; x++) {
+                    uint64_t index = channel_offset + y_offset + x;
+                    output[index] = bundle.buf[index];
+                }
             }
-        };
+        }
+    } else {
+        throw CodecErrors::InvalidOperationException("[SHARINGAN] Unsupported color type");
+    }
+}
 
-        auto encoder = hzrans64_encoder();
+rainman::ptr<uint64_t> hzcodec::Sharingan::freq_dist_leading(
+        uint8_t depth,
+        uint8_t channel_index,
+        uint64_t per_channel_length,
+        const rainman::ptr<uint16_t> &buffer
+) {
+    uint64_t channel_offset = per_channel_length * channel_index;
+    auto output = rainman::ptr<uint64_t>(256);
 
-        encoder.set_header(256, 24, per_channel_length);
-        encoder.set_distribution(hzip_get_init_dist(256));
-        encoder.set_cross_encoder(cross_encoder);
-        encoder.set_size(per_channel_length);
-
-        leading_outputs[i] = encoder.encode();
+    for (uint16_t i = 0; i < 256; i++) {
+        output[i] = 1;
     }
 
-    // If the depth is greater than 8 then encode the residues with a dynamic frequency distribution
-    if (depth > 8) {
+    uint8_t shift = depth >= 8 ? depth - 8 : 0;
+
+    for (uint64_t i = 0; i < per_channel_length; i++) {
+        output[(buffer[channel_offset + i] >> shift) & 0xff] += 32;
+    }
+
+    return output;
+}
+
+rainman::ptr<hzrans64_encoder_output> hzcodec::Sharingan::leading_encode(
+        const PNGBundle &bundle,
+        const rainman::ptr<hzmodels::FirstOrderContextModel> &models,
+        const rainman::ptr<uint16_t> &data
+) {
+    auto per_channel_length = bundle.width * bundle.height;
+    auto depth = bundle.depth;
+    auto leading_outputs = rainman::ptr<hzrans64_encoder_output>(bundle.nchannels);
+    auto color_type = bundle.ihdr.color_type;
+
+    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGBA || color_type == PNG_COLOR_TYPE_PALETTE) {
         for (uint64_t i = 0; i < bundle.nchannels; i++) {
             uint64_t index = per_channel_length * (i + 1);
-            auto freq = freq_dist_residues(i, per_channel_length, encoded_buffer);
+            auto focm = models[i];
 
-            auto cross_encoder = [&index, &freq, &encoded_buffer](
+            auto cross_encoder = [&index, &focm, &data, depth](
                     const rainman::ptr<hzrans64_t> &state,
                     const rainman::ptr<HZ_Stack<uint32_t>> &_data
             ) {
                 index--;
-                uint8_t curr_symbol = encoded_buffer[index] & 0xff;
+                uint8_t shift = depth >= 8 ? depth - 8 : 0;
+                uint16_t curr_symbol = (data[index] >> shift) & 0xff;
                 if (index == 0) {
                     state->ls = 65536;
                     state->bs = (uint64_t) curr_symbol << 16;
                 } else {
+                    uint16_t prev_symbol = (data[index - 1] >> shift) & 0xff;
+                    auto dist = focm.get_dist(prev_symbol);
+
                     // Dynamic-normalization (Costly operation)
                     // Encode symbol
 
-                    hzrans64_create_ftable_nf(state.pointer(), freq.pointer());
+                    hzrans64_create_ftable_nf(state.pointer(), dist.pointer());
                     hzrans64_add_to_seq(state.pointer(), curr_symbol);
 
                     // revert model to previous state.
-                    freq[curr_symbol] -= 32;
+                    focm.revert(prev_symbol, curr_symbol, 32);
                 }
             };
 
@@ -202,8 +181,107 @@ rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &
             encoder.set_cross_encoder(cross_encoder);
             encoder.set_size(per_channel_length);
 
-            residual_outputs[i] = encoder.encode();
+            leading_outputs[i] = encoder.encode();
         }
+    } else {
+        throw CodecErrors::InvalidOperationException("[SHARINGAN] Unsupported color type");
+    }
+
+    return leading_outputs;
+}
+
+rainman::ptr<hzrans64_encoder_output> hzcodec::Sharingan::residual_encode(
+        const PNGBundle &bundle,
+        const rainman::ptr<uint16_t> &data
+) {
+    auto per_channel_length = bundle.width * bundle.height;
+    auto residual_outputs = rainman::ptr<hzrans64_encoder_output>(bundle.nchannels);
+
+    for (uint64_t i = 0; i < bundle.nchannels; i++) {
+        uint64_t index = per_channel_length * (i + 1);
+        auto freq = freq_dist_residues(i, per_channel_length, data);
+
+        auto cross_encoder = [&index, &freq, &data](
+                const rainman::ptr<hzrans64_t> &state,
+                const rainman::ptr<HZ_Stack<uint32_t>> &_data
+        ) {
+            index--;
+            uint8_t curr_symbol = data[index] & 0xff;
+            if (index == 0) {
+                state->ls = 65536;
+                state->bs = (uint64_t) curr_symbol << 16;
+            } else {
+                // Dynamic-normalization (Costly operation)
+                // Encode symbol
+
+                hzrans64_create_ftable_nf(state.pointer(), freq.pointer());
+                hzrans64_add_to_seq(state.pointer(), curr_symbol);
+
+                // revert model to previous state.
+                freq[curr_symbol] -= 32;
+            }
+        };
+
+        auto encoder = hzrans64_encoder();
+
+        encoder.set_header(256, 24, per_channel_length);
+        encoder.set_distribution(hzip_get_init_dist(256));
+        encoder.set_cross_encoder(cross_encoder);
+        encoder.set_size(per_channel_length);
+
+        residual_outputs[i] = encoder.encode();
+    }
+
+    return residual_outputs;
+}
+
+rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &blob) {
+    rainman::ptr<hzmodels::FirstOrderContextModel> models;
+
+    init_models(models);
+
+    auto cblob = rainman::ptr<HZ_Blob>();
+
+    // Decode PNG
+    auto bundle_builder = PNGBundleBuilder(blob->data);
+    auto bundle = bundle_builder.read_pixels();
+
+    auto mstate = blob->mstate;
+    if (mstate->is_empty()) {
+        mstate->alg = hzcodec::algorithms::SHARINGAN;
+        mstate->data = rainman::ptr<uint8_t>();
+    } else if (bundle.ihdr.color_type == PNG_COLOR_TYPE_RGB || bundle.ihdr.color_type == PNG_COLOR_TYPE_RGBA) {
+        if (validate_model(mstate->data)) {
+            load_models(models, mstate->data);
+        }
+    }
+
+    uint8_t depth = bundle.depth;
+
+    if (bundle.nchannels >= 3) {
+        // Apply YCOCG color space transform on RGB image.
+        if (depth <= 16) {
+            auto transformer = hztrans::LinearU16ColorTransformer(bundle.width, bundle.height);
+            bundle.buf = transformer.rgb_to_ycocg(bundle.buf);
+        } else {
+            throw CodecErrors::InvalidOperationException("[SHARINGAN] Unsupported bit depth");
+        }
+    }
+
+    auto transformed_data = rainman::ptr<uint16_t>(bundle.buf.size());
+
+    // Populate transformed_data with error-values.
+    //todo: OpenCL implementation
+    apply_data_transforms(bundle, transformed_data);
+    train_models(models, bundle.width, bundle.height, depth, bundle.nchannels, transformed_data);
+
+    // Encode leading 8-bits per pixel for all channels.
+    auto leading_outputs = leading_encode(bundle, models, transformed_data);
+    rainman::ptr<hzrans64_encoder_output> residual_outputs;
+
+    // If the depth is greater than 8 then encode the residues with a dynamic frequency distribution
+    if (depth > 8) {
+        residual_outputs = residual_encode(bundle, transformed_data);
     }
 
     cblob->header = HZ_BlobHeader();

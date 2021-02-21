@@ -24,19 +24,15 @@ public:
     };
 
     rainman::ptr<uint16_t> buf{};
-    uint32_t width{};
-    uint32_t height{};
     uint8_t nchannels{};
-    uint8_t depth{};
 
     IHDR ihdr{};
     PLTE plte{};
 
-    PNGBundle(const rainman::ptr<uint16_t> &buf, uint32_t width, uint32_t height, uint8_t nchannels, uint8_t depth) :
-            width(width),
-            height(height),
-            nchannels(nchannels),
-            depth(depth) {
+    PNGBundle(
+            const rainman::ptr<uint16_t> &buf,
+            uint8_t nchannels
+    ) : nchannels(nchannels) {
         this->buf = buf;
     }
 };
@@ -63,12 +59,12 @@ private:
     MemBuffer _mem_buf;
 
     static void png_read_fn(png_structp png_ptr, png_bytep data, png_size_t length) {
-        auto mem_buf = static_cast<MemBuffer*>(png_get_io_ptr(png_ptr));
+        auto mem_buf = static_cast<MemBuffer *>(png_get_io_ptr(png_ptr));
         mem_buf->read(data, 1, length);
     }
 
     static void png_vector_write_fn(png_structp png_ptr, png_bytep data, png_size_t length) {
-        auto vec = static_cast<std::vector<uint8_t>*>(png_get_io_ptr(png_ptr));
+        auto vec = static_cast<std::vector<uint8_t> *>(png_get_io_ptr(png_ptr));
 
         for (uint64_t i = 0; i < length; i++) {
             vec->push_back(data[i]);
@@ -92,7 +88,7 @@ private:
     }
 
     static void png_free_fn(png_structp png_ptr, png_voidp ptr) {
-        rainman::Allocator().rfree(static_cast<uint8_t*>(ptr));
+        rainman::Allocator().rfree(static_cast<uint8_t *>(ptr));
     }
 
 public:
@@ -170,10 +166,7 @@ public:
 
         auto bundle = PNGBundle(
                 pixar,
-                static_cast<uint32_t>(width),
-                static_cast<uint32_t>(height),
-                nchannels,
-                bit_depth
+                nchannels
         );
 
         bundle.ihdr.width = width;

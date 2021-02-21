@@ -10,7 +10,7 @@ add_executable(hybridzip_test
         hzip_storage/archive.cpp
         hzip_core/zigzag_transform.cpp
         hzip_codec/sharingan_codec.cpp
-        hzip_core/color_transform.cpp debug.cpp)
+        hzip_core/color_transform.cpp debug.cpp hzip_core/paeth_differential.cpp)
 
 target_link_libraries(hybridzip_test gtest gtest_main hzip_core hzip_storage hzip_network hzip_codec)
 

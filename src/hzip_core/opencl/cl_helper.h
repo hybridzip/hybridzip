@@ -50,6 +50,11 @@ namespace hzopencl {
 
         static cl::Kernel get(const std::string &program_name, const std::string &kernel);
     };
+
+    class Runtime {
+    public:
+        static std::mutex mutex;
+    };
 }
 
 #endif

@@ -2,6 +2,7 @@
 #define HYBRIDZIP_PAETH_H
 
 #include <cstdint>
+#include <rainman/rainman.h>
 
 namespace hzmodels {
     template<typename T>
@@ -63,6 +64,49 @@ namespace hzmodels {
                 return c;
             }
         }
+    };
+
+    class LinearU16PaethDifferential {
+    private:
+        static inline uint32_t absdiff(uint32_t x, uint32_t y) {
+            return x > y ? x - y : y - x;
+        }
+
+        static inline uint32_t min3(uint32_t x, uint32_t y, uint32_t z) {
+            uint32_t tmp = x < y ? x : y;
+            return tmp < z ? tmp : z;
+        }
+
+    public:
+        LinearU16PaethDifferential() = default;
+
+        static rainman::ptr<uint16_t> filter(
+                const rainman::ptr<uint16_t> &buffer,
+                uint64_t width,
+                uint64_t height,
+                uint64_t nchannels,
+                bool inplace = false
+        );
+
+        static rainman::ptr<uint16_t> cpu_filter(
+                const rainman::ptr<uint16_t> &buffer,
+                uint64_t width,
+                uint64_t height,
+                uint64_t nchannels,
+                bool inplace = false
+        );
+
+#ifdef HZIP_ENABLE_OPENCL
+        static void register_opencl_program();
+
+        static rainman::ptr<uint16_t> opencl_filter(
+                const rainman::ptr<uint16_t> &buffer,
+                uint64_t width,
+                uint64_t height,
+                uint64_t nchannels,
+                bool inplace = false
+        );
+#endif
     };
 }
 

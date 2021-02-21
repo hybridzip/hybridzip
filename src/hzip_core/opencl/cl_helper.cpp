@@ -17,6 +17,8 @@ std::mutex DeviceProvider::_mutex;
 uint64_t DeviceProvider::_device_index = 0;
 std::string DeviceProvider::_preferred_device_name;
 
+std::mutex Runtime::mutex;
+
 void DeviceProvider::list_available_devices() {
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);

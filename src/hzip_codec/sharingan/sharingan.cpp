@@ -1,6 +1,7 @@
 #include "sharingan.h"
 #include <hzip_core/utils/distribution.h>
 #include <hzip_core/preprocessor/transforms.h>
+#include <hzip_core/models/paeth.h>
 
 void hzcodec::Sharingan::preprocess_data(const PNGBundle &bundle) {
     auto color_type = bundle.ihdr.color_type;
@@ -12,7 +13,17 @@ void hzcodec::Sharingan::preprocess_data(const PNGBundle &bundle) {
 }
 
 void hzcodec::Sharingan::apply_filter(const PNGBundle &bundle) {
+    auto color_type = bundle.ihdr.color_type;
 
+    if (color_type != PNG_COLOR_TYPE_PALETTE) {
+        hzmodels::LinearU16PaethDifferential::filter(
+                bundle.buf,
+                bundle.ihdr.width,
+                bundle.ihdr.height,
+                bundle.nchannels,
+                true
+        );
+    }
 }
 
 rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &blob) {

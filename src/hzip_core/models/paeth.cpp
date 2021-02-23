@@ -1,6 +1,7 @@
 #include <hzip_core/config.h>
 #include <hzip_core/executor.h>
 #include <hzip_core/opencl/cl_helper.h>
+#include <hzip_core/runtime.h>
 #include "paeth.h"
 
 rainman::ptr<uint16_t>
@@ -153,7 +154,7 @@ hzmodels::LinearU16PaethDifferential::opencl_filter(
         kernel.setArg(4, n);
         kernel.setArg(5, stride_size);
 
-        std::unique_lock<std::mutex> lock(hzopencl::Runtime::mutex);
+        std::unique_lock<std::mutex> lock(HZRuntime::opencl_mutex);
 
         auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
         queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));

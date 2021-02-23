@@ -86,9 +86,11 @@ TEST(PaethDifferentialTest, opencl_paeth_diff_test_3) {
     uint64_t nchannels = 3;
 
     auto buffer = rainman::ptr<uint16_t>(width * height * nchannels);
+    auto buffer_copy = rainman::ptr<uint16_t>(width * height * nchannels);
 
     for (uint64_t i = 0; i < buffer.size(); i++) {
         buffer[i] = i & 0xff;
+        buffer_copy[i] = i & 0xff;
     }
 
     hzmodels::LinearU16PaethDifferential::register_opencl_program();
@@ -96,14 +98,14 @@ TEST(PaethDifferentialTest, opencl_paeth_diff_test_3) {
     auto clock = std::chrono::high_resolution_clock();
     auto start = clock.now();
 
-    auto cpu_output = hzmodels::LinearU16PaethDifferential::cpu_filter(buffer, width, height, nchannels);
+    auto cpu_output = hzmodels::LinearU16PaethDifferential::cpu_filter(buffer, width, height, nchannels, true);
 
     std::cout << "[opencl_paeth_diff_test_3] CPU time: " << double((clock.now() - start).count()) / 1000000000.0 << " s"
               << std::endl;
 
     start = clock.now();
 
-    auto opencl_output = hzmodels::LinearU16PaethDifferential::opencl_filter(buffer, width, height, nchannels);
+    auto opencl_output = hzmodels::LinearU16PaethDifferential::opencl_filter(buffer_copy, width, height, nchannels);
 
     std::cout << "[opencl_paeth_diff_test_3] OPENCL time: " << double((clock.now() - start).count()) / 1000000000.0
               << " s" << std::endl;

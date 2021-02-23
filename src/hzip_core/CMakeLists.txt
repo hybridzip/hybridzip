@@ -33,7 +33,7 @@ add_library(hzip_core STATIC
         opencl/cl_helper.cpp
         executor.h
         errors/opencl.h
-        utils/semaphore.h utils/semaphore.cpp config.h config.cpp models/paeth.cpp)
+        utils/semaphore.h utils/semaphore.cpp config.h config.cpp models/paeth.cpp runtime.h runtime.cpp)
 
 target_compile_features(hzip_core PUBLIC cxx_std_20)
 target_link_libraries(hzip_core PUBLIC bitio loguru rainman)

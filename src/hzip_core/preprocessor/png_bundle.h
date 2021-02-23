@@ -98,7 +98,7 @@ public:
         _mem_buf.buffer = buf;
     }
 
-    PNGBundle read_pixels() {
+    PNGBundle read_bundle() {
         char header[8];
 
         _mem_buf.read(reinterpret_cast<uint8_t *>(header), 1, 8);
@@ -209,8 +209,6 @@ public:
             png_destroy_read_struct(&png_ptr, nullptr, nullptr);
             throw TransformErrors::InvalidOperationError("png_create_info_struct() failed");
         }
-
-
     }
 };
 

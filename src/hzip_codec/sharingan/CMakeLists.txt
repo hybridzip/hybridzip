@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-add_library(hzip_sharingan STATIC sharingan.h sharingan.cpp)
+add_library(hzip_sharingan STATIC sharingan.h sharingan.cpp state_transition.h state_transition.cpp)
 
 target_link_libraries(hzip_sharingan PRIVATE hzip_core)
 

@@ -1,6 +1,7 @@
 #include "color.h"
 #include <hzip_core/opencl/cl_helper.h>
 #include <hzip_core/config.h>
+#include <hzip_core/runtime.h>
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::cpu_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
@@ -112,7 +113,7 @@ hztrans::LinearU16ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint1
     kernel.setArg(2, stride_size);
 
 
-    std::unique_lock<std::mutex> lock(hzopencl::Runtime::mutex);
+    std::unique_lock<std::mutex> lock(HZRuntime::opencl_mutex);
 
     auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
     queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));
@@ -152,7 +153,7 @@ hztrans::LinearU16ColorTransformer::opencl_ycocg_to_rgb(const rainman::ptr<uint1
     kernel.setArg(1, n);
     kernel.setArg(2, stride_size);
 
-    std::unique_lock<std::mutex> lock(hzopencl::Runtime::mutex);
+    std::unique_lock<std::mutex> lock(HZRuntime::opencl_mutex);
 
     auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
     queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));

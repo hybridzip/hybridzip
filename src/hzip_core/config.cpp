@@ -1,10 +1,8 @@
 #include "config.h"
+#include "runtime.h"
 #include <cstdlib>
 #include <string>
 #include <hzip_core/opencl/cl_helper.h>
-#include <rainman/cache.h>
-
-rainman::cache Config::cache("cache.rain", 131072);
 
 uint64_t Config::api_threads = 1;
 uint64_t Config::api_port = 1729;
@@ -22,6 +20,7 @@ std::string Config::opencl_preferred_device = "";
 void Config::configure() {
     const char *_cache_file = std::getenv("HZIP_CACHE_FILE");
     const char *_cache_page_size = std::getenv("HZIP_CACHE_PAGE_SIZE");
+    const char *_cache_count = std::getenv("HZIP_CACHE_COUNT");
     const char *_api_threads = std::getenv("HZIP_API_THREADS");
     const char *_api_port = std::getenv("HZIP_API_PORT");
     const char *_api_timeout = std::getenv("HZIP_API_TIMEOUT");
@@ -31,11 +30,19 @@ void Config::configure() {
 
     if (_cache_file != nullptr) {
         uint64_t page_size = 131072;
+        uint64_t cache_count = 4;
+
         if (_cache_page_size != nullptr) {
             page_size = std::stoull(_cache_page_size);
         }
 
-        Config::cache = rainman::cache(_cache_file, page_size);
+        if (_cache_count != nullptr) {
+            cache_count = std::stoull(_cache_count);
+        }
+
+        HZRuntime::init_cache(_cache_file, cache_count, page_size);
+    } else {
+        HZRuntime::init_cache("hzip", 4, 131072);
     }
 
     if (_api_threads != nullptr) {

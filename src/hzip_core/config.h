@@ -5,8 +5,6 @@
 
 class Config {
 public:
-    static rainman::cache cache;
-
     static uint64_t api_threads;
     static uint64_t api_port;
     static uint32_t api_timeout;

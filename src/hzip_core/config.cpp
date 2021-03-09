@@ -15,7 +15,7 @@ uint64_t Config::host_max_memory = 1073741824;
 
 bool Config::opencl_support_enabled = false;
 uint64_t Config::opencl_kernels = 32;
-std::string Config::opencl_preferred_device = "";
+std::string Config::opencl_device_regex = "";
 
 void Config::configure() {
     const char *_cache_file = std::getenv("HZIP_CACHE_FILE");
@@ -40,9 +40,9 @@ void Config::configure() {
             cache_count = std::stoull(_cache_count);
         }
 
-        HZRuntime::init_cache(_cache_file, cache_count, page_size);
+        Runtime::init_cache(_cache_file, cache_count, page_size);
     } else {
-        HZRuntime::init_cache("hzip", 4, 131072);
+        Runtime::init_cache("hzip", 4, 131072);
     }
 
     if (_api_threads != nullptr) {
@@ -77,15 +77,15 @@ void Config::configure() {
     }
 
     const char *_opencl_kernels = std::getenv("HZIP_OPENCL_KERNELS");
-    const char *_opencl_preferred_device = std::getenv("HZIP_OPENCL_PREFERRED_DEVICE");
+    const char *_opencl_device_regex = std::getenv("HZIP_OPENCL_DEVICE_REGEX");
 
     if (_opencl_kernels != nullptr) {
         Config::opencl_kernels = std::stoull(_opencl_kernels);
     }
 
-    if (_opencl_preferred_device != nullptr) {
-        Config::opencl_preferred_device = _opencl_preferred_device;
-        hzopencl::DeviceProvider::set_preferred_device(Config::opencl_preferred_device);
+    if (_opencl_device_regex != nullptr) {
+        Config::opencl_device_regex = _opencl_device_regex;
+        hzopencl::DeviceProvider::filter_devices(Config::opencl_device_regex);
     }
 #endif
 }

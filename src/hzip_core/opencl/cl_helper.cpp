@@ -1,5 +1,6 @@
 #include "cl_helper.h"
 #include <iostream>
+#include <regex>
 
 #ifdef HZIP_ENABLE_OPENCL
 
@@ -8,14 +9,14 @@
 
 using namespace hzopencl;
 
-std::unordered_map<std::string, cl::Program> ProgramProvider::_program_map;
-std::unordered_map<std::string, std::string> ProgramProvider::_src_map;
+std::unordered_map<std::string, std::vector<cl::Program>> ProgramProvider::_program_map;
 std::mutex ProgramProvider::_mutex;
+uint64_t ProgramProvider::_device_index = 0;
+uint64_t ProgramProvider::_device_count = 0;
 
 std::vector<cl::Device> DeviceProvider::_devices;
+std::vector<std::mutex> DeviceProvider::_mutexes;
 std::mutex DeviceProvider::_mutex;
-uint64_t DeviceProvider::_device_index = 0;
-std::string DeviceProvider::_preferred_device_name;
 
 void DeviceProvider::list_available_devices() {
     std::vector<cl::Platform> platforms;
@@ -36,62 +37,51 @@ void DeviceProvider::list_available_devices() {
             std::cout << std::endl;
         }
         std::cout << std::endl;
-
-        _devices.insert(_devices.end(), platform_devices.begin(), platform_devices.end());
     }
 }
 
-cl::Device DeviceProvider::get() {
-    _mutex.lock();
+std::vector<cl::Device> DeviceProvider::get_devices() {
+    std::scoped_lock<std::mutex> lock(_mutex);
     if (_devices.empty()) {
-        _mutex.unlock();
         throw OpenCLErrors::InvalidOperationException("No devices were loaded");
     }
-    cl::Device device = _devices[_device_index];
-    if (_preferred_device_name.empty()) {
-        _device_index = (_device_index + 1) % _devices.size();
-    }
-    _mutex.unlock();
-    return device;
+
+    return _devices;
 }
 
 bool DeviceProvider::empty() {
-    _mutex.lock();
-    bool v = _devices.empty();
-    _mutex.unlock();
-    return v;
+    std::scoped_lock<std::mutex> lock(_mutex);
+    return _devices.empty();
 }
 
-void DeviceProvider::set_preferred_device(const std::string &dev_name) {
-    _preferred_device_name = dev_name;
-    bool not_found_device = true;
-    _mutex.lock();
+void DeviceProvider::filter_devices(const std::string &regex_pattern) {
+    std::scoped_lock<std::mutex> lock(_mutex);
+
     if (_devices.empty()) {
-        _mutex.unlock();
         throw OpenCLErrors::InvalidOperationException("No devices were loaded");
     }
-    for (int i = 0; i < _devices.size(); i++) {
-        auto device = _devices[i];
-        std::string dname = device.getInfo<CL_DEVICE_NAME>();
 
-        if (dname.find(_preferred_device_name) != std::string::npos) {
-            not_found_device = false;
-            _device_index = i;
-            break;
+    std::regex regex(regex_pattern);
+
+    std::vector<cl::Device> filtered_devices;
+
+    for (const auto& device : _devices) {
+        std::string dname = device.getInfo<CL_DEVICE_NAME>();
+        if (std::regex_search(dname.begin(), dname.end(), regex)) {
+            filtered_devices.push_back(device);
         }
     }
 
-    if (not_found_device) {
-        _preferred_device_name = "";
-    }
+    _devices = filtered_devices;
 
-    _mutex.unlock();
+    ProgramProvider::clear();
+    ProgramProvider::set_device_count(_devices.size());
 }
 
 void DeviceProvider::load_devices(uint32_t device_type) {
-    _mutex.lock();
+    std::scoped_lock<std::mutex> lock(_mutex);
+
     _devices.clear();
-    _device_index = 0;
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
 
@@ -101,59 +91,64 @@ void DeviceProvider::load_devices(uint32_t device_type) {
         _devices.insert(_devices.end(), platform_devices.begin(), platform_devices.end());
     }
 
+    _mutexes = std::vector<std::mutex>(_devices.size());
+
     ProgramProvider::clear();
-    _mutex.unlock();
+    ProgramProvider::set_device_count(_devices.size());
 }
 
-cl::Program ProgramProvider::get(const std::string &kernel) {
-    _mutex.lock();
-    if (!_program_map.contains(kernel)) {
-        _mutex.unlock();
-        throw OpenCLErrors::InvalidOperationException("Failed to load unregistered OpenCL kernel");
+std::mutex &DeviceProvider::get_mutex(uint64_t index) {
+    return _mutexes[index];
+}
+
+std::pair<cl::Program, std::mutex &> ProgramProvider::get(const std::string &program_name) {
+    std::scoped_lock<std::mutex> lock(_mutex);
+
+    if (!_program_map.contains(program_name)) {
+        throw OpenCLErrors::InvalidOperationException("Failed to load unregistered OpenCL program");
     }
-    _mutex.unlock();
-    return _program_map[kernel];
+
+    auto program = _program_map[program_name][_device_index];
+    auto output = std::pair<cl::Program, std::mutex &>(program, DeviceProvider::get_mutex(_device_index));
+
+    _device_index = (_device_index + 1) % _device_count;
+    return output;
 }
 
 void ProgramProvider::clear() {
-    _mutex.lock();
+    std::scoped_lock<std::mutex> lock(_mutex);
+
     _program_map.clear();
-    _mutex.unlock();
 }
 
 void ProgramProvider::register_program(const std::string &program_name, const std::string &src) {
-    _mutex.lock();
+    std::scoped_lock<std::mutex> lock(_mutex);
+
     if (!_program_map.contains(program_name)) {
-        cl::Context context(DeviceProvider::get());
-        auto program = cl::Program(context, src);
-        program.build(HZIP_OPENCL_BUILD_OPTIONS);
-        _program_map[program_name] = program;
-        _src_map[program_name] = src;
+        auto devices = DeviceProvider::get_devices();
+
+        for (const auto &device : devices) {
+            cl::Context context(device);
+            auto program = cl::Program(context, src);
+            program.build(HZIP_OPENCL_BUILD_OPTIONS);
+            _program_map[program_name].push_back(program);
+        }
     }
-    _mutex.unlock();
 }
 
-void ProgramProvider::compile(const std::string &program_name, const cl::Device &device) {
-    _mutex.lock();
-    if (!_program_map.contains(program_name)) {
-        throw OpenCLErrors::InvalidOperationException("Cannot set device for unregistered OpenCL program");
-    } else {
-        cl::Context context(device);
-        auto program = cl::Program(context, _src_map[program_name]);
-        program.build(HZIP_OPENCL_BUILD_OPTIONS);
-        _program_map[program_name] = program;
-    }
-    _mutex.unlock();
+void ProgramProvider::set_device_count(uint64_t device_count) {
+    std::scoped_lock<std::mutex> lock(_mutex);
+    _device_count = device_count;
 }
 
-cl::Kernel KernelProvider::get(const std::string &program_name) {
-    cl::Program program = ProgramProvider::get(program_name);
-    return cl::Kernel(program, "run");
+std::pair<cl::Kernel, std::mutex &> KernelProvider::get(const std::string &program_name) {
+    auto [program, mutex] = ProgramProvider::get(program_name);
+    return std::pair<cl::Kernel, std::mutex &>(cl::Kernel(program, "run"), mutex);
 }
 
-cl::Kernel KernelProvider::get(const std::string &program_name, const std::string &kernel) {
-    cl::Program program = ProgramProvider::get(program_name);
-    return cl::Kernel(program, kernel.c_str());
+std::pair<cl::Kernel, std::mutex &> KernelProvider::get(const std::string &program_name, const std::string &kernel) {
+    auto [program, mutex] = ProgramProvider::get(program_name);
+    return std::pair<cl::Kernel, std::mutex &>(cl::Kernel(program, kernel.c_str()), mutex);
 }
 
 #endif

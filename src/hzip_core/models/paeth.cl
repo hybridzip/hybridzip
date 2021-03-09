@@ -30,7 +30,7 @@ __kernel void paeth_differential16(
 	const u64 n,
 	const u64 s
 ) {
-	u64 tid = get_local_id(0);
+	u64 tid = get_global_id(0);
 	if (tid >= n) {
 		return;
 	}

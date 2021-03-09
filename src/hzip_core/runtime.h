@@ -7,7 +7,7 @@
 #include <string>
 #include <rainman/cache.h>
 
-class HZRuntime {
+class Runtime {
 private:
     static uint64_t _rainman_cache_count;
     static uint64_t _rainman_cache_index;
@@ -16,8 +16,6 @@ private:
     static std::mutex _rainman_cache_mutex;
 
 public:
-    static std::mutex opencl_mutex;
-
     static void init_cache(const std::string &filename, uint64_t count, uint64_t page_size);
 
     static std::pair<rainman::cache&, std::mutex&> get_cache();

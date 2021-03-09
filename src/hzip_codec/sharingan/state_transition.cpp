@@ -1,6 +1,7 @@
 #include "state_transition.h"
 #include <hzip_core/runtime.h>
 #include <hzip_core/config.h>
+#include <hzip_core/opencl/cl_helper.h>
 #include <hzip_core/kernel/hzrans/hzrans64.h>
 
 /*
@@ -94,7 +95,7 @@ SSTPair SharinganStateTransition::uniform_pair(uint64_t symbol) {
 
 std::pair<rainman::virtual_array<SSTPair>, std::mutex &>
 SharinganStateTransition::static_precode() {
-    auto[cache, mutex] = HZRuntime::get_cache();
+    auto[cache, mutex] = Runtime::get_cache();
 
     std::scoped_lock<std::mutex> lock(mutex);
 
@@ -146,8 +147,6 @@ SharinganStateTransition::static_precode() {
                 }
             }
         }
-
-
     }
 
     uint64_t residue_offset = _nchannels * per_channel_size;
@@ -180,7 +179,7 @@ SharinganStateTransition::static_precode() {
 
 std::pair<rainman::virtual_array<SSTPair>, std::mutex &>
 SharinganStateTransition::cpu_dynamic_precode() {
-    auto[cache, mutex] = HZRuntime::get_cache();
+    auto[cache, mutex] = Runtime::get_cache();
 
     std::scoped_lock<std::mutex> lock(mutex);
 
@@ -218,7 +217,7 @@ SharinganStateTransition::cpu_dynamic_precode() {
 
         for (uint64_t y_chunk_index = 0; y_chunk_index < y_chunks; y_chunk_index++) {
             uint64_t y_chunk_partial_offset = y_chunk_index * _chunk_height;
-            uint64_t y_chunk_offset = channel_offset + y_chunk_partial_offset;
+            uint64_t y_chunk_offset = channel_offset + y_chunk_partial_offset * _width;
             uint64_t chunk_h = y_chunk_partial_offset + _chunk_height > _height ? y_residue : _chunk_height;
 
             for (uint64_t x_chunk_index = 0; x_chunk_index < x_chunks; x_chunk_index++) {
@@ -242,10 +241,12 @@ SharinganStateTransition::cpu_dynamic_precode() {
                             hzrans64_create_ftable_nf(&state, f_map[left_symbol]);
                             hzrans64_add_to_seq(&state, leading_symbol);
 
-                            array[index] = SSTPair{
+                            auto val = SSTPair{
                                     .ls=static_cast<uint32_t>(state.ls),
                                     .bs=static_cast<uint32_t>(state.bs)
                             };
+
+                            array.set(val, index);
 
                             f_map[left_symbol][leading_symbol] += _learning_rate;
 
@@ -267,17 +268,19 @@ SharinganStateTransition::cpu_dynamic_precode() {
                                 hzrans64_create_ftable_nf(&state, f_map[up_symbol]);
                                 hzrans64_add_to_seq(&state, leading_symbol);
 
-                                array[index] = SSTPair{
+                                auto val = SSTPair{
                                         .ls=static_cast<uint32_t>(state.ls),
                                         .bs=static_cast<uint32_t>(state.bs)
                                 };
 
+                                array.set(val, index);
+
                                 f_map[up_symbol][leading_symbol] += _learning_rate;
                             } else {
-                                array[index] = uniform_pair(leading_symbol);
+                                array.set(uniform_pair(leading_symbol), index);
                             }
                         } else {
-                            array[index] = uniform_pair(leading_symbol);
+                            array.set(uniform_pair(leading_symbol), index);
                         }
                     }
                 }
@@ -312,17 +315,17 @@ SharinganStateTransition::cpu_dynamic_precode() {
                             uint64_t residual_symbol = _data[index] & 0xff;
 
                             if (x == 0 && y == 0) {
-                                array[index] = uniform_pair(residual_symbol);
+                                array.set(uniform_pair(residual_symbol), index);
                             } else {
                                 state.ftable = ls_arr;
 
                                 hzrans64_create_ftable_nf(&state, f_dist);
                                 hzrans64_add_to_seq(&state, residual_symbol);
 
-                                array[index] = SSTPair{
+                                array.set(SSTPair{
                                         .ls=static_cast<uint32_t>(state.ls),
                                         .bs=static_cast<uint32_t>(state.bs)
-                                };
+                                }, index);
                             }
 
                             f_dist[residual_symbol] += (_learning_rate << 1);
@@ -335,3 +338,19 @@ SharinganStateTransition::cpu_dynamic_precode() {
 
     return std::pair<rainman::virtual_array<SSTPair>, std::mutex &>(array, mutex);
 }
+
+#ifdef HZIP_ENABLE_OPENCL
+
+void SharinganStateTransition::register_opencl_program() {
+    hzopencl::ProgramProvider::register_program("sharingan_dynamic",
+
+#include "sharingan_dynamic.cl"
+
+    );
+}
+
+std::pair<rainman::virtual_array<SSTPair>, std::mutex &> SharinganStateTransition::opencl_dynamic_precode() {
+
+}
+
+#endif

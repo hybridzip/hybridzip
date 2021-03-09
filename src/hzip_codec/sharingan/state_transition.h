@@ -1,15 +1,15 @@
 #ifndef HZIP_SHARINGAN_STATE_TRANSITION_H
 #define HZIP_SHARINGAN_STATE_TRANSITION_H
 
-#define HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_CHUNK_WIDTH 0x40
-#define HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_CHUNK_HEIGHT 0x40
-#define HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_LOCALITY_CONTEXT_ORDER 1
+#define HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_CHUNK_WIDTH 0x100
+#define HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_CHUNK_HEIGHT 0x100
+#define HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_LOCALITY_CONTEXT_ORDER 3
 #define HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_LEARNING_RATE 0x20
 
 #include <rainman/rainman.h>
 #include <hzip_core/preprocessor/png_bundle.h>
 
-struct SSTPair {
+struct __attribute__((packed)) SSTPair {
     uint32_t ls;
     uint32_t bs;
 };
@@ -53,9 +53,17 @@ public:
 
     void inject_model(const rainman::ptr3d<uint64_t> &locality_maps, const rainman::ptr2d<uint64_t> &frequency_dists);
 
-    std::pair<rainman::virtual_array<SSTPair>, std::mutex&> static_precode();
+    std::pair<rainman::virtual_array<SSTPair>, std::mutex &> static_precode();
 
     std::pair<rainman::virtual_array<SSTPair>, std::mutex &> cpu_dynamic_precode();
+
+#ifdef HZIP_ENABLE_OPENCL
+
+    void register_opencl_program();
+
+    std::pair<rainman::virtual_array<SSTPair>, std::mutex &> opencl_dynamic_precode();
+
+#endif
 };
 
 #endif

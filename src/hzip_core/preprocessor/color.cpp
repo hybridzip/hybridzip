@@ -64,7 +64,8 @@ hztrans::LinearU16ColorTransformer::LinearU16ColorTransformer(
     }
 }
 
-rainman::ptr<uint16_t> hztrans::LinearU16ColorTransformer::rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) {
+rainman::ptr<uint16_t>
+hztrans::LinearU16ColorTransformer::rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) {
     if (_executor == OPENCL) {
         return opencl_rgb_to_ycocg(buffer);
     } else {
@@ -72,7 +73,8 @@ rainman::ptr<uint16_t> hztrans::LinearU16ColorTransformer::rgb_to_ycocg(const ra
     }
 }
 
-rainman::ptr<uint16_t> hztrans::LinearU16ColorTransformer::ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer, bool inplace) {
+rainman::ptr<uint16_t>
+hztrans::LinearU16ColorTransformer::ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer, bool inplace) {
     if (_executor == OPENCL) {
         return opencl_ycocg_to_rgb(buffer);
     } else {
@@ -82,7 +84,7 @@ rainman::ptr<uint16_t> hztrans::LinearU16ColorTransformer::ycocg_to_rgb(const ra
 
 #ifdef HZIP_ENABLE_OPENCL
 
-void hztrans::LinearU16ColorTransformer::register_kernel() {
+void hztrans::LinearU16ColorTransformer::register_opencl_program() {
     hzopencl::ProgramProvider::register_program("rgb_ycocg",
 
 #include "rgb_ycocg.cl"
@@ -92,9 +94,9 @@ void hztrans::LinearU16ColorTransformer::register_kernel() {
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
-    register_kernel();
+    register_opencl_program();
 
-    auto kernel = hzopencl::KernelProvider::get("rgb_ycocg", "rgb_to_ycocg16");
+    auto [kernel, device_mutex] = hzopencl::KernelProvider::get("rgb_ycocg", "rgb_to_ycocg16");
     auto context = kernel.getInfo<CL_KERNEL_CONTEXT>();
     auto device = context.getInfo<CL_CONTEXT_DEVICES>().front();
 
@@ -113,7 +115,7 @@ hztrans::LinearU16ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint1
     kernel.setArg(2, stride_size);
 
 
-    std::unique_lock<std::mutex> lock(HZRuntime::opencl_mutex);
+    std::scoped_lock<std::mutex> lock(device_mutex);
 
     auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
     queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));
@@ -133,9 +135,9 @@ hztrans::LinearU16ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint1
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::opencl_ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
-    register_kernel();
+    register_opencl_program();
 
-    auto kernel = hzopencl::KernelProvider::get("rgb_ycocg", "ycocg_to_rgb16");
+    auto[kernel, device_mutex] = hzopencl::KernelProvider::get("rgb_ycocg", "ycocg_to_rgb16");
     auto context = kernel.getInfo<CL_KERNEL_CONTEXT>();
     auto device = context.getInfo<CL_CONTEXT_DEVICES>().front();
 
@@ -153,7 +155,7 @@ hztrans::LinearU16ColorTransformer::opencl_ycocg_to_rgb(const rainman::ptr<uint1
     kernel.setArg(1, n);
     kernel.setArg(2, stride_size);
 
-    std::unique_lock<std::mutex> lock(HZRuntime::opencl_mutex);
+    std::scoped_lock<std::mutex> lock(device_mutex);
 
     auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
     queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));

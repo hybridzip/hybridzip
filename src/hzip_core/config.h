@@ -16,7 +16,7 @@ public:
 
     static bool opencl_support_enabled;
     static uint64_t opencl_kernels;
-    static std::string opencl_preferred_device;
+    static std::string opencl_device_regex;
 
     static void configure();
 };

@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 #include <unordered_map>
 #include <mutex>
 #include <CL/opencl.hpp>
@@ -13,42 +14,45 @@
 namespace hzopencl {
     class ProgramProvider {
     private:
-        static std::unordered_map<std::string, cl::Program> _program_map;
-        static std::unordered_map<std::string, std::string> _src_map;
+        static std::unordered_map<std::string, std::vector<cl::Program>> _program_map;
         static std::mutex _mutex;
+        static uint64_t _device_index;
+        static uint64_t _device_count;
+
     public:
-        static cl::Program get(const std::string &kernel);
+        static std::pair<cl::Program, std::mutex &> get(const std::string &program_name);
 
         static void register_program(const std::string &program_name, const std::string &src);
 
-        static void compile(const std::string &program_name, const cl::Device &device);
-
         static void clear();
+
+        static void set_device_count(uint64_t device_count);
     };
 
     class DeviceProvider {
     private:
         static std::vector<cl::Device> _devices;
+        static std::vector<std::mutex> _mutexes;
         static std::mutex _mutex;
-        static uint64_t _device_index;
-        static std::string _preferred_device_name;
     public:
         static void load_devices(uint32_t device_type = CL_DEVICE_TYPE_ALL);
 
         static void list_available_devices();
 
-        static cl::Device get();
+        static std::vector<cl::Device> get_devices();
+
+        static std::mutex &get_mutex(uint64_t index);
 
         static bool empty();
 
-        static void set_preferred_device(const std::string &dev_name);
+        static void filter_devices(const std::string &regex_pattern);
     };
 
     class KernelProvider {
     public:
-        static cl::Kernel get(const std::string &program_name);
+        static std::pair<cl::Kernel, std::mutex &> get(const std::string &program_name);
 
-        static cl::Kernel get(const std::string &program_name, const std::string &kernel);
+        static std::pair<cl::Kernel, std::mutex &> get(const std::string &program_name, const std::string &kernel);
     };
 }
 

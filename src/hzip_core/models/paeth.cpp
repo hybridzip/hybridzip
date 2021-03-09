@@ -131,7 +131,11 @@ hzmodels::LinearU16PaethDifferential::opencl_filter(
 
     for (uint64_t channel_index = 0; channel_index < nchannels; channel_index++) {
         uint64_t channel_offset = channel_index * width * height;
-        auto kernel = hzopencl::KernelProvider::get("paeth_differential", "paeth_differential16");
+        auto[kernel, device_mutex] = hzopencl::KernelProvider::get(
+                "paeth_differential",
+                "paeth_differential16"
+        );
+
         auto context = kernel.getInfo<CL_KERNEL_CONTEXT>();
         auto device = context.getInfo<CL_CONTEXT_DEVICES>().front();
 
@@ -154,7 +158,7 @@ hzmodels::LinearU16PaethDifferential::opencl_filter(
         kernel.setArg(4, n);
         kernel.setArg(5, stride_size);
 
-        std::unique_lock<std::mutex> lock(HZRuntime::opencl_mutex);
+        std::scoped_lock<std::mutex> lock(device_mutex);
 
         auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
         queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));

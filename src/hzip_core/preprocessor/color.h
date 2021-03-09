@@ -99,7 +99,7 @@ namespace hztrans {
 
 #ifdef HZIP_ENABLE_OPENCL
 
-        static void register_kernel();
+        static void register_opencl_program();
 
         [[nodiscard]] rainman::ptr<uint16_t>
         opencl_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace = false) const;

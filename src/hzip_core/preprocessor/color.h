@@ -67,7 +67,7 @@ namespace hztrans {
 
                     pair temp_co = forward_lift(pair<T>{.x=red, .y=blue});
                     pair y_cg = forward_lift(pair<T>{.x=green, .y=temp_co.x});
-                    return ColorTransformPixel<T>{.x=y_cg.x, .y=y_cg.y, .z=temp_co.y};
+                    return ColorTransformPixel<T>{.x=y_cg.x, .y=temp_co.y, .z=y_cg.y};
                 }
                 case YCOCG_TO_RGB: {
                     auto y = pixel.x;

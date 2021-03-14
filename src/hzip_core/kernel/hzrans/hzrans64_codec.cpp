@@ -5,7 +5,6 @@ void hzrans64_encoder::set_header(uint64_t alphabet_size, uint16_t scale, uint64
     state = rainman::ptr<hzrans64_t>();
 
     index = 0;
-    cross_encoder = nullptr;
     size = buffer_size;
     if (scale > 31) scale = 31;
 

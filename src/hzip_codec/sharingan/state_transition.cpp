@@ -3,6 +3,7 @@
 #include <hzip_core/config.h>
 #include <hzip_core/opencl/cl_helper.h>
 #include <hzip_core/kernel/hzrans/hzrans64.h>
+#include <iostream>
 
 /*
  * StateTransitionPair sequence (Static Model):- Leading Bytes (chan-1, chan-2, ..., chan-n) Residues (...)
@@ -212,6 +213,7 @@ SharinganStateTransition::cpu_dynamic_precode() {
 
     // Perform line-scan on each chunk.
     // Encode leading symbols first for more performance.
+
     for (uint64_t channel_index = 0; channel_index < _nchannels; channel_index++) {
         uint64_t channel_offset = channel_index * per_channel_offset;
 
@@ -227,16 +229,16 @@ SharinganStateTransition::cpu_dynamic_precode() {
                 uint64_t chunk_w = x_chunk_partial_offset + _chunk_width > _width ? x_residue : _chunk_width;
 
                 // Create maps.
-                uint64_t f_map[256][256] = {1};
+                uint64_t f_map[256][256] = {0};
 
                 for (uint64_t y = 0; y < chunk_h; y++) {
                     uint64_t y_offset = x_chunk_offset + y * _width;
                     for (uint64_t x = 0; x < chunk_w; x++) {
                         uint64_t index = y_offset + x;
-                        uint64_t leading_symbol = _data[index] >> shift;
+                        uint64_t leading_symbol = (_data[index] >> shift) & 0xff;
 
                         if (x > 0) {
-                            uint64_t left_symbol = _data[index - 1] >> shift;
+                            uint64_t left_symbol = (_data[index - 1] >> shift) & 0xff;
 
                             hzrans64_create_ftable_nf(&state, f_map[left_symbol]);
                             hzrans64_add_to_seq(&state, leading_symbol);
@@ -252,18 +254,18 @@ SharinganStateTransition::cpu_dynamic_precode() {
 
                             if (y > 0) {
                                 if (_locality_context_order > 1) {
-                                    uint64_t up_symbol = _data[index - _width] >> shift;
+                                    uint64_t up_symbol = (_data[index - _width] >> shift) & 0xff;
                                     f_map[up_symbol][leading_symbol] += _learning_rate;
                                 }
 
                                 if (_locality_context_order > 2) {
-                                    uint64_t diag_symbol = _data[index - _width - 1] >> shift;
+                                    uint64_t diag_symbol = (_data[index - _width - 1] >> shift) & 0xff;
                                     f_map[diag_symbol][leading_symbol] += (_learning_rate >> 1);
                                 }
                             }
                         } else if (y > 0) {
                             if (_locality_context_order > 1) {
-                                uint64_t up_symbol = _data[index - _width] >> shift;
+                                uint64_t up_symbol = (_data[index - _width] >> shift) & 0xff;
 
                                 hzrans64_create_ftable_nf(&state, f_map[up_symbol]);
                                 hzrans64_add_to_seq(&state, leading_symbol);

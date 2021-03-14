@@ -30,7 +30,7 @@ void hzrans64_codec_init(hzrans64_t *state, uint64_t size, uint64_t scale);
 
 void hzrans64_encode_s(hzrans64_t *state, HZ_Stack<uint32_t> *data);
 
-void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq);
+void hzrans64_create_ftable_nf(hzrans64_t *state, const uint64_t *freq);
 
 void hzrans64_add_to_seq(hzrans64_t *state, uint64_t symbol);
 

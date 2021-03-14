@@ -9,7 +9,7 @@
 
 class hzrans64_encoder {
 private:
-    hz_cross_codec cross_encoder;
+    hz_cross_codec cross_encoder{};
     rainman::ptr<uint64_t> distptr{};
     uint64_t size{};
     int64_t index{};

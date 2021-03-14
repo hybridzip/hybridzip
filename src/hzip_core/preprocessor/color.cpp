@@ -5,7 +5,13 @@
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::cpu_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
-    auto output = rainman::ptr<uint16_t>(buffer.size());
+    rainman::ptr<uint16_t> output;
+
+    if (inplace) {
+        output = buffer;
+    } else {
+        output = rainman::ptr<uint16_t>(buffer.size());
+    }
 
     auto transformer = RGBColorTransformer<uint16_t>(HZ_COLOR_TRANSFORM::RGB_TO_YCOCG);
     uint64_t lz = _width * _height;
@@ -20,8 +26,8 @@ hztrans::LinearU16ColorTransformer::cpu_rgb_to_ycocg(const rainman::ptr<uint16_t
         pixel = transformer.transform(pixel);
 
         output[i] = pixel.x;
-        output[i + lz] = pixel.z;
-        output[i + lz2] = pixel.y;
+        output[i + lz] = pixel.y;
+        output[i + lz2] = pixel.z;
     }
 
     return output;
@@ -29,7 +35,13 @@ hztrans::LinearU16ColorTransformer::cpu_rgb_to_ycocg(const rainman::ptr<uint16_t
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::cpu_ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
-    auto output = rainman::ptr<uint16_t>(buffer.size());
+    rainman::ptr<uint16_t> output;
+
+    if (inplace) {
+        output = buffer;
+    } else {
+        output = rainman::ptr<uint16_t>(buffer.size());
+    }
 
     auto transformer = RGBColorTransformer<uint16_t>(HZ_COLOR_TRANSFORM::YCOCG_TO_RGB);
     uint64_t lz = _width * _height;
@@ -67,18 +79,18 @@ hztrans::LinearU16ColorTransformer::LinearU16ColorTransformer(
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) {
     if (_executor == OPENCL) {
-        return opencl_rgb_to_ycocg(buffer);
+        return opencl_rgb_to_ycocg(buffer, inplace);
     } else {
-        return cpu_rgb_to_ycocg(buffer);
+        return cpu_rgb_to_ycocg(buffer, inplace);
     }
 }
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer, bool inplace) {
     if (_executor == OPENCL) {
-        return opencl_ycocg_to_rgb(buffer);
+        return opencl_ycocg_to_rgb(buffer, inplace);
     } else {
-        return cpu_ycocg_to_rgb(buffer);
+        return cpu_ycocg_to_rgb(buffer, inplace);
     }
 }
 

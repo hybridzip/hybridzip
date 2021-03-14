@@ -38,9 +38,9 @@ void hzrans64_encode_s(hzrans64_t *state, HZ_Stack<uint32_t> *data) {
 }
 
 
-void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
+void hzrans64_create_ftable_nf(hzrans64_t *state, const uint64_t *freq) {
     uint64_t sum = state->size;
-    for (int i = 0; i < state->size; i++) {
+    for (uint64_t i = 0; i < state->size; i++) {
         sum += freq[i];
     }
 
@@ -48,7 +48,7 @@ void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
     uint64_t ssum = 0;
     uint64_t mul_factor = (1ull << state->scale) - state->size;
 
-    for (int i = 0; i < state->size; i++) {
+    for (uint64_t i = 0; i < state->size; i++) {
         uint64_t value = 1 + (freq[i] + 1) * mul_factor / sum;
         ssum += value - 1;
         state->ftable[i] = value;
@@ -56,6 +56,7 @@ void hzrans64_create_ftable_nf(hzrans64_t *state, uint64_t *freq) {
 
     //disperse residues.
     ssum = mul_factor - ssum;
+
     for (uint64_t i = 0; ssum > 0; i = (i + 1) % state->size, ssum--) {
         state->ftable[i]++;
     }

@@ -85,7 +85,8 @@ namespace hzmodels {
                 uint64_t width,
                 uint64_t height,
                 uint64_t nchannels,
-                bool inplace = false
+                bool inplace = false,
+                uint8_t bit_depth = 16
         );
 
         static rainman::ptr<uint16_t> cpu_filter(
@@ -93,7 +94,8 @@ namespace hzmodels {
                 uint64_t width,
                 uint64_t height,
                 uint64_t nchannels,
-                bool inplace = false
+                bool inplace = false,
+                uint8_t bit_depth = 16
         );
 
 #ifdef HZIP_ENABLE_OPENCL
@@ -104,7 +106,8 @@ namespace hzmodels {
                 uint64_t width,
                 uint64_t height,
                 uint64_t nchannels,
-                bool inplace = false
+                bool inplace = false,
+                uint8_t bit_depth = 16
         );
 #endif
     };

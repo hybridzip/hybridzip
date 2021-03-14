@@ -1,5 +1,6 @@
 R"(
 
+#define u8 unsigned char
 #define u16 unsigned short
 #define u32 unsigned int
 #define u64 unsigned long int
@@ -27,6 +28,7 @@ __kernel void paeth_differential16(
 	__global u16 *g_output,
 	const u64 width,
 	const u64 height,
+	const u8 bit_depth,
 	const u64 n,
 	const u64 s
 ) {
@@ -53,7 +55,7 @@ __kernel void paeth_differential16(
 			u32 b = g_input[index - width];
 			u32 c = g_input[index - width - 1];
 			
-			u32 d = a + b - c;
+			u32 d = absdiff(a + b, c);
 			u32 da = absdiff(a, d);
 			u32 db = absdiff(b, d);
 			u32 dc = absdiff(c, d);
@@ -68,20 +70,44 @@ __kernel void paeth_differential16(
 				d = c;
 			}
 			
-			g_output[index] = t | d;
+			u16 diff;
+			if (t >= d) {
+				diff = t - d;
+			} else {
+				diff = (1 << bit_depth) + t - d;
+			}
+			
+			g_output[index] = diff;
 			continue;
 		}
 		
 		if (x > 0 && y == 0) {
 			u16 d = g_input[index - 1];
-			g_output[index] = t | d;
+			
+			u16 diff;
+			if (t >= d) {
+				diff = t - d;
+			} else {
+				diff = (1 << bit_depth) + t - d;
+			}
+			
+			g_output[index] = diff;
 			continue;
 		}
 		
 		
 		if (x == 0 && y > 0) {
 			u16 d = g_input[index - width];
-			g_output[index] = t | d;
+			
+			u16 diff;
+			if (t >= d) {
+				diff = t - d;
+			} else {
+				diff = (1 << bit_depth) + t - d;
+			}
+			
+			g_output[index] = diff;
+			
 			continue;
 		}
 		

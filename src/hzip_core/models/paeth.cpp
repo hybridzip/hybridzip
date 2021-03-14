@@ -10,7 +10,8 @@ hzmodels::LinearU16PaethDifferential::filter(
         uint64_t width,
         uint64_t height,
         uint64_t nchannels,
-        bool inplace
+        bool inplace,
+        uint8_t bit_depth
 ) {
     Executor executor = CPU;
     if (Config::opencl_support_enabled) {
@@ -22,9 +23,9 @@ hzmodels::LinearU16PaethDifferential::filter(
     }
 
     if (executor == OPENCL) {
-        return opencl_filter(buffer, width, height, nchannels, inplace);
+        return opencl_filter(buffer, width, height, nchannels, inplace, bit_depth);
     } else {
-        return cpu_filter(buffer, width, height, nchannels, inplace);
+        return cpu_filter(buffer, width, height, nchannels, inplace, bit_depth);
     }
 }
 
@@ -34,7 +35,8 @@ hzmodels::LinearU16PaethDifferential::cpu_filter(
         uint64_t width,
         uint64_t height,
         uint64_t nchannels,
-        bool inplace
+        bool inplace,
+        uint8_t bit_depth
 ) {
     rainman::ptr<uint16_t> output;
 
@@ -49,13 +51,14 @@ hzmodels::LinearU16PaethDifferential::cpu_filter(
         for (int32_t y = height - 1; y >= 0; y--) {
             uint64_t offset = channel_offset + y * width;
             for (int32_t x = width - 1; x >= 0; x--) {
+                uint32_t t = buffer[offset + x];
+
                 if (y > 0 && x > 0) {
-                    uint32_t t = buffer[offset + x];
                     uint32_t a = buffer[offset + x - 1];
                     uint32_t b = buffer[offset + x - width];
                     uint32_t c = buffer[offset + x - width - 1];
 
-                    uint32_t d = a + b - c;
+                    uint32_t d = absdiff(a + b, c);
                     uint32_t da = absdiff(a, d);
                     uint32_t db = absdiff(b, d);
                     uint32_t dc = absdiff(c, d);
@@ -69,31 +72,47 @@ hzmodels::LinearU16PaethDifferential::cpu_filter(
                         d = c;
                     }
 
-                    uint16_t diff = t | d;
+                    uint16_t diff;
+                    if (t >= d) {
+                        diff = t - d;
+                    } else {
+                        diff = (1 << bit_depth) + t - d;
+                    }
+
                     output[offset + x] = diff;
                     continue;
                 }
 
                 if (y == 0 && x > 0) {
-                    uint16_t t = buffer[offset + x];
                     uint16_t d = buffer[offset + x - 1];
 
-                    uint16_t diff = t | d;
+                    uint16_t diff;
+                    if (t >= d) {
+                        diff = t - d;
+                    } else {
+                        diff = (1 << bit_depth) + t - d;
+                    }
+
                     output[offset + x] = diff;
                     continue;
                 }
 
                 if (y > 0 && x == 0) {
-                    uint16_t t = buffer[offset + x];
                     uint16_t d = buffer[offset + x - width];
 
-                    uint16_t diff = t | d;
+                    uint16_t diff;
+                    if (t >= d) {
+                        diff = t - d;
+                    } else {
+                        diff = (1 << bit_depth) + t - d;
+                    }
+
                     output[offset + x] = diff;
                     continue;
                 }
 
                 if (y == 0 && x == 0) {
-                    output[offset + x] = buffer[offset + x];
+                    output[offset + x] = t;
                 }
             }
         }
@@ -118,7 +137,8 @@ hzmodels::LinearU16PaethDifferential::opencl_filter(
         uint64_t width,
         uint64_t height,
         uint64_t nchannels,
-        bool inplace
+        bool inplace,
+        uint8_t bit_depth
 ) {
     register_opencl_program();
 
@@ -155,8 +175,9 @@ hzmodels::LinearU16PaethDifferential::opencl_filter(
         kernel.setArg(1, buf_output);
         kernel.setArg(2, width);
         kernel.setArg(3, height);
-        kernel.setArg(4, n);
-        kernel.setArg(5, stride_size);
+        kernel.setArg(4, bit_depth);
+        kernel.setArg(5, n);
+        kernel.setArg(6, stride_size);
 
         std::scoped_lock<std::mutex> lock(device_mutex);
 

@@ -1,7 +1,9 @@
 R"(
 
 #define u8 unsigned char
+#define i16 short
 #define u16 unsigned short
+#define u32 unsigned int
 #define u64 unsigned long int
 
 typedef struct __attribute__ ((packed)) _pair16 {
@@ -11,6 +13,7 @@ typedef struct __attribute__ ((packed)) _pair16 {
 
 pair16 forward_lift16(pair16 p) {
 	pair16 out;
+	
 	out.y = p.y - p.x;
 	out.x = p.x + (out.y >> 1);
 	

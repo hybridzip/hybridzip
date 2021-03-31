@@ -2,9 +2,9 @@
 #define HYBRIDZIP_COLOR_TRANSFORM_H
 
 #include <cstdint>
-#include <hzip_core/errors/transform.h>
-#include <hzip_core/executor.h>
 #include <rainman/rainman.h>
+#include <hzip_core/errors/transform.h>
+#include <hzip_core/runtime/runtime.h>
 
 namespace hztrans {
     enum HZ_COLOR_SPACE {
@@ -87,7 +87,7 @@ namespace hztrans {
 
     class LinearU16ColorTransformer {
     private:
-        Executor _executor;
+        hzruntime::Executor _executor;
         uint64_t _width;
         uint64_t _height;
 

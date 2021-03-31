@@ -1,7 +1,7 @@
 #include <chrono>
 #include <gtest/gtest.h>
 #include <hzip_core/models/paeth.h>
-#include <hzip_core/config.h>
+#include <hzip_core/runtime/runtime.h>
 
 class PaethDifferentialTest : public testing::Test {
 };
@@ -9,7 +9,7 @@ class PaethDifferentialTest : public testing::Test {
 #ifdef HZIP_ENABLE_OPENCL
 
 TEST(PaethDifferentialTest, opencl_paeth_diff_test_1) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 1920;
     uint64_t height = 1080;
@@ -44,7 +44,7 @@ TEST(PaethDifferentialTest, opencl_paeth_diff_test_1) {
 }
 
 TEST(PaethDifferentialTest, opencl_paeth_diff_test_2) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 1;
     uint64_t height = 1;
@@ -79,7 +79,7 @@ TEST(PaethDifferentialTest, opencl_paeth_diff_test_2) {
 }
 
 TEST(PaethDifferentialTest, opencl_paeth_diff_test_3) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 1;
     uint64_t height = 16384;

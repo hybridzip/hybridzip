@@ -1,7 +1,6 @@
 #include "color.h"
 #include <hzip_core/opencl/cl_helper.h>
-#include <hzip_core/config.h>
-#include <hzip_core/runtime.h>
+#include <hzip_core/runtime/runtime.h>
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::cpu_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
@@ -66,19 +65,19 @@ hztrans::LinearU16ColorTransformer::cpu_ycocg_to_rgb(const rainman::ptr<uint16_t
 hztrans::LinearU16ColorTransformer::LinearU16ColorTransformer(
         uint64_t width,
         uint64_t height
-) : _width(width), _height(height), _executor(get_best_executor()) {
-    if (Config::opencl_support_enabled) {
+) : _width(width), _height(height), _executor(hzruntime::get_best_executor()) {
+    if (hzruntime::Config::opencl_support_enabled) {
         if (width * height > 1000000) {
-            _executor = OPENCL;
+            _executor = hzruntime::OPENCL;
         } else {
-            _executor = CPU;
+            _executor = hzruntime::CPU;
         }
     }
 }
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) {
-    if (_executor == OPENCL) {
+    if (_executor == hzruntime::OPENCL) {
         return opencl_rgb_to_ycocg(buffer, inplace);
     } else {
         return cpu_rgb_to_ycocg(buffer, inplace);
@@ -87,7 +86,7 @@ hztrans::LinearU16ColorTransformer::rgb_to_ycocg(const rainman::ptr<uint16_t> &b
 
 rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer, bool inplace) {
-    if (_executor == OPENCL) {
+    if (_executor == hzruntime::OPENCL) {
         return opencl_ycocg_to_rgb(buffer, inplace);
     } else {
         return cpu_ycocg_to_rgb(buffer, inplace);
@@ -116,7 +115,7 @@ hztrans::LinearU16ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint1
     uint64_t local_size = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
 
     uint64_t n = _width * _height;
-    uint64_t stride_size = (n / Config::opencl_kernels) + (n % Config::opencl_kernels != 0);
+    uint64_t stride_size = (n / hzruntime::Config::opencl_kernels) + (n % hzruntime::Config::opencl_kernels != 0);
     uint64_t true_size = (n / stride_size) + (n % stride_size != 0);
     uint64_t global_size = (true_size / local_size + (true_size % local_size != 0)) * local_size;
 
@@ -157,7 +156,7 @@ hztrans::LinearU16ColorTransformer::opencl_ycocg_to_rgb(const rainman::ptr<uint1
     uint64_t local_size = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
 
     uint64_t n = _width * _height;
-    uint64_t stride_size = n / Config::opencl_kernels;
+    uint64_t stride_size = n / hzruntime::Config::opencl_kernels;
     uint64_t true_size = (n / stride_size) + (n % stride_size != 0);
     uint64_t global_size = (true_size / local_size + (true_size % local_size != 0)) * local_size;
 

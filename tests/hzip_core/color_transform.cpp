@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <hzip_core/preprocessor/transforms.h>
-#include <hzip_core/config.h>
+#include <hzip_core/runtime/runtime.h>
 
 
 class ColorTransformTest : public testing::Test {
@@ -9,7 +9,7 @@ class ColorTransformTest : public testing::Test {
 #ifdef HZIP_ENABLE_OPENCL
 
 TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 1024;
     uint64_t height = 1024;
@@ -30,7 +30,7 @@ TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16) {
 }
 
 TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_1) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 123;
     uint64_t height = 132;
@@ -51,7 +51,7 @@ TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_1) {
 }
 
 TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_2) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 123;
     uint64_t height = 132;
@@ -72,7 +72,7 @@ TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_2) {
 }
 
 TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_3) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 123;
     uint64_t height = 132;
@@ -93,7 +93,7 @@ TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_3) {
 }
 
 TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_4) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 123;
     uint64_t height = 132;
@@ -114,7 +114,7 @@ TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_4) {
 }
 
 TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_5) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 123;
     uint64_t height = 132;
@@ -135,7 +135,7 @@ TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_5) {
 }
 
 TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_6) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 1024;
     uint64_t height = 1024;
@@ -157,7 +157,7 @@ TEST(ColorTransformTest, hzip_color_opencl_rgb_to_ycocg16_6) {
 #endif
 
 TEST(ColorTransformTest, hzip_color_cpu_rgb_to_ycocg16) {
-    Config::configure();
+    hzruntime::Config::configure();
 
     uint64_t width = 128;
     uint64_t height = 128;

@@ -2,16 +2,15 @@
 #include <hzip_codec/sharingan/sharingan.h>
 #include <hzip_codec/sharingan/state_transition.h>
 #include <filesystem>
-#include <hzip_core/config.h>
-#include <hzip_core/runtime.h>
+#include <hzip_core/runtime/runtime.h>
 #include <cmath>
 
 class SharinganCodecTest : public testing::Test {
 };
 
 TEST(SharinganCodecTest, sharingan_state_transition_cpu_precode) {
-    Config::configure();
-    Runtime::init_cache("test", 1, 4194304);
+    hzruntime::Config::configure();
+    hzruntime::CacheProvider::init_cache("test", 1, 4194304);
 
     const char *filename = "/home/supercmmetry/Projects/hzip-research/datasets/png/7.png";
 

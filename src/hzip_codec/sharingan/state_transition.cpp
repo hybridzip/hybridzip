@@ -1,6 +1,5 @@
 #include "state_transition.h"
-#include <hzip_core/runtime.h>
-#include <hzip_core/config.h>
+#include <hzip_core/runtime/runtime.h>
 #include <hzip_core/opencl/cl_helper.h>
 #include <hzip_core/kernel/hzrans/hzrans64.h>
 #include <iostream>
@@ -96,7 +95,7 @@ SSTPair SharinganStateTransition::uniform_pair(uint64_t symbol) {
 
 std::pair<rainman::virtual_array<SSTPair>, std::mutex &>
 SharinganStateTransition::static_precode() {
-    auto[cache, mutex] = Runtime::get_cache();
+    auto[cache, mutex] = hzruntime::CacheProvider::get_cache();
 
     std::scoped_lock<std::mutex> lock(mutex);
 
@@ -180,7 +179,7 @@ SharinganStateTransition::static_precode() {
 
 std::pair<rainman::virtual_array<SSTPair>, std::mutex &>
 SharinganStateTransition::cpu_dynamic_precode() {
-    auto[cache, mutex] = Runtime::get_cache();
+    auto[cache, mutex] = hzruntime::CacheProvider::get_cache();
 
     std::scoped_lock<std::mutex> lock(mutex);
 
@@ -346,13 +345,39 @@ SharinganStateTransition::cpu_dynamic_precode() {
 void SharinganStateTransition::register_opencl_program() {
     hzopencl::ProgramProvider::register_program("sharingan_dynamic",
 
+#include "hzip_core/opencl/types.cl"
+#include "hzip_core/opencl/hzrans64.cl"
 #include "sharingan_dynamic.cl"
 
     );
 }
 
 std::pair<rainman::virtual_array<SSTPair>, std::mutex &> SharinganStateTransition::opencl_dynamic_precode() {
+    register_opencl_program();
 
+    auto[kernel, device_mutex] = hzopencl::KernelProvider::get("sharingan_dynamic", "sharingan_dynamic");
+    auto context = kernel.getInfo<CL_KERNEL_CONTEXT>();
+    auto device = context.getInfo<CL_CONTEXT_DEVICES>().front();
+
+    uint64_t local_size = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
+
+    uint8_t shift = _bit_depth > 8 ? _bit_depth - 8 : 0;
+    uint64_t total_size = _nchannels * _width * _height;
+    if (_bit_depth > 8) {
+        total_size <<= 1;
+    }
+
+    auto [cache, cache_mutex] = hzruntime::CacheProvider::get_cache();
+    auto array = rainman::virtual_array<SSTPair>(cache, total_size);
+
+    for (uint64_t channel_index = 0; channel_index < _nchannels; channel_index++) {
+        std::scoped_lock<std::mutex, std::mutex> lock(device_mutex, cache_mutex);
+
+        uint64_t n = _width * _height;
+        uint64_t stride_size = (n / hzruntime::Config::opencl_kernels) + (n % hzruntime::Config::opencl_kernels != 0);
+        uint64_t true_size = (n / stride_size) + (n % stride_size != 0);
+        uint64_t global_size = (true_size / local_size + (true_size % local_size != 0)) * local_size;
+    }
 }
 
 #endif

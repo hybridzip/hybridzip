@@ -1,14 +1,16 @@
-#include "runtime.h"
+#include "cache_provider.h"
 
-uint64_t Runtime::_rainman_cache_index = 0;
-uint64_t Runtime::_rainman_cache_count = 0;
+using namespace hzruntime;
 
-std::vector<rainman::cache> Runtime::_rainman_caches;
-std::vector<std::mutex> Runtime::_rainman_cache_mutexes;
+uint64_t CacheProvider::_rainman_cache_index = 0;
+uint64_t CacheProvider::_rainman_cache_count = 0;
 
-std::mutex Runtime::_rainman_cache_mutex;
+std::vector<rainman::cache> CacheProvider::_rainman_caches;
+std::vector<std::mutex> CacheProvider::_rainman_cache_mutexes;
 
-void Runtime::init_cache(const std::string &filename, uint64_t count, uint64_t page_size) {
+std::mutex CacheProvider::_rainman_cache_mutex;
+
+void CacheProvider::init_cache(const std::string &filename, uint64_t count, uint64_t page_size) {
     _rainman_cache_mutexes = std::vector<std::mutex>(count);
     _rainman_caches.clear();
 
@@ -19,7 +21,7 @@ void Runtime::init_cache(const std::string &filename, uint64_t count, uint64_t p
     _rainman_cache_count = count;
 }
 
-std::pair<rainman::cache&, std::mutex &> Runtime::get_cache() {
+std::pair<rainman::cache&, std::mutex &> CacheProvider::get_cache() {
     std::scoped_lock<std::mutex> lock(_rainman_cache_mutex);
 
     auto pair = std::pair<rainman::cache&, std::mutex &>(

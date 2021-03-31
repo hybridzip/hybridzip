@@ -1,7 +1,5 @@
-#include <hzip_core/config.h>
-#include <hzip_core/executor.h>
 #include <hzip_core/opencl/cl_helper.h>
-#include <hzip_core/runtime.h>
+#include <hzip_core/runtime/runtime.h>
 #include "paeth.h"
 
 rainman::ptr<uint16_t>
@@ -13,16 +11,16 @@ hzmodels::LinearU16PaethDifferential::filter(
         bool inplace,
         uint8_t bit_depth
 ) {
-    Executor executor = CPU;
-    if (Config::opencl_support_enabled) {
+    hzruntime::Executor executor = hzruntime::CPU;
+    if (hzruntime::Config::opencl_support_enabled) {
         if (buffer.size() > 49152) {
-            executor = OPENCL;
+            executor = hzruntime::OPENCL;
         } else {
-            executor = CPU;
+            executor = hzruntime::CPU;
         }
     }
 
-    if (executor == OPENCL) {
+    if (executor == hzruntime::OPENCL) {
         return opencl_filter(buffer, width, height, nchannels, inplace, bit_depth);
     } else {
         return cpu_filter(buffer, width, height, nchannels, inplace, bit_depth);
@@ -163,7 +161,7 @@ hzmodels::LinearU16PaethDifferential::opencl_filter(
         uint64_t local_size = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
 
         uint64_t n = width * height;
-        uint64_t stride_size = (n / Config::opencl_kernels) + (n % Config::opencl_kernels != 0);
+        uint64_t stride_size = (n / hzruntime::Config::opencl_kernels) + (n % hzruntime::Config::opencl_kernels != 0);
         uint64_t true_size = (n / stride_size) + (n % stride_size != 0);
         uint64_t global_size = (true_size / local_size + (true_size % local_size != 0)) * local_size;
 

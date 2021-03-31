@@ -2,7 +2,7 @@
 #include <loguru/loguru.hpp>
 #include <rainman/rainman.h>
 #include <hzip_network/api/api.h>
-#include <hzip_core/config.h>
+#include <hzip_core/runtime/config.h>
 
 std::function<void()> _hzapi_graceful_shutdown;
 

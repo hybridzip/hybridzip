@@ -1,8 +1,10 @@
 #include "config.h"
-#include "runtime.h"
+#include "cache_provider.h"
 #include <cstdlib>
 #include <string>
 #include <hzip_core/opencl/cl_helper.h>
+
+using namespace hzruntime;
 
 uint64_t Config::api_threads = 1;
 uint64_t Config::api_port = 1729;
@@ -40,9 +42,9 @@ void Config::configure() {
             cache_count = std::stoull(_cache_count);
         }
 
-        Runtime::init_cache(_cache_file, cache_count, page_size);
+        CacheProvider::init_cache(_cache_file, cache_count, page_size);
     } else {
-        Runtime::init_cache("hzip", 4, 131072);
+        CacheProvider::init_cache("hzip", 4, 131072);
     }
 
     if (_api_threads != nullptr) {

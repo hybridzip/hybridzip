@@ -1,10 +1,8 @@
 R"(
 
-#define u8 unsigned char
-#define u16 unsigned short
-#define u32 unsigned int
-#define u64 unsigned long int
-	
+// Required dependencies:
+// types.cl
+
 u32 absdiff(u32 x, u32 y) {
 	return x > y ? x - y : y - x;
 }

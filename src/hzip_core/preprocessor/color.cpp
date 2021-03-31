@@ -99,6 +99,7 @@ hztrans::LinearU16ColorTransformer::ycocg_to_rgb(const rainman::ptr<uint16_t> &b
 void hztrans::LinearU16ColorTransformer::register_opencl_program() {
     hzopencl::ProgramProvider::register_program("rgb_ycocg",
 
+#include "hzip_core/opencl/types.cl"
 #include "rgb_ycocg.cl"
 
     );
@@ -108,7 +109,7 @@ rainman::ptr<uint16_t>
 hztrans::LinearU16ColorTransformer::opencl_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
     register_opencl_program();
 
-    auto [kernel, device_mutex] = hzopencl::KernelProvider::get("rgb_ycocg", "rgb_to_ycocg16");
+    auto[kernel, device_mutex] = hzopencl::KernelProvider::get("rgb_ycocg", "rgb_to_ycocg16");
     auto context = kernel.getInfo<CL_KERNEL_CONTEXT>();
     auto device = context.getInfo<CL_CONTEXT_DEVICES>().front();
 

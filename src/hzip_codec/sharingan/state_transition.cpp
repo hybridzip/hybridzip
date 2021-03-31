@@ -3,6 +3,7 @@
 #include <hzip_core/opencl/cl_helper.h>
 #include <hzip_core/kernel/hzrans/hzrans64.h>
 #include <iostream>
+#include <hzip_core/utils/utils.h>
 
 /*
  * StateTransitionPair sequence (Static Model):- Leading Bytes (chan-1, chan-2, ..., chan-n) Residues (...)
@@ -24,9 +25,8 @@ SharinganStateTransition::SharinganStateTransition(
         uint8_t locality_context_order,
         uint64_t learning_rate
 ) : _data(bundle.buf), _width(bundle.ihdr.width), _height(bundle.ihdr.height), _nchannels(bundle.nchannels),
-    _chunk_width(chunk_width), _chunk_height(chunk_height), _is_dynamic(is_dynamic),
-    _locality_context_order(locality_context_order), _bit_depth(bundle.ihdr.bit_depth),
-    _learning_rate(learning_rate) {
+    _chunk_width(chunk_width), _chunk_height(chunk_height), _locality_context_order(locality_context_order),
+    _bit_depth(bundle.ihdr.bit_depth), _learning_rate(learning_rate) {
 
 }
 
@@ -367,16 +367,116 @@ std::pair<rainman::virtual_array<SSTPair>, std::mutex &> SharinganStateTransitio
         total_size <<= 1;
     }
 
-    auto [cache, cache_mutex] = hzruntime::CacheProvider::get_cache();
+    uint64_t x_chunks = (_width / _chunk_width) + (_width % _chunk_width != 0);
+    uint64_t y_chunks = (_height / _chunk_height) + (_height % _chunk_height != 0);
+    uint64_t true_size = x_chunks * y_chunks;
+    uint64_t global_size = (true_size / local_size + (true_size % local_size != 0)) * local_size;
+    uint64_t n = _width * _height;
+
+    auto[cache, cache_mutex] = hzruntime::CacheProvider::get_cache();
     auto array = rainman::virtual_array<SSTPair>(cache, total_size);
 
     for (uint64_t channel_index = 0; channel_index < _nchannels; channel_index++) {
-        std::scoped_lock<std::mutex, std::mutex> lock(device_mutex, cache_mutex);
 
-        uint64_t n = _width * _height;
-        uint64_t stride_size = (n / hzruntime::Config::opencl_kernels) + (n % hzruntime::Config::opencl_kernels != 0);
-        uint64_t true_size = (n / stride_size) + (n % stride_size != 0);
-        uint64_t global_size = (true_size / local_size + (true_size % local_size != 0)) * local_size;
+        uint64_t channel_offset = n * channel_index;
+
+        cl::Buffer g_input(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, n * sizeof(uint16_t),
+                           _data.pointer() + channel_offset);
+
+        cl::Buffer g_output(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, n * sizeof(SSTPair));
+
+        cl::Buffer g_freq_map(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS, true_size * 65536 * sizeof(uint64_t));
+
+        kernel.setArg(0, g_input);
+        kernel.setArg(1, g_output);
+        kernel.setArg(2, n);
+        kernel.setArg(3, _chunk_width);
+        kernel.setArg(4, _chunk_height);
+        kernel.setArg(5, _locality_context_order);
+        kernel.setArg(6, shift);
+        kernel.setArg(7, false);
+        kernel.setArg(8, _width);
+        kernel.setArg(9, _height);
+        kernel.setArg(10, _learning_rate);
+        kernel.setArg(11, g_freq_map);
+
+        auto output = rainman::ptr<SSTPair>(n);
+
+        {
+            std::scoped_lock<std::mutex> device_lock(device_mutex);
+            auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+            queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));
+            queue.enqueueBarrierWithWaitList();
+            queue.enqueueReadBuffer(g_output, CL_FALSE, 0, n * sizeof(SSTPair), output.pointer());
+            queue.finish();
+        }
+
+        {
+            std::scoped_lock<std::mutex> cache_lock(cache_mutex);
+            for (uint64_t index = 0; index < n; index++) {
+                array.set(output[index], channel_offset + index);
+            }
+        }
+    }
+
+    if (_bit_depth > 8) {
+        uint64_t residue_segment_offset = n * _nchannels;
+
+        for (uint64_t channel_index = 0; channel_index < _nchannels; channel_index++) {
+
+            uint64_t channel_offset = n * channel_index;
+
+            cl::Buffer g_input(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, n * sizeof(uint16_t),
+                               _data.pointer() + channel_offset);
+
+            cl::Buffer g_output(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, n * sizeof(SSTPair));
+
+            cl::Buffer g_freq_map(context, CL_MEM_READ_WRITE | CL_MEM_HOST_NO_ACCESS,
+                                  true_size * 256 * sizeof(uint64_t));
+
+            kernel.setArg(0, g_input);
+            kernel.setArg(1, g_output);
+            kernel.setArg(2, n);
+            kernel.setArg(3, _chunk_width);
+            kernel.setArg(4, _chunk_height);
+            kernel.setArg(5, _locality_context_order);
+            kernel.setArg(6, 0);
+            kernel.setArg(7, true);
+            kernel.setArg(8, _width);
+            kernel.setArg(9, _height);
+            kernel.setArg(10, _learning_rate);
+            kernel.setArg(11, g_freq_map);
+
+            auto output = rainman::ptr<SSTPair>(n);
+
+            {
+                std::scoped_lock<std::mutex> device_lock(device_mutex);
+                auto queue = cl::CommandQueue(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+                queue.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(global_size), cl::NDRange(local_size));
+                queue.enqueueBarrierWithWaitList();
+                queue.enqueueReadBuffer(g_output, CL_FALSE, 0, n * sizeof(SSTPair), output.pointer());
+                queue.finish();
+            }
+
+            {
+                std::scoped_lock<std::mutex> cache_lock(cache_mutex);
+                for (uint64_t index = 0; index < n; index++) {
+                    array.set(output[index], residue_segment_offset + channel_offset + index);
+                }
+            }
+        }
+    }
+
+    return std::pair<rainman::virtual_array<SSTPair>, std::mutex &>(array, cache_mutex);
+}
+
+std::pair<rainman::virtual_array<SSTPair>, std::mutex &> SharinganStateTransition::dynamic_precode() {
+    if (hzruntime::Config::opencl_support_enabled) {
+        if (_width * _height > 1000000) {
+            return opencl_dynamic_precode();
+        } else {
+            return cpu_dynamic_precode();
+        }
     }
 }
 

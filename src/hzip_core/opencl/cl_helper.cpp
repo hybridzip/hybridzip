@@ -30,9 +30,10 @@ void DeviceProvider::list_available_devices() {
 
         std::cout << "Platform: " << platform.getInfo<CL_PLATFORM_NAME>() << std::endl;
 
-        for (const auto& device : platform_devices) {
+        for (const auto &device : platform_devices) {
             std::cout << "\t- Device: " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
-            std::cout << "\t\t- Clock Frequency: " << device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>() << " MHz" << std::endl;
+            std::cout << "\t\t- Clock Frequency: " << device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>() << " MHz"
+                      << std::endl;
             std::cout << "\t\t- Compute units: " << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << std::endl;
             std::cout << std::endl;
         }
@@ -65,7 +66,7 @@ void DeviceProvider::filter_devices(const std::string &regex_pattern) {
 
     std::vector<cl::Device> filtered_devices;
 
-    for (const auto& device : _devices) {
+    for (const auto &device : _devices) {
         std::string dname = device.getInfo<CL_DEVICE_NAME>();
         if (std::regex_search(dname.begin(), dname.end(), regex)) {
             filtered_devices.push_back(device);
@@ -130,7 +131,24 @@ void ProgramProvider::register_program(const std::string &program_name, const st
         for (const auto &device : devices) {
             cl::Context context(device);
             auto program = cl::Program(context, src);
-            program.build(HZIP_OPENCL_BUILD_OPTIONS);
+            try {
+                program.build(HZIP_OPENCL_BUILD_OPTIONS);
+            } catch (cl::Error &e) {
+                if (e.err() == CL_BUILD_PROGRAM_FAILURE) {
+                    cl_build_status status = program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(device);
+                    if (status == CL_BUILD_ERROR) {
+                        std::string name = device.getInfo<CL_DEVICE_NAME>();
+                        std::string build_log = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+                        std::string err_msg = "Build failed for device: " + name;
+                        err_msg += "\nBuild log - \n" + build_log;
+
+                        throw OpenCLErrors::ProgramException(err_msg);
+                    } else {
+                        throw OpenCLErrors::InvalidOperationException(e.what());
+                    }
+                }
+            }
+
             _program_map[program_name].push_back(program);
         }
     }
@@ -142,12 +160,12 @@ void ProgramProvider::set_device_count(uint64_t device_count) {
 }
 
 std::pair<cl::Kernel, std::mutex &> KernelProvider::get(const std::string &program_name) {
-    auto [program, mutex] = ProgramProvider::get(program_name);
+    auto[program, mutex] = ProgramProvider::get(program_name);
     return std::pair<cl::Kernel, std::mutex &>(cl::Kernel(program, "run"), mutex);
 }
 
 std::pair<cl::Kernel, std::mutex &> KernelProvider::get(const std::string &program_name, const std::string &kernel) {
-    auto [program, mutex] = ProgramProvider::get(program_name);
+    auto[program, mutex] = ProgramProvider::get(program_name);
     return std::pair<cl::Kernel, std::mutex &>(cl::Kernel(program, kernel.c_str()), mutex);
 }
 

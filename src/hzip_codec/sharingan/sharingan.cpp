@@ -40,7 +40,7 @@ rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &
     apply_filter(bundle);
 
     auto state_transition = SharinganStateTransition(bundle);
-    auto[virt_array, cache_mutex] = state_transition.cpu_dynamic_precode();
+    auto[virt_array, cache_mutex] = state_transition.dynamic_precode();
 
     rainman::virtual_array<SSTPair> state_trans = virt_array;
 

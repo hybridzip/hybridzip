@@ -16,7 +16,6 @@ struct SSTPair {
 
 class SharinganStateTransition {
 private:
-    bool _is_dynamic;
     uint8_t _locality_context_order;
 
     uint64_t _chunk_width;
@@ -55,11 +54,13 @@ public:
 
     std::pair<rainman::virtual_array<SSTPair>, std::mutex &> static_precode();
 
+    std::pair<rainman::virtual_array<SSTPair>, std::mutex &> dynamic_precode();
+
     std::pair<rainman::virtual_array<SSTPair>, std::mutex &> cpu_dynamic_precode();
 
 #ifdef HZIP_ENABLE_OPENCL
 
-    void register_opencl_program();
+    static void register_opencl_program();
 
     std::pair<rainman::virtual_array<SSTPair>, std::mutex &> opencl_dynamic_precode();
 

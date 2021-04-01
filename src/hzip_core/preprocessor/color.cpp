@@ -186,3 +186,100 @@ hztrans::LinearU16ColorTransformer::opencl_ycocg_to_rgb(const rainman::ptr<uint1
 }
 
 #endif
+
+hztrans::LinearU16XColorTransformer::LinearU16XColorTransformer(
+        uint64_t width,
+        uint64_t height,
+        uint8_t bit_depth
+) : _width(width), _height(height), _bit_depth(bit_depth) {
+    _mask = (1ull << _bit_depth) - 1;
+    if (hzruntime::Config::opencl_support_enabled) {
+        if (_width * _height > 1000000) {
+            _executor = hzruntime::OPENCL;
+        } else {
+            _executor = hzruntime::CPU;
+        }
+    }
+}
+
+std::pair<uint16_t, uint16_t>
+hztrans::LinearU16XColorTransformer::forward_lift(const std::pair<uint16_t, uint16_t> &p) const {
+    auto[x, y] = p;
+    x &= _mask;
+    y &= _mask;
+
+    uint16_t diff = (y - x) & _mask;
+    uint16_t average = (x + (diff >> 1)) & _mask;
+
+    return std::pair(average, diff);
+}
+
+std::pair<uint16_t, uint16_t>
+hztrans::LinearU16XColorTransformer::reverse_lift(const std::pair<uint16_t, uint16_t> &p) const {
+    auto[average, diff] = p;
+    average &= _mask;
+    diff &= _mask;
+
+    uint16_t x = (average - (diff >> 1)) & _mask;
+    uint16_t y = (x + diff) & _mask;
+
+    return std::pair(x, y);
+}
+
+rainman::ptr<uint16_t>
+hztrans::LinearU16XColorTransformer::cpu_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
+    rainman::ptr<uint16_t> output;
+
+    if (inplace) {
+        output = buffer;
+    } else {
+        output = rainman::ptr<uint16_t>(buffer.size());
+    }
+
+    uint64_t lz = _width * _height;
+    uint64_t lz2 = lz << 1;
+
+    for (uint64_t i = 0; i < lz; i++) {
+        auto r = buffer[i];
+        auto g = buffer[i + lz];
+        auto b = buffer[i + lz2];
+
+        auto[temp, co] = forward_lift(std::pair(r, b));
+        auto[y, cg] = forward_lift(std::pair(g, temp));
+
+        output[i] = y;
+        output[i + lz] = co;
+        output[i + lz2] = cg;
+    }
+
+    return output;
+}
+
+rainman::ptr<uint16_t>
+hztrans::LinearU16XColorTransformer::cpu_ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer, bool inplace) const {
+    rainman::ptr<uint16_t> output;
+
+    if (inplace) {
+        output = buffer;
+    } else {
+        output = rainman::ptr<uint16_t>(buffer.size());
+    }
+
+    uint64_t lz = _width * _height;
+    uint64_t lz2 = lz << 1;
+
+    for (uint64_t i = 0; i < lz; i++) {
+        auto y = buffer[i];
+        auto co = buffer[i + lz];
+        auto cg = buffer[i + lz2];
+
+        auto[g, temp] = reverse_lift(std::pair(y, cg));
+        auto[r, b] = reverse_lift(std::pair(temp, co));
+
+        output[i] = r;
+        output[i + lz] = g;
+        output[i + lz2] = b;
+    }
+
+    return output;
+}

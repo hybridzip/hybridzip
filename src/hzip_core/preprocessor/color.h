@@ -85,6 +85,33 @@ namespace hztrans {
         }
     };
 
+    class LinearU16XColorTransformer {
+    private:
+        hzruntime::Executor _executor;
+        uint64_t _width;
+        uint64_t _height;
+        uint8_t _bit_depth;
+        uint64_t _mask;
+
+        [[nodiscard]] std::pair<uint16_t, uint16_t> forward_lift(const std::pair<uint16_t, uint16_t> &p) const;
+
+        [[nodiscard]] std::pair<uint16_t, uint16_t> reverse_lift(const std::pair<uint16_t, uint16_t> &p) const;
+
+    public:
+        LinearU16XColorTransformer(
+                uint64_t width,
+                uint64_t height,
+                uint8_t bit_depth
+        );
+
+        [[nodiscard]] rainman::ptr<uint16_t>
+        cpu_rgb_to_ycocg(const rainman::ptr<uint16_t> &buffer, bool inplace = false) const;
+
+        [[nodiscard]] rainman::ptr<uint16_t>
+        cpu_ycocg_to_rgb(const rainman::ptr<uint16_t> &buffer, bool inplace = false) const;
+    };
+
+
     class LinearU16ColorTransformer {
     private:
         hzruntime::Executor _executor;

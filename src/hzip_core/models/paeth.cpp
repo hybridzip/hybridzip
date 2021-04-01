@@ -124,7 +124,7 @@ hzmodels::LinearU16PaethDifferential::cpu_filter(
 void hzmodels::LinearU16PaethDifferential::register_opencl_program() {
     hzopencl::ProgramProvider::register_program("paeth_differential",
 
-#include "hzip_core/opencl/types.cl"
+#include "hzip_core/opencl/common/types.cl"
 #include "paeth.cl"
 
     );

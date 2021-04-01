@@ -1,23 +1,24 @@
 R"(
 
 // Required dependencies:
-// types.cl
+// common/types.cl
+// common/extended_types.cl
 
-typedef struct __attribute__ ((packed)) _pair16 {
-	u16 x;
-	u16 y;
-} pair16;
-
-pair16 forward_lift16(pair16 p) {
-	pair16 out;
+u16_pair u16x_forward_lift(u64 mask, u16_pair p) {
+	u16_pair out;
+	u16 x = p.first;
+	u16 y = p.second;
 	
-	out.y = p.y - p.x;
-	out.x = p.x + (out.y >> 1);
+	x &= mask;
+	y &= mask;
+	
+	out.second = (y - x) & mask;
+	out.first = (x + (out.second >> 1)) & mask;
 	
 	return out;
 }
 	
-__kernel void rgb_to_ycocg16(__global u16 *arr, const u64 n, const u64 s) {
+__kernel void u16x_rgb_to_ycocg(__global u16 *arr, const u64 n, const u64 s, const u64 mask) {
 	u64 tid = get_global_id(0);
 	u64 start_index = tid * s;
 	
@@ -40,21 +41,21 @@ __kernel void rgb_to_ycocg16(__global u16 *arr, const u64 n, const u64 s) {
 		u16 g = arr[index + n];
 		u16 b = arr[index + n2];
 		
-		pair16 rb;
-		rb.x = r;
-		rb.y = b;
+		u16_pair rb;
+		rb.first = r;
+		rb.second = b;
 		
-		pair16 temp_co = forward_lift16(rb);
+		u16_pair temp_co = u16x_forward_lift(mask, rb);
 		
-		pair16 gt;
-		gt.x = g;
-		gt.y = temp_co.x;
+		u16_pair gt;
+		gt.first = g;
+		gt.second = temp_co.first;
 		
-		pair16 y_cg = forward_lift16(gt);
+		u16_pair y_cg = u16x_forward_lift(mask, gt);
 		
-		arr[index] = y_cg.x;
-		arr[index + n] = temp_co.y;
-		arr[index + n2] = y_cg.y;
+		arr[index] = y_cg.first;
+		arr[index + n] = temp_co.second;
+		arr[index + n2] = y_cg.second;
 		
 		if (index == end_index) {
 			break;
@@ -64,15 +65,21 @@ __kernel void rgb_to_ycocg16(__global u16 *arr, const u64 n, const u64 s) {
 	}
 }
 
-pair16 reverse_lift16(pair16 p) {
-	pair16 out;
-	out.x = p.x - (p.y >> 1);
-	out.y = out.x + p.y;
+u16_pair u16x_reverse_lift(u64 mask, u16_pair p) {
+	u16_pair out;
+	u16 x = p.first;
+	u16 y = p.second;
+	
+	x &= mask;
+	y &= mask;
+	
+	out.first = (x - (y >> 1)) & mask;
+	out.second = (out.first + y) & mask;
 	
 	return out;
 }
 
-__kernel void ycocg_to_rgb16(__global u16 *arr, const u64 n, const u64 s) {
+__kernel void u16x_ycocg_to_rgb(__global u16 *arr, const u64 n, const u64 s, const u64 mask) {
 	u64 tid = get_global_id(0);
 	u64 start_index = tid * s;
 	
@@ -95,21 +102,21 @@ __kernel void ycocg_to_rgb16(__global u16 *arr, const u64 n, const u64 s) {
 		u16 co = arr[index + n];
 		u16 cg = arr[index + n2];
 		
-		pair16 ycg;
-		ycg.x = y;
-		ycg.y = cg;
+		u16_pair ycg;
+		ycg.first = y;
+		ycg.second = cg;
 		
-		pair16 green_temp = reverse_lift16(ycg);
+		u16_pair green_temp = u16x_reverse_lift(mask, ycg);
 		
-		pair16 temp_co;
-		temp_co.x = green_temp.y;
-		temp_co.y = co;
+		u16_pair temp_co;
+		temp_co.first = green_temp.second;
+		temp_co.second = co;
 		
-		pair16 rb = reverse_lift16(temp_co);
+		u16_pair rb = u16x_reverse_lift(mask, temp_co);
 		
-		arr[index] = rb.x;
-		arr[index + n] = green_temp.x;
-		arr[index + n2] = rb.y;
+		arr[index] = rb.first;
+		arr[index + n] = green_temp.first;
+		arr[index + n2] = rb.second;
 		
 		if (index == end_index) {
 			break;

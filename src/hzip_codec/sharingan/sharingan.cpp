@@ -10,7 +10,12 @@ void hzcodec::Sharingan::preprocess_data(const PNGBundle &bundle) {
     auto color_type = bundle.ihdr.color_type;
 
     if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGBA) {
-        auto transformer = hztrans::LinearU16ColorTransformer(bundle.ihdr.width, bundle.ihdr.height);
+        auto transformer = hztrans::LinearU16XColorTransformer(
+                bundle.ihdr.width,
+                bundle.ihdr.height,
+                bundle.ihdr.bit_depth
+        );
+
         transformer.rgb_to_ycocg(bundle.buf, true);
     }
 }

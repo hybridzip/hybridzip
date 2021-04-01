@@ -1,8 +1,8 @@
 R"(
 
 // Required dependencies:
-// types.cl
-// hzrans64.cl
+// common/types.cl
+// kernel/hzrans64.cl
 	
 __kernel void sharingan_dynamic(
 	__global u16 *g_input,

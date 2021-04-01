@@ -345,8 +345,8 @@ SharinganStateTransition::cpu_dynamic_precode() {
 void SharinganStateTransition::register_opencl_program() {
     hzopencl::ProgramProvider::register_program("sharingan_dynamic",
 
-#include "hzip_core/opencl/types.cl"
-#include "hzip_core/opencl/hzrans64.cl"
+#include "hzip_core/opencl/common/types.cl"
+#include "hzip_core/opencl/kernel/hzrans64.cl"
 #include "sharingan_dynamic.cl"
 
     );

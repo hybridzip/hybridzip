@@ -1,7 +1,7 @@
 R"(
 
 // Required dependencies:
-// types.cl
+// common/types.cl
 
 u32 absdiff(u32 x, u32 y) {
 	return x > y ? x - y : y - x;

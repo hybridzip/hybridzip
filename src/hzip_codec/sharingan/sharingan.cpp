@@ -1,11 +1,10 @@
 #include "sharingan.h"
-#include "state_transition.h"
-#include <cmath>
-#include <iostream>
 #include <hzip_core/utils/distribution.h>
 #include <hzip_core/preprocessor/transforms.h>
 #include <hzip_core/models/paeth.h>
 #include <hzip_core/kernel/hzrans/hzrans64_codec.h>
+#include <hzip_core/utils/utils.h>
+#include "state_transition.h"
 
 void hzcodec::Sharingan::preprocess_data(const PNGBundle &bundle) {
     auto color_type = bundle.ihdr.color_type;
@@ -31,8 +30,40 @@ void hzcodec::Sharingan::apply_filter(const PNGBundle &bundle) {
     }
 }
 
+HZ_BlobHeader hzcodec::Sharingan::generate_blob_header(const PNGBundle &bundle) {
+    auto header = HZ_BlobHeader();
+
+    std::vector<bin_t> data;
+
+    // Store custom metadata
+    data.push_back(bin_t{.obj=static_cast<uint64_t>(bundle.nchannels), .n=8});
+
+    // Store IHDR
+    data.push_back(bin_t{.obj=static_cast<uint64_t>(bundle.ihdr.width), .n=32});
+    data.push_back(bin_t{.obj=static_cast<uint64_t>(bundle.ihdr.height), .n=32});
+    data.push_back(bin_t{.obj=static_cast<uint64_t>(bundle.ihdr.bit_depth), .n=8});
+    data.push_back(bin_t{.obj=static_cast<uint64_t>(bundle.ihdr.color_type), .n=8});
+    data.push_back(bin_t{.obj=static_cast<uint64_t>(bundle.ihdr.interlace_method), .n=8});
+    data.push_back(bin_t{.obj=static_cast<uint64_t>(bundle.ihdr.filter_method), .n=8});
+    data.push_back(bin_t{.obj=static_cast<uint64_t>(bundle.ihdr.compression_method), .n=8});
+
+    // Store PLTE
+    data.push_back(bin_t{.obj=bundle.plte.colors.size(), .n=32});
+    for (int i = 0; i < bundle.plte.colors.size(); i++) {
+        data.push_back(bin_t{.obj=bundle.plte.colors[i].red, .n=8});
+        data.push_back(bin_t{.obj=bundle.plte.colors[i].green, .n=8});
+        data.push_back(bin_t{.obj=bundle.plte.colors[i].blue, .n=8});
+    }
+
+    header.raw = hz_vecbin_to_raw(data);
+
+    return header;
+}
+
 rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &blob) {
-    // ignore mstate for now.
+    auto mstate = rainman::ptr<HZ_MState>();
+    mstate->alg = hzcodec::algorithms::SHARINGAN;
+
     auto builder = PNGBundleBuilder(blob->data);
     auto bundle = builder.read_bundle();
 
@@ -65,20 +96,17 @@ rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &
     encoder.set_distribution(hzip_get_init_dist(0x100));
 
     auto output = encoder.encode();
+    auto cblob = rainman::ptr<HZ_Blob>();
 
-    std::cout << "Actual size: " << blob->data.size() << " bytes" << std::endl;
-    std::cout << "Compressed size: " << output.n * 4 << " bytes" << std::endl;
+    auto header = generate_blob_header(bundle);
 
-//    double pbits = 0.0;
-//    for (uint64_t i = 0; i < virt_array.size(); i++) {
-//        pbits += log2(16777216.0 / double(virt_array[i].ls));
-//    }
-//
-//    std::cout << "Actual size: " << blob->data.size() << " bytes" << std::endl;
-//    std::cout << "Compressed size: " << pbits / 8 << " bytes" << std::endl;
-//    std::cout << "Compression ratio: " << double(blob->data.size() * 8) / pbits << std::endl;
+    cblob->data = hz_u32_to_u8ptr(output.data, output.n);
+    cblob->size = output.n << 2;
+    cblob->o_size = blob->data.size();
+    cblob->mstate = mstate;
+    cblob->header = header;
 
-    return rainman::ptr<HZ_Blob>();
+    return cblob;
 }
 
 rainman::ptr<HZ_Blob> hzcodec::Sharingan::decompress(const rainman::ptr<HZ_Blob> &blob) {

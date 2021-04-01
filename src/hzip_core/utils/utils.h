@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <ctime>
 #include <openssl/sha.h>
+#include <bitio/bitio.h>
 #include <hzip_core/errors/utils.h>
 #include "common.h"
 #include "platform.h"
@@ -116,7 +117,7 @@ HZ_INLINE uint64_t hz_u8buf_to_u64(const rainman::ptr<uint8_t> &buf) {
     return x;
 }
 
-HZ_INLINE rainman::ptr<uint32_t> u8_to_u32ptr(const rainman::ptr<uint8_t> &arr, uint64_t n) {
+HZ_INLINE rainman::ptr<uint32_t> hz_u8_to_u32ptr(const rainman::ptr<uint8_t> &arr, uint64_t n) {
     uint64_t n32 = (n >> 2) + (n & 0x3 ? 1 : 0);
 
     auto arr32 = rainman::ptr<uint32_t>(n32);
@@ -137,7 +138,7 @@ HZ_INLINE rainman::ptr<uint32_t> u8_to_u32ptr(const rainman::ptr<uint8_t> &arr, 
     return arr32;
 }
 
-HZ_INLINE rainman::ptr<uint8_t> u32_to_u8ptr(const rainman::ptr<uint32_t> &arr, uint64_t n) {
+HZ_INLINE rainman::ptr<uint8_t> hz_u32_to_u8ptr(const rainman::ptr<uint32_t> &arr, uint64_t n) {
     auto arr8 = rainman::ptr<uint8_t>(n << 2);
 
     for (uint64_t i = 0, j = 0; i < n; i++, j += 4) {
@@ -159,6 +160,22 @@ inline void hz_assert(bool exp, const std::string &msg = "Assertion failed") {
     if (!exp) {
         throw UtilErrors::InternalError(msg);
     }
+}
+
+inline rainman::ptr<uint8_t> hz_vecbin_to_raw(const std::vector<bin_t> &vec) {
+    uint64_t bits = 0;
+    for (const auto &x: vec) {
+        bits += x.n;
+    }
+
+    auto raw = rainman::ptr<uint8_t>((bits >> 3) + ((bits & 0x7) != 0));
+    auto stream = bitio::stream(raw.pointer(), raw.size());
+
+    for (const auto &bin: vec) {
+        stream.write(bin.obj, bin.n);
+    }
+
+    return raw;
 }
 
 #define HZ_ASSERT(exp, msg) hz_assert(exp, msg)

@@ -60,7 +60,7 @@ rainman::ptr<HZ_Blob> hzcodec::Victini::compress(const rainman::ptr<HZ_Blob> &bl
 
     auto cblob = rainman::ptr<HZ_Blob>();
 
-    cblob->data = u32_to_u8ptr(blob_data.data, blob_data.n);
+    cblob->data = hz_u32_to_u8ptr(blob_data.data, blob_data.n);
     cblob->size = blob_data.n << 2;
     cblob->o_size = length;
     cblob->mstate = mstate;
@@ -136,7 +136,7 @@ rainman::ptr<HZ_Blob> hzcodec::Victini::decompress(const rainman::ptr<HZ_Blob> &
     decoder.set_distribution(hzip_get_init_dist(0x100));
     decoder.override_symbol_ptr(sym_optr);
 
-    rainman::ptr<uint32_t> blob_data = u8_to_u32ptr(blob->data, blob->size);
+    rainman::ptr<uint32_t> blob_data = hz_u8_to_u32ptr(blob->data, blob->size);
 
     hzrans64_decoder_output dataptr = decoder.decode(blob_data);
 

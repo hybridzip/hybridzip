@@ -20,9 +20,11 @@
 namespace hzcodec {
     class Sharingan : public AbstractCodec {
     private:
-        void preprocess_data(const PNGBundle &bundle);
+        static void preprocess_data(const PNGBundle &bundle);
 
-        void apply_filter(const PNGBundle &bundle);
+        static void apply_filter(const PNGBundle &bundle);
+
+        static HZ_BlobHeader generate_blob_header(const PNGBundle &bundle);
 
     public:
         Sharingan() = default;

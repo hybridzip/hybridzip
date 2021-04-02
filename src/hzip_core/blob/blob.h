@@ -2,6 +2,7 @@
 #define HYBRIDZIP_BLOB_H
 
 #include <cstdint>
+#include <unordered_map>
 #include <rainman/rainman.h>
 #include <hzip_core/utils/platform.h>
 #include <hzip_codec/compressor_enums.h>
@@ -11,33 +12,37 @@ struct HZ_MState {
     rainman::ptr<uint8_t> data{};
     hzcodec::algorithms::ALGORITHM alg{};
 
-    HZ_MState() {
-        alg = hzcodec::algorithms::UNCOMPRESSED;
-    }
+    HZ_MState();
 
-    [[nodiscard]] uint64_t size() const {
-        return data.size();
-    }
+    [[nodiscard]] uint64_t size() const;
 
-    [[nodiscard]] bool is_empty() const {
-        return alg == hzcodec::algorithms::UNCOMPRESSED;
-    }
+    [[nodiscard]] bool is_empty() const;
 };
 
-struct HZ_BlobHeader{
+struct HZ_BlobHeader {
     rainman::ptr<uint8_t> raw;
 
     HZ_BlobHeader() = default;
 
-    [[nodiscard]] uint64_t size() const {
-        return raw.size();
-    }
+    [[nodiscard]] uint64_t size() const;
+};
+
+struct HZ_Params {
+    std::unordered_map<std::string, std::string> params;
+
+    rainman::ptr<uint8_t> to_byte_array();
+
+    static HZ_Params from_byte_array(const rainman::ptr<uint8_t> &raw);
+
+    template <typename Type=std::string>
+    Type get(const std::string &key, const std::string &default_value = "");
 };
 
 // status: true indicates that the blob is compressed.
 
 struct HZ_Blob {
     HZ_BlobHeader header{};
+    HZ_Params codec_params{};
     rainman::ptr<HZ_MState> mstate;
     rainman::ptr<uint8_t> data;
     uint64_t size{};
@@ -47,19 +52,7 @@ struct HZ_Blob {
 
     HZ_Blob() = default;
 
-    void evaluate(const rainman::ptr<uint8_t> &original_data) {
-        status = size < o_size;
-        if (!status) {
-            data = original_data;
-            size = o_size;
-
-            // Destroy mstate if compression fails.
-            // Replace it with a mstate with algorithm = UNCOMPRESSED
-            if (!mstate->is_empty()) {
-                mstate = rainman::ptr<HZ_MState>();
-            }
-        }
-    }
+    void evaluate(const rainman::ptr<uint8_t> &original_data);
 };
 
 #endif

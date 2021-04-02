@@ -21,7 +21,6 @@ SharinganStateTransition::SharinganStateTransition(
         const PNGBundle &bundle,
         uint64_t chunk_width,
         uint64_t chunk_height,
-        bool is_dynamic,
         uint8_t locality_context_order,
         uint64_t learning_rate
 ) : _data(bundle.buf), _width(bundle.ihdr.width), _height(bundle.ihdr.height), _nchannels(bundle.nchannels),

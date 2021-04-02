@@ -33,6 +33,10 @@ TEST(SharinganCodecTest, sharingan_codec_test) {
     hzruntime::Config::configure();
     hzruntime::CacheProvider::init_cache("test", 1, 4194304);
 
+#ifdef HZIP_ENABLE_OPENCL
+    SharinganStateTransition::register_opencl_program();
+#endif
+
     const char *filename = "/home/supercmmetry/Projects/hzip-research/datasets/png/7.png";
 
     FILE *fp = std::fopen(filename, "rb");
@@ -45,7 +49,16 @@ TEST(SharinganCodecTest, sharingan_codec_test) {
     auto blob = rainman::ptr<HZ_Blob>();
     blob->data = data;
     auto sharingan = hzcodec::Sharingan();
-    sharingan.compress(blob);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto cblob = sharingan.compress(blob);
+    auto end = std::chrono::high_resolution_clock::now();
+    
+    std::cout << "Actual file size: " << cblob->o_size << " bytes" << std::endl;
+    std::cout << "Compressed file size: " << cblob->size << " bytes" << std::endl;
+    std::cout << "Compression ratio: " << double(cblob->o_size) / double(cblob->size) << std::endl;
+    std::cout << "Time taken: " << double((end - start).count()) / 1000000.0 << " ms" << std::endl;
+
 }
 
 #ifdef HZIP_ENABLE_OPENCL

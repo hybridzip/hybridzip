@@ -75,7 +75,19 @@ rainman::ptr<HZ_Blob> hzcodec::Sharingan::compress(const rainman::ptr<HZ_Blob> &
     preprocess_data(bundle);
     apply_filter(bundle);
 
-    auto state_transition = SharinganStateTransition(bundle);
+    auto chunk_width = blob->codec_params.get<uint64_t>("chunk_width", "64");
+    auto chunk_height = blob->codec_params.get<uint64_t>("chunk_height", "64");
+    auto locality_context_order = blob->codec_params.get<uint64_t>("locality_context_order", "3");
+    auto learning_rate = blob->codec_params.get<uint64_t>("learning_rate", "32");
+
+    auto state_transition = SharinganStateTransition(
+            bundle,
+            chunk_width,
+            chunk_height,
+            locality_context_order,
+            learning_rate
+    );
+
     auto[virt_array, cache_mutex] = state_transition.dynamic_precode();
 
     rainman::virtual_array<SSTPair> state_trans = virt_array;

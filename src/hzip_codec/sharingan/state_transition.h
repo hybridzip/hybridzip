@@ -45,7 +45,6 @@ public:
             const PNGBundle &bundle,
             uint64_t chunk_width = HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_CHUNK_WIDTH,
             uint64_t chunk_height = HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_CHUNK_HEIGHT,
-            bool is_dynamic = true,
             uint8_t locality_context_order = HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_LOCALITY_CONTEXT_ORDER,
             uint64_t learning_rate = HZIP_SHARINGAN_STATE_TRANSITION_DEFAULT_LEARNING_RATE
     );

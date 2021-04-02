@@ -10,6 +10,7 @@
 #include <ctime>
 #include <openssl/sha.h>
 #include <bitio/bitio.h>
+#include <rainman/rainman.h>
 #include <hzip_core/errors/utils.h>
 #include "common.h"
 #include "platform.h"
